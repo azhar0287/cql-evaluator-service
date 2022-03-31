@@ -69,13 +69,9 @@
         <module name="evaluator" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="engine" target="8" />
-    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="engine" options="-Xlint:all -Xlint:-options -Xlint:-processing -Werror -implicit:none" />
       <module name="evaluator" options="-Xlint:all -Xlint:-options -Xlint:-processing -Werror -implicit:none" />
       <module name="evaluator.activitydefinition" options="-Xlint:all -Xlint:-options -Xlint:-processing -Werror -implicit:none" />
       <module name="evaluator.builder" options="-Xlint:all -Xlint:-options -Xlint:-processing -Werror -implicit:none" />
@@ -88,7 +84,6 @@
       <module name="evaluator.measure" options="-Xlint:all -Xlint:-options -Xlint:-processing -Werror -implicit:none" />
       <module name="evaluator.measure-hapi" options="-Xlint:all -Xlint:-options -Xlint:-processing -Werror -implicit:none" />
       <module name="evaluator.plandefinition" options="-Xlint:all -Xlint:-options -Xlint:-processing -Werror -implicit:none" />
-      <module name="evaluator.shared" options="-Xlint:all -Xlint:-options -Xlint:-processing -Werror -implicit:none" />
       <module name="evaluator.spring" options="-Xlint:all -Xlint:-options -Xlint:-processing -Werror -implicit:none" />
     </option>
   </component>
