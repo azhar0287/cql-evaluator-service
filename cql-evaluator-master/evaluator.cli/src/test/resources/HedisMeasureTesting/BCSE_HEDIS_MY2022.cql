@@ -26,7 +26,7 @@ valueset "Unilateral Mastectomy": 'https://www.ncqa.org/fhir/valueset/2.16.840.1
 valueset "Unilateral Mastectomy Left": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1334'
 valueset "Unilateral Mastectomy Right": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1335'
 
-parameter "Measurement Period" default Interval[@2020-10-01T00:00:00.000Z, @2022-12-31T23:59:59.000Z)
+parameter "Measurement Period" default Interval[@2022-01-01T00:00:00.000Z, @2022-12-31T23:59:59.000Z)
 
 context Patient
 

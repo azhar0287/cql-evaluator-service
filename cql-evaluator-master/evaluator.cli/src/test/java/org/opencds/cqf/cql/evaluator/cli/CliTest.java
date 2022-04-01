@@ -175,7 +175,7 @@ public class CliTest {
                 "-mu=" + testResourcePath + "/HedisMeasureTesting",
                 "-t=" + testResourcePath + "/HedisMeasureTesting/vocabulary/ValueSet",
                 "-c=Patient",
-                "-cv=Patient-15"
+                "-cv=Patient-33"
         };
 
         Main.run(args);
