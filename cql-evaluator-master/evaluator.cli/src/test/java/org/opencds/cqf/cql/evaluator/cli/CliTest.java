@@ -170,12 +170,12 @@ public class CliTest {
                 "cql",
                 "-fv=R4",
                 "-lu="+ testResourcePath + "/HedisMeasureTesting",
-                "-ln=BCSE_HEDIS_MY2022",
+                "-ln=AISE_HEDIS_MY2022",
                 "-m=FHIR",
                 "-mu=" + testResourcePath + "/HedisMeasureTesting",
                 "-t=" + testResourcePath + "/HedisMeasureTesting/vocabulary/ValueSet",
                 "-c=Patient",
-                "-cv=Patient-33"
+                "-cv=95229"
         };
 
         Main.run(args);

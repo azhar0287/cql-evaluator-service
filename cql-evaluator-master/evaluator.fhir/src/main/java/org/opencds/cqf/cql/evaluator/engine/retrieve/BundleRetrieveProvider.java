@@ -30,7 +30,7 @@ public class BundleRetrieveProvider extends TerminologyAwareRetrieveProvider {
 
 	private static final Logger logger = LoggerFactory.getLogger(BundleRetrieveProvider.class);
 
-	private final IBaseBundle bundle;
+	public final IBaseBundle bundle;
 	private final FhirContext fhirContext;
 	private final CodeUtil codeUtil;
 	private final IFhirPath fhirPath;
