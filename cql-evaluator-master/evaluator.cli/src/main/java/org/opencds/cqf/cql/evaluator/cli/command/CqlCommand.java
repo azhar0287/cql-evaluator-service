@@ -1,16 +1,19 @@
 package org.opencds.cqf.cql.evaluator.cli.command;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
-import org.apache.commons.io.FileUtils;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.bson.Document;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptions;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptionsMapper;
 import org.cqframework.cql.elm.execution.VersionedIdentifier;
@@ -29,6 +32,7 @@ import org.opencds.cqf.cql.evaluator.builder.CqlEvaluatorBuilder;
 import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
 import org.opencds.cqf.cql.evaluator.builder.data.TypedRetrieveProviderFactory;
+import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cql2elm.content.LibraryContentProvider;
 import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.dagger.DaggerCqlEvaluatorComponent;
@@ -103,723 +107,70 @@ public class CqlCommand implements Callable<Integer> {
     private Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     private Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
 
+
+    List<RetrieveProvider> getPatientData() {
+        DBConnection db = new DBConnection();
+
+        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
+
+        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
+        IBaseBundle bundle;
+        FhirContext fhirContext = fhirVersionEnum.newContext();
+        IParser selectedParser = fhirContext.newJsonParser();
+
+        List<Document> documents = db.getConditionalData("95550", "ep_encounter_fhir");
+        for(Document document:documents) {
+            bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
+            RetrieveProvider retrieveProvider = null;
+            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle);
+            retrieveProviders.add(retrieveProvider);
+        }
+        return retrieveProviders;
+    }
+
+    void refreshValueSetBundles(Bundle valueSetBundle , Bundle copySetBundle,List<Bundle.BundleEntryComponent> valueSetEntry  ){
+        copySetBundle = valueSetBundle.copy();
+        valueSetEntry = copySetBundle.getEntry();
+    }
+    List<String> getPatientIds(){
+        StringBuilder builder = new StringBuilder();
+        List<String> patientIdList=new LinkedList<>();
+
+        // try block to check for exceptions where
+        // object of BufferedReader class us created
+        // to read filepath
+        try (BufferedReader buffer = new BufferedReader(
+                new FileReader("C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\patientIds.txt"))) {
+
+            String str;
+
+            // Condition check via buffer.readLine() method
+            // holding true upto that the while loop runs
+            while ((str = buffer.readLine()) != null) {
+                patientIdList.add(str);
+                builder.append(str).append("\n");
+            }
+        }
+
+        // Catch block to handle the exceptions
+        catch (IOException e) {
+
+            // Print the line number here exception occured
+            // using printStackTrace() method
+            e.printStackTrace();
+        }
+
+        // Returning a string
+        return patientIdList;
+    }
     @Override
     public Integer call() throws Exception {
 
 
-        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
 
-        TypedRetrieveProviderFactory factory;
-        Triple<String, ModelResolver, RetrieveProvider> customDataProvider = null;
-
-        String resource = "{\n" +
-                "  \"resourceType\": \"Bundle\",\n" +
-                "  \"id\": \"95229\",\n" +
-                "  \"entry\": [\n" +
-                "    [\n" +
-                "      {\n" +
-                "        \"resource\": {\n" +
-                "          \"resourceType\": \"Patient\",\n" +
-                "          \"id\": \"95229\",\n" +
-                "          \"name\": {\n" +
-                "            \"given\": [\n" +
-                "              \"FirstName\"\n" +
-                "            ],\n" +
-                "            \"family\": \"LastName\"\n" +
-                "          },\n" +
-                "          \"gender\": \"male\",\n" +
-                "          \"birthDate\": \"1981-03-08\",\n" +
-                "          \"identifier\": [\n" +
-                "            {\n" +
-                "              \"use\": \"usual\",\n" +
-                "              \"type\": [],\n" +
-                "              \"system\": \"\",\n" +
-                "              \"value\": \"95229\",\n" +
-                "              \"assigner\": {\n" +
-                "                \"display\": \"Commercial HMO\"\n" +
-                "              }\n" +
-                "            }\n" +
-                "          ]\n" +
-                "        }\n" +
-                "      },\n" +
-                "      {\n" +
-                "        \"resource\": {\n" +
-                "          \"resourceType\": \"Coverage\",\n" +
-                "          \"id\": \"95229\",\n" +
-                "          \"identifier\": [\n" +
-                "            {\n" +
-                "              \"use\": \"usual\",\n" +
-                "              \"type\": [],\n" +
-                "              \"system\": \"\",\n" +
-                "              \"value\": \"95229\",\n" +
-                "              \"assigner\": {\n" +
-                "                \"display\": \"Commercial HMO\"\n" +
-                "              }\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"type\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"urn:oid:HEDIS.Commercial.Custom.Codes.22\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"HMO\",\n" +
-                "                \"display\": \"Commercial Custom code\"\n" +
-                "              }\n" +
-                "            ]\n" +
-                "          },\n" +
-                "          \"policyHolder\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"subscriber\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"beneficiary\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"payor\": {\n" +
-                "            \"reference\": \"Organization/Commercial HMO\"\n" +
-                "          },\n" +
-                "          \"period\": {\n" +
-                "            \"start\": \"2022-02-16\",\n" +
-                "            \"end\": \"2023-01-26\"\n" +
-                "          },\n" +
-                "          \"order\": 0\n" +
-                "        }\n" +
-                "      },\n" +
-                "      {\n" +
-                "        \"resource\": {\n" +
-                "          \"resourceType\": \"Procedure\",\n" +
-                "          \"id\": \"95229\",\n" +
-                "          \"status\": \"in-progress\",\n" +
-                "          \"code\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"urn:oid:2.16.840.1.113883.3.526.3.402\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"90653\",\n" +
-                "                \"display\": \"Influenza Vaccination Value Set\"\n" +
-                "              }\n" +
-                "            ],\n" +
-                "            \"text\": \"Influenza Vaccination Value Set\"\n" +
-                "          },\n" +
-                "          \"subject\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"encounter\": {\n" +
-                "            \"reference\": \"Encounter/90653\"\n" +
-                "          },\n" +
-                "          \"performedPeriod\": {\n" +
-                "            \"start\": \"2010-03-29\",\n" +
-                "            \"end\": \"\"\n" +
-                "          },\n" +
-                "          \"performer\": [],\n" +
-                "          \"reasonCode\": [],\n" +
-                "          \"report\": [\n" +
-                "            {\n" +
-                "              \"reference\": \"DiagnosticReport/90653\"\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"_class\": \"com.example.springjsontofhirparser.FhirResources.Procedure\"\n" +
-                "        },\n" +
-                "        \"_class\": \"com.example.springjsontofhirparser.FhirResources.ResourceChild\"\n" +
-                "      },\n" +
-                "      {\n" +
-                "        \"resource\": {\n" +
-                "          \"resourceType\": \"Condition\",\n" +
-                "          \"id\": \"95229\",\n" +
-                "          \"clinicalStatus\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"http://terminology.hl7.org/CodeSystem/condition-clinical\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"active\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ]\n" +
-                "          },\n" +
-                "          \"verificationStatus\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"http://terminology.hl7.org/CodeSystem/condition-ver-status\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"confirmed\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ]\n" +
-                "          },\n" +
-                "          \"category\": [\n" +
-                "            {\n" +
-                "              \"coding\": [\n" +
-                "                {\n" +
-                "                  \"system\": \"http://terminology.hl7.org/CodeSystem/condition-category\",\n" +
-                "                  \"version\": \"\",\n" +
-                "                  \"code\": \"problem-list-item\",\n" +
-                "                  \"display\": \"Problem List Item\"\n" +
-                "                }\n" +
-                "              ]\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"severity\": {\n" +
-                "            \"coding\": []\n" +
-                "          },\n" +
-                "          \"code\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"urn:oid:\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"379.8\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ],\n" +
-                "            \"text\": \"\"\n" +
-                "          },\n" +
-                "          \"subject\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"encounter\": {\n" +
-                "            \"reference\": \"Encounter/87d394a5-076c-484b-aa75-e43051841c22\"\n" +
-                "          },\n" +
-                "          \"onsetDateTime\": \"2010-03-29T10:00:00\",\n" +
-                "          \"recordedDate\": \"2010-03-29T10:00:00\",\n" +
-                "          \"stage\": [],\n" +
-                "          \"_class\": \"com.example.springjsontofhirparser.FhirResources.Condition\"\n" +
-                "        },\n" +
-                "        \"_class\": \"com.example.springjsontofhirparser.FhirResources.ResourceChild\"\n" +
-                "      },\n" +
-                "      {\n" +
-                "        \"resource\": {\n" +
-                "          \"resourceType\": \"Condition\",\n" +
-                "          \"id\": \"95229\",\n" +
-                "          \"clinicalStatus\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"http://terminology.hl7.org/CodeSystem/condition-clinical\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"active\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ]\n" +
-                "          },\n" +
-                "          \"verificationStatus\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"http://terminology.hl7.org/CodeSystem/condition-ver-status\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"confirmed\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ]\n" +
-                "          },\n" +
-                "          \"category\": [\n" +
-                "            {\n" +
-                "              \"coding\": [\n" +
-                "                {\n" +
-                "                  \"system\": \"http://terminology.hl7.org/CodeSystem/condition-category\",\n" +
-                "                  \"version\": \"\",\n" +
-                "                  \"code\": \"problem-list-item\",\n" +
-                "                  \"display\": \"Problem List Item\"\n" +
-                "                }\n" +
-                "              ]\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"severity\": {\n" +
-                "            \"coding\": []\n" +
-                "          },\n" +
-                "          \"code\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"urn:oid:\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"550.90\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ],\n" +
-                "            \"text\": \"\"\n" +
-                "          },\n" +
-                "          \"subject\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"encounter\": {\n" +
-                "            \"reference\": \"Encounter/87d394a5-076c-484b-aa75-e43051841c22\"\n" +
-                "          },\n" +
-                "          \"onsetDateTime\": \"2010-03-29T10:00:00\",\n" +
-                "          \"recordedDate\": \"2010-03-29T10:00:00\",\n" +
-                "          \"stage\": []\n" +
-                "          \n" +
-                "        }\n" +
-                "      },\n" +
-                "      {\n" +
-                "        \"resource\": {\n" +
-                "          \"resourceType\": \"Condition\",\n" +
-                "          \"id\": \"95229\",\n" +
-                "          \"clinicalStatus\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"http://terminology.hl7.org/CodeSystem/condition-clinical\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"active\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ]\n" +
-                "          },\n" +
-                "          \"verificationStatus\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"http://terminology.hl7.org/CodeSystem/condition-ver-status\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"confirmed\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ]\n" +
-                "          },\n" +
-                "          \"category\": [\n" +
-                "            {\n" +
-                "              \"coding\": [\n" +
-                "                {\n" +
-                "                  \"system\": \"http://terminology.hl7.org/CodeSystem/condition-category\",\n" +
-                "                  \"version\": \"\",\n" +
-                "                  \"code\": \"problem-list-item\",\n" +
-                "                  \"display\": \"Problem List Item\"\n" +
-                "                }\n" +
-                "              ]\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"severity\": {\n" +
-                "            \"coding\": []\n" +
-                "          },\n" +
-                "          \"code\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"urn:oid:\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"218.1\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ],\n" +
-                "            \"text\": \"\"\n" +
-                "          },\n" +
-                "          \"subject\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"encounter\": {\n" +
-                "            \"reference\": \"Encounter/87d394a5-076c-484b-aa75-e43051841c22\"\n" +
-                "          },\n" +
-                "          \"onsetDateTime\": \"2010-03-29T10:00:00\",\n" +
-                "          \"recordedDate\": \"2010-03-29T10:00:00\",\n" +
-                "          \"stage\": []\n" +
-                "        }\n" +
-                "      },\n" +
-                "      {\n" +
-                "        \"resource\": {\n" +
-                "          \"resourceType\": \"Condition\",\n" +
-                "          \"id\": \"95229\",\n" +
-                "          \"clinicalStatus\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"http://terminology.hl7.org/CodeSystem/condition-clinical\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"active\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ]\n" +
-                "          },\n" +
-                "          \"verificationStatus\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"http://terminology.hl7.org/CodeSystem/condition-ver-status\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"confirmed\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ]\n" +
-                "          },\n" +
-                "          \"category\": [\n" +
-                "            {\n" +
-                "              \"coding\": [\n" +
-                "                {\n" +
-                "                  \"system\": \"http://terminology.hl7.org/CodeSystem/condition-category\",\n" +
-                "                  \"version\": \"\",\n" +
-                "                  \"code\": \"problem-list-item\",\n" +
-                "                  \"display\": \"Problem List Item\"\n" +
-                "                }\n" +
-                "              ]\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"severity\": {\n" +
-                "            \"coding\": []\n" +
-                "          },\n" +
-                "          \"code\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"urn:oid:2.16.840.1.113883.3.526.3.1462\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"363.55\",\n" +
-                "                \"display\": \"Hereditary Choroidal Dystrophies Value Set\"\n" +
-                "              }\n" +
-                "            ],\n" +
-                "            \"text\": \"\"\n" +
-                "          },\n" +
-                "          \"subject\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"encounter\": {\n" +
-                "            \"reference\": \"Encounter/87d394a5-076c-484b-aa75-e43051841c22\"\n" +
-                "          },\n" +
-                "          \"onsetDateTime\": \"2010-03-29T10:00:00\",\n" +
-                "          \"recordedDate\": \"2010-03-29T10:00:00\",\n" +
-                "          \"stage\": []\n" +
-                "        }\n" +
-                "      },\n" +
-                "      {\n" +
-                "        \"resource\": {\n" +
-                "          \"resourceType\": \"Condition\",\n" +
-                "          \"id\": \"95229\",\n" +
-                "          \"clinicalStatus\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"http://terminology.hl7.org/CodeSystem/condition-clinical\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"active\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ]\n" +
-                "          },\n" +
-                "          \"verificationStatus\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"http://terminology.hl7.org/CodeSystem/condition-ver-status\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"confirmed\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ]\n" +
-                "          },\n" +
-                "          \"category\": [\n" +
-                "            {\n" +
-                "              \"coding\": [\n" +
-                "                {\n" +
-                "                  \"system\": \"http://terminology.hl7.org/CodeSystem/condition-category\",\n" +
-                "                  \"version\": \"\",\n" +
-                "                  \"code\": \"problem-list-item\",\n" +
-                "                  \"display\": \"Problem List Item\"\n" +
-                "                }\n" +
-                "              ]\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"severity\": {\n" +
-                "            \"coding\": []\n" +
-                "          },\n" +
-                "          \"code\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"urn:oid:\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"738554003\",\n" +
-                "                \"display\": \"\"\n" +
-                "              }\n" +
-                "            ],\n" +
-                "            \"text\": \"\"\n" +
-                "          },\n" +
-                "          \"subject\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"encounter\": {\n" +
-                "            \"reference\": \"Encounter/null\"\n" +
-                "          },\n" +
-                "          \"onsetDateTime\": \"2010-03-29T10:00:00\",\n" +
-                "          \"recordedDate\": \"2010-03-29T10:00:00\",\n" +
-                "          \"stage\": []\n" +
-                "        }\n" +
-                "     \n" +
-                "      },\n" +
-                "      {\n" +
-                "        \"resource\": {\n" +
-                "          \"_id\": \"95229\",\n" +
-                "          \"resourceType\": \"Observation\",\n" +
-                "          \"status\": \"final\",\n" +
-                "          \"code\": {\n" +
-                "            \"coding\": [\n" +
-                "              {\n" +
-                "                \"system\": \"urn:oid:2.16.840.1.113883.3.526.3.402\",\n" +
-                "                \"version\": \"\",\n" +
-                "                \"code\": \"90653\",\n" +
-                "                \"display\": \"Influenza Vaccination Value Set\"\n" +
-                "              }\n" +
-                "            ],\n" +
-                "            \"text\": \"Influenza Vaccination Value Set\"\n" +
-                "          },\n" +
-                "          \"subject\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"encounter\": {\n" +
-                "            \"reference\": \"Encounter/90653\"\n" +
-                "          },\n" +
-                "          \"effectivePeriod\": {\n" +
-                "            \"start\": \"2010-03-29T10:00:00\",\n" +
-                "            \"end\": \"2010-03-29T10:00:00\"\n" +
-                "          },\n" +
-                "          \"issued\": \"2010-03-29T10:00:00\",\n" +
-                "          \"performer\": [\n" +
-                "            {\n" +
-                "              \"actor\": {\n" +
-                "                \"reference\": \"Practitioner/UNK001\",\n" +
-                "                \"display\": \"Practitioner/UNK001\"\n" +
-                "              }\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"component\": []\n" +
-                "        }\n" +
-                "      },\n" +
-                "      {\n" +
-                "        \"resource\": {\n" +
-                "          \"resourceType\": \"Encounter\",\n" +
-                "          \"id\": \"95229\",\n" +
-                "          \"identifier\": [],\n" +
-                "          \"status\": \"finished\",\n" +
-                "          \"class\": {\n" +
-                "            \"system\": \"urn:oid:2.16.840.1.113883.3.526.3.402\",\n" +
-                "            \"version\": \"\",\n" +
-                "            \"code\": \"90653\",\n" +
-                "            \"display\": \"Influenza Vaccination Value Set\"\n" +
-                "          },\n" +
-                "          \"type\": [\n" +
-                "            {\n" +
-                "              \"coding\": [\n" +
-                "                {\n" +
-                "                  \"system\": \"urn:oid:2.16.840.1.113883.3.526.3.402\",\n" +
-                "                  \"version\": \"\",\n" +
-                "                  \"code\": \"90653\",\n" +
-                "                  \"display\": \"Influenza Vaccination Value Set\"\n" +
-                "                }\n" +
-                "              ]\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"subject\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"diagnosis\": [\n" +
-                "            {\n" +
-                "              \"condition\": {\n" +
-                "                \"reference\": \"Condition/\"\n" +
-                "              },\n" +
-                "              \"use\": {\n" +
-                "                \"coding\": [\n" +
-                "                  {\n" +
-                "                    \"system\": \"urn:oid:2.16.840.1.113883.3.526.3.402\",\n" +
-                "                    \"version\": \"\",\n" +
-                "                    \"code\": \"90653\",\n" +
-                "                    \"display\": \"Influenza Vaccination Value Set\"\n" +
-                "                  }\n" +
-                "                ]\n" +
-                "              },\n" +
-                "              \"rank\": 1\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"condition\": {\n" +
-                "                \"reference\": \"Condition/\"\n" +
-                "              },\n" +
-                "              \"use\": {\n" +
-                "                \"coding\": [\n" +
-                "                  {\n" +
-                "                    \"system\": \"urn:oid:2.16.840.1.113883.3.526.3.402\",\n" +
-                "                    \"version\": \"\",\n" +
-                "                    \"code\": \"90653\",\n" +
-                "                    \"display\": \"Influenza Vaccination Value Set\"\n" +
-                "                  }\n" +
-                "                ]\n" +
-                "              },\n" +
-                "              \"rank\": 0\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"condition\": {\n" +
-                "                \"reference\": \"Condition/\"\n" +
-                "              },\n" +
-                "              \"use\": {\n" +
-                "                \"coding\": [\n" +
-                "                  {\n" +
-                "                    \"system\": \"urn:oid:2.16.840.1.113883.3.526.3.402\",\n" +
-                "                    \"version\": \"\",\n" +
-                "                    \"code\": \"90653\",\n" +
-                "                    \"display\": \"Influenza Vaccination Value Set\"\n" +
-                "                  }\n" +
-                "                ]\n" +
-                "              },\n" +
-                "              \"rank\": 0\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"condition\": {\n" +
-                "                \"reference\": \"Condition/Hereditary Choroidal Dystrophies Value Set\"\n" +
-                "              },\n" +
-                "              \"use\": {\n" +
-                "                \"coding\": [\n" +
-                "                  {\n" +
-                "                    \"system\": \"urn:oid:2.16.840.1.113883.3.526.3.402\",\n" +
-                "                    \"version\": \"\",\n" +
-                "                    \"code\": \"90653\",\n" +
-                "                    \"display\": \"Influenza Vaccination Value Set\"\n" +
-                "                  }\n" +
-                "                ]\n" +
-                "              },\n" +
-                "              \"rank\": 0\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"condition\": {\n" +
-                "                \"reference\": \"Condition/\"\n" +
-                "              },\n" +
-                "              \"use\": {\n" +
-                "                \"coding\": [\n" +
-                "                  {\n" +
-                "                    \"system\": \"urn:oid:2.16.840.1.113883.3.526.3.402\",\n" +
-                "                    \"version\": \"\",\n" +
-                "                    \"code\": \"90653\",\n" +
-                "                    \"display\": \"Influenza Vaccination Value Set\"\n" +
-                "                  }\n" +
-                "                ]\n" +
-                "              },\n" +
-                "              \"rank\": 0\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"participant\": [],\n" +
-                "          \"period\": {\n" +
-                "            \"start\": \"2010-03-29\",\n" +
-                "            \"end\": \"2010-03-29\"\n" +
-                "          },\n" +
-                "          \"serviceProvider\": {\n" +
-                "            \"reference\": \"Practitioner/UNK001\"\n" +
-                "          }\n" +
-                "        }\n" +
-                "      },\n" +
-                "      {\n" +
-                "        \"resource\": {\n" +
-                "          \"resourceType\": \"Encounter\",\n" +
-                "          \"id\": \"95229\",\n" +
-                "          \"identifier\": [],\n" +
-                "          \"status\": \"finished\",\n" +
-                "          \"class\": {\n" +
-                "            \"system\": \"urn:oid:\",\n" +
-                "            \"version\": \"\",\n" +
-                "            \"code\": \"PersiviaCode\",\n" +
-                "            \"display\": \"\"\n" +
-                "          },\n" +
-                "          \"type\": [\n" +
-                "            {\n" +
-                "              \"coding\": [\n" +
-                "                {\n" +
-                "                  \"system\": \"urn:oid:\",\n" +
-                "                  \"version\": \"\",\n" +
-                "                  \"code\": \"PersiviaCode\",\n" +
-                "                  \"display\": \"\"\n" +
-                "                }\n" +
-                "              ]\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"subject\": {\n" +
-                "            \"reference\": \"Patient/95229\"\n" +
-                "          },\n" +
-                "          \"diagnosis\": [\n" +
-                "            {\n" +
-                "              \"condition\": {\n" +
-                "                \"reference\": \"Condition/\"\n" +
-                "              },\n" +
-                "              \"use\": {\n" +
-                "                \"coding\": [\n" +
-                "                  {\n" +
-                "                    \"system\": \"urn:oid:\",\n" +
-                "                    \"version\": \"\",\n" +
-                "                    \"code\": \"PersiviaCode\",\n" +
-                "                    \"display\": \"\"\n" +
-                "                  }\n" +
-                "                ]\n" +
-                "              },\n" +
-                "              \"rank\": 1\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"condition\": {\n" +
-                "                \"reference\": \"Condition/\"\n" +
-                "              },\n" +
-                "              \"use\": {\n" +
-                "                \"coding\": [\n" +
-                "                  {\n" +
-                "                    \"system\": \"urn:oid:\",\n" +
-                "                    \"version\": \"\",\n" +
-                "                    \"code\": \"PersiviaCode\",\n" +
-                "                    \"display\": \"\"\n" +
-                "                  }\n" +
-                "                ]\n" +
-                "              },\n" +
-                "              \"rank\": 0\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"condition\": {\n" +
-                "                \"reference\": \"Condition/\"\n" +
-                "              },\n" +
-                "              \"use\": {\n" +
-                "                \"coding\": [\n" +
-                "                  {\n" +
-                "                    \"system\": \"urn:oid:\",\n" +
-                "                    \"version\": \"\",\n" +
-                "                    \"code\": \"PersiviaCode\",\n" +
-                "                    \"display\": \"\"\n" +
-                "                  }\n" +
-                "                ]\n" +
-                "              },\n" +
-                "              \"rank\": 0\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"condition\": {\n" +
-                "                \"reference\": \"Condition/Hereditary Choroidal Dystrophies Value Set\"\n" +
-                "              },\n" +
-                "              \"use\": {\n" +
-                "                \"coding\": [\n" +
-                "                  {\n" +
-                "                    \"system\": \"urn:oid:\",\n" +
-                "                    \"version\": \"\",\n" +
-                "                    \"code\": \"PersiviaCode\",\n" +
-                "                    \"display\": \"\"\n" +
-                "                  }\n" +
-                "                ]\n" +
-                "              },\n" +
-                "              \"rank\": 0\n" +
-                "            },\n" +
-                "            {\n" +
-                "              \"condition\": {\n" +
-                "                \"reference\": \"Condition/\"\n" +
-                "              },\n" +
-                "              \"use\": {\n" +
-                "                \"coding\": [\n" +
-                "                  {\n" +
-                "                    \"system\": \"urn:oid:\",\n" +
-                "                    \"version\": \"\",\n" +
-                "                    \"code\": \"PersiviaCode\",\n" +
-                "                    \"display\": \"\"\n" +
-                "                  }\n" +
-                "                ]\n" +
-                "              },\n" +
-                "              \"rank\": 0\n" +
-                "            }\n" +
-                "          ],\n" +
-                "          \"participant\": [],\n" +
-                "          \"period\": {\n" +
-                "            \"start\": \"2022-01-01\",\n" +
-                "            \"end\": \"2022-01-01\"\n" +
-                "          },\n" +
-                "          \"serviceProvider\": {\n" +
-                "            \"reference\": \"Practitioner/UNK001\"\n" +
-                "          }\n" +
-                "        }\n" +
-                "      }\n" +
-                "    ]\n" +
-                "  ]\n" +
-                "}";
-        IBaseBundle bundle;
-        FhirContext fhirContext = fhirVersionEnum.newContext();
-        IParser selectedParser = fhirContext.newJsonParser();
-        bundle = (IBaseBundle) selectedParser.parseResource(resource);
-        RetrieveProvider retrieveProvider = null;
-        retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle);
-
-
-
+        List<RetrieveProvider> retrieveProviders = getPatientData();
+        System.out.println("Patient List Size: "+retrieveProviders.size());
+       FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
         CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder()
                 .fhirContext(fhirVersionEnum.newContext()).build();
 
@@ -828,6 +179,11 @@ public class CqlCommand implements Callable<Integer> {
             options = CqlTranslatorOptionsMapper.fromFile(optionsPath);
         }
 
+        HashMap<String, Map<String, Object>> finalResult = new HashMap<>();
+        HashMap<String, Map<String, Object>> finalResultScoreSheetPatients = new HashMap<>();
+        int chaipi=0;
+        CqlEvaluator evaluator = null;
+        List<String> patientIds=getPatientIds();
         for (LibraryParameter library : libraries) {
 
             CqlEvaluatorBuilder cqlEvaluatorBuilder = cqlEvaluatorComponent.createBuilder();
@@ -869,51 +225,70 @@ public class CqlCommand implements Callable<Integer> {
 
             //Changes need to be made here
 
-            RetrieveProvider bundleRetrieveProvider =  dataProvider.getRight();
+            RetrieveProvider bundleRetrieveProvider =  dataProvider.getRight(); // here value sets are added
+           // RetrieveProvider copyRetrieveProvider  =
 
 
-
+            List<Bundle.BundleEntryComponent> valueSetEntry = null, valueSetEntryTemp = null;
+            Bundle valueSetBundle = null;
+            Bundle copySetBundle = null;
             if(bundleRetrieveProvider instanceof BundleRetrieveProvider)
             {
-                BundleRetrieveProvider bundleRetrieveProvider1=(BundleRetrieveProvider)bundleRetrieveProvider;
+                //having value sets entries
+                BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) bundleRetrieveProvider;
                 if(bundleRetrieveProvider1.bundle instanceof Bundle){
-                    Bundle bundle1=(Bundle)bundleRetrieveProvider1.bundle;
-                    bundle1.getEntry();
-                    if(retrieveProvider instanceof BundleRetrieveProvider)
-                    {
-                        BundleRetrieveProvider retrieveProvider1=(BundleRetrieveProvider)retrieveProvider;
-                        if(retrieveProvider1.bundle instanceof Bundle){
-                            Bundle bundle2=(Bundle)retrieveProvider1.bundle;
-                            bundle1.getEntry().addAll(bundle2.getEntry());
+                    valueSetBundle = (Bundle)bundleRetrieveProvider1.bundle;
+                    copySetBundle = valueSetBundle.copy();
+                    valueSetEntry = copySetBundle.getEntry();
+
+                }
+            }
+            
+            //having Patient data entries
+            for(RetrieveProvider retrieveProvider : retrieveProviders) {
+                refreshValueSetBundles(valueSetBundle,copySetBundle,valueSetEntry);
+                valueSetEntryTemp = valueSetEntry;
+
+                if(retrieveProvider instanceof BundleRetrieveProvider)
+                {
+                    BundleRetrieveProvider retrieveProvider1 = (BundleRetrieveProvider) retrieveProvider;
+                    if(retrieveProvider1.bundle instanceof Bundle){
+                        Bundle bundle2 = (Bundle)retrieveProvider1.bundle;
+                        valueSetEntryTemp.addAll(bundle2.getEntry()); //adding value sets + patient entries
+
+                        //Processing
+                        cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(),
+                                bundleRetrieveProvider);
+
+                        if(chaipi==0){
+                            evaluator = cqlEvaluatorBuilder.build();
+                        }
+                        chaipi++;
+                         
+
+                        VersionedIdentifier identifier = new VersionedIdentifier().withId(library.libraryName);
+
+                        Pair<String, Object> contextParameter = null;
+
+                        if (library.context != null) {
+                            contextParameter = Pair.of(library.context.contextName, library.context.contextValue);
+                        }
+
+                        EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
+                        System.out.println("Adding Patient Result: "+chaipi);
+                        finalResult.put(((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString(), result.expressionResults);
+                        if(patientIds.equals(((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString())){
+                            finalResultScoreSheetPatients.put(((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString(), result.expressionResults);
+                            System.out.println("Adding match Patient Result: "+chaipi);
                         }
                     }
                 }
             }
 
-
-            cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(),
-                   bundleRetrieveProvider);
-
-
-            CqlEvaluator evaluator = cqlEvaluatorBuilder.build();
-
-            VersionedIdentifier identifier = new VersionedIdentifier().withId(library.libraryName);
-
-            Pair<String, Object> contextParameter = null;
-
-            if (library.context != null) {
-                contextParameter = Pair.of(library.context.contextName, library.context.contextValue);
-            }
-
-            EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
-
-            for (Map.Entry<String, Object> libraryEntry : result.expressionResults.entrySet()) {
-                System.out.println(libraryEntry.getKey() + "=" + this.tempConvert(libraryEntry.getValue()));
-            }
-
-            System.out.println();
         }
 
+
+        System.out.println("AAAAAAAAA");
         return 0;
     }
 
