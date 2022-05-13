@@ -1,0 +1,36 @@
+{
+  "resourceType": "ValueSet",
+  "id": "33260",
+  "meta": {
+    "lastUpdated": "2022-03-02T19:42:55.387-05:00"
+  },
+  "url": "https://www.ncqa.org/fhir/valueset/HEDIS.Payer.Custom.Codes.21",
+  "identifier": [
+    {
+      "value": "HEDIS.Payer.Custom.Codes.21"
+    }
+  ],
+  "version": "2022-03-31",
+  "name": "Absence_of_Cervix_Diagnosis",
+  "title": "Absence of Cervix Diagnosis",
+  "status": "active",
+  "expansion": {
+    "timestamp": "2022-03-24T18:42:29-04:00",
+    "total": 15,
+    "offset": 0,
+    "contains": [
+      {
+        "code": "MMP",
+        "display": "Medicaid"
+      },
+      {
+        "code": "PL",
+        "display": "Medicaid"
+      },
+      {
+        "code": "C1",
+        "display": "Medicaid"
+      }
+    ]
+  }
+}

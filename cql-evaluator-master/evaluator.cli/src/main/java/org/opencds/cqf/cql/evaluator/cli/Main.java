@@ -48,7 +48,8 @@ public class Main {
 
 
     public static void main(String[] args) {
-        Main.testingAISE_Hedis_My2022();
+        //Main.testingAISE_Hedis_My2022();
+        Main.CSS_HEDIS_MY2022();
         int exitCode = run(args);
         System.exit(exitCode);
     }
@@ -72,13 +73,60 @@ public class Main {
                 "-mu=" + testResourcePath + folderName,
                 "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
                 "-c=Patient",
-                "-cv=95013"
+                "-cv=130354"
         };
 
         Main.run(args);
 
         String output = outContent.toString();
-        System.out.println("sdfsd");
+        System.out.println("Test here");
+        restoreStreams();
+    }
+
+
+    public static void CSS_HEDIS_MY2022(){
+        setUpStreams();
+        String folderName="/CCS_HEDIS_MY2022";
+        String mainLibrary="CCS_HEDIS_MY2022";
+        String[] args = new String[]{
+                "cql",
+                "-fv=R4",
+                "-lu="+ testResourcePath + folderName,
+                "-ln="+mainLibrary,
+                "-m=FHIR",
+                "-mu=" + testResourcePath + folderName,
+                "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
+                "-c=Patient",
+                "-cv=130354"
+        };
+
+        Main.run(args);
+
+        String output = outContent.toString();
+        System.out.println("Test here");
+        restoreStreams();
+    }
+
+    public static void BCSE_HEDIS_MY2022(){
+        setUpStreams();
+        String folderName="/HedisMeasureTesting";
+        String mainLibrary="BCSE_HEDIS_MY2022";
+        String[] args = new String[]{
+                "cql",
+                "-fv=R4",
+                "-lu="+ testResourcePath + folderName,
+                "-ln="+mainLibrary,
+                "-m=FHIR",
+                "-mu=" + testResourcePath + folderName,
+                "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
+                "-c=Patient",
+                "-cv=Patient-18"
+        };
+
+        Main.run(args);
+
+        String output = outContent.toString();
+        System.out.println("Test here");
         restoreStreams();
     }
 }

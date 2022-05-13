@@ -11,8 +11,6 @@
     <name>evaluator.cli</name>
     <url>https://github.com/DBCG/cql-evaluator/tree/master</url>
 
-
-
     <parent>
         <groupId>org.opencds.cqf.cql</groupId>
         <artifactId>evaluator.shared</artifactId>
@@ -22,6 +20,11 @@
     <description>CQL Evaluator - CLI</description>
 
     <dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.5</version>
+        </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver</artifactId>

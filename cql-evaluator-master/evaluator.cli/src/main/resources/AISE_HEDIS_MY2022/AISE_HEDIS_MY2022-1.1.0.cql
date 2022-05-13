@@ -51,8 +51,8 @@ define "Initial Population 1":
     and "Enrolled During Participation Period"
 
 define "Enrolled During Participation Period":
-  Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from 
-  end of "Measurement Period", Interval[date from start of "Measurement Period", date from 
+  Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
+  end of "Measurement Period", Interval[date from start of "Measurement Period", date from
   end of "Measurement Period"], 45 )
 
 define "Member Coverage":
@@ -112,12 +112,12 @@ define "Has Immunocompromising Conditions":
       union Status."Active Condition" ( [Condition: "Anatomic or Functional Asplenia"] )
       union Status."Active Condition" ( [Condition: "Cerebrospinal Fluid Leak"] )
       union Status."Active Condition" ( [Condition: "Sickle Cell Anemia and HB S Disease"] ) ) ExclusionDiagnoses
-      where FHIRBase."Prevalence Period" ( ExclusionDiagnoses ) starts on or before 
+      where FHIRBase."Prevalence Period" ( ExclusionDiagnoses ) starts on or before
       end of "Measurement Period"
   )
     or exists ( ( Status."Completed Procedure" ( [Procedure: "Cochlear Implant"] )
         union Status."Completed Procedure" ( [Procedure: "Cochlear Implant Device"] ) ) CochlearImplantProcedure
-        where FHIRBase."Normalize Interval" ( CochlearImplantProcedure.performed ) starts on or before 
+        where FHIRBase."Normalize Interval" ( CochlearImplantProcedure.performed ) starts on or before
         end of "Measurement Period"
     )
 
@@ -163,7 +163,7 @@ define "Td or Tdap Vaccine":
     union Status."Completed Procedure" ( [Procedure: "Tdap Vaccine Procedure"] )
 
 define "Between Nine Years Prior to the Start of the Measurement Period and the End of the Measurement Period":
-  Interval[( date from start of "Measurement Period" - 9 years ), ( date from 
+  Interval[( date from start of "Measurement Period" - 9 years ), ( date from
     end of "Measurement Period"
   )]
 
@@ -171,11 +171,11 @@ define "Meets Td or Tdap Vaccination Criteria":
   Immunization."Meets Required Vaccination Threshold" ( "Td or Tdap Vaccine", "Between Nine Years Prior to the Start of the Measurement Period and the End of the Measurement Period", 1 )
 
 define "Has Anaphylaxis Due to Td or Tdap Vaccine":
-  exists Immunization."Diagnosis on or Before Latest Possible Vaccination Date" ( Status."Active Condition" ( [Condition: "Anaphylaxis Due to Diphtheria, Tetanus or Pertussis Vaccine"] ), date from 
+  exists Immunization."Diagnosis on or Before Latest Possible Vaccination Date" ( Status."Active Condition" ( [Condition: "Anaphylaxis Due to Diphtheria, Tetanus or Pertussis Vaccine"] ), date from
   end of "Measurement Period" )
 
 define "Has Encephalitis Due to Td or Tdap Vaccine":
-  exists Immunization."Diagnosis on or Before Latest Possible Vaccination Date" ( Status."Active Condition" ( [Condition: "Encephalitis Due to Diphtheria, Tetanus or Pertussis Vaccine"] ), date from 
+  exists Immunization."Diagnosis on or Before Latest Possible Vaccination Date" ( Status."Active Condition" ( [Condition: "Encephalitis Due to Diphtheria, Tetanus or Pertussis Vaccine"] ), date from
   end of "Measurement Period" )
 
 define "Numerator 3":
@@ -190,8 +190,8 @@ define "Herpes Zoster Live Vaccine":
     union Status."Completed Procedure" ( [Procedure: "Herpes Zoster Live Vaccine Procedure"] )
 
 define "Between Age 50 and the End of the Measurement Period":
-  Interval[Patient.birthDate + 50 years, date from 
-  end of "Measurement Period"]
+  Interval[Patient.birthDate + 50 years, date from
+end of "Measurement Period"]
 
 define "Meets Herpes Zoster Recombinant Vaccination Criteria":
   Immunization."Meets Required Threshold With Variable Days Apart" ( "Herpes Zoster Recombinant Vaccine", "Between Age 50 and the End of the Measurement Period", 2, 28 )
@@ -211,5 +211,5 @@ define "Pneumococcal Polysaccharide Vaccine 23":
     union Status."Completed Procedure" ( [Procedure: "Pneumococcal Polysaccharide 23 Vaccine Procedure"] )
 
 define "Between Age 60 and the End of the Measurement Period":
-  Interval[Patient.birthDate + 60 years, date from 
-  end of "Measurement Period"]
+  Interval[Patient.birthDate + 60 years, date from
+end of "Measurement Period"]

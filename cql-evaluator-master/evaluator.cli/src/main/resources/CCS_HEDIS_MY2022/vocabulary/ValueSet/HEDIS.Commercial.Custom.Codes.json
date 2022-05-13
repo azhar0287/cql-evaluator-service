@@ -1,0 +1,184 @@
+{
+  "resourceType": "ValueSet",
+  "id": "33260",
+  "meta": {
+    "lastUpdated": "2022-03-02T19:42:55.387-05:00"
+  },
+  "url": "https://www.ncqa.org/fhir/valueset/HEDIS.Commercial.Custom.Codes",
+  "identifier": [
+    {
+      "value": "HEDIS.Commercial.Custom.Codes"
+    }
+  ],
+  "version": "2022-03-31",
+  "name": "Absence_of_Cervix_Diagnosis",
+  "title": "Absence of Cervix Diagnosis",
+  "status": "active",
+  "expansion": {
+    "timestamp": "2022-03-24T18:42:29-04:00",
+    "total": 15,
+    "offset": 0,
+    "contains": [
+      {
+        "code": "5",
+        "display": "Medicaid"
+      },
+      {
+        "code": "51",
+        "display": "Medicaid"
+      },
+      {
+        "code": "511",
+        "display": "Medicaid"
+      },
+      {
+       "code": "512",
+        "display": "Medicaid"
+      },
+      {
+        "code": "513",
+        "display": "Medicaid"
+      },
+      {
+        "code": "514",
+        "display": "Medicaid"
+      },
+      {
+       "code": "515",
+        "display": "Medicaid"
+      },
+      {
+        "code": "519",
+        "display": "Medicaid"
+      },
+      {
+        "code": "54",
+        "display": "Medicaid"
+      },
+      {
+        "code": "55",
+        "display": "Medicaid"
+      },
+      {
+        "code": "56",
+        "display": "Medicaid"
+      },
+      {
+        "code": "59",
+        "display": "Medicaid"
+      },
+      {
+        "code": "CEP",
+        "display": "Medicaid"
+      },
+      {
+        "code": "HMO",
+        "display": "Medicaid"
+      },
+      {
+        "code": "POS",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "PPO",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "COF",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "MB3",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "BB4",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "BEC",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "BB",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "BB3",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "BB1",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "BLUE CARE NETWORK",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "B1R",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "B3",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "B3R",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "BLUE CROSS PPO",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "BLUE CROSS TRADITIONAL",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "DbO",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "MEDHBLUE",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "MEDHMPBLUE",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "MB2",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "LO",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "MBE",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "LM",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "MEP",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "MMO",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "MOS",
+        "display": "Medicaid"
+      },
+	  {
+        "code": "MPO",
+        "display": "Medicaid"
+      }
+    ]
+  }
+}

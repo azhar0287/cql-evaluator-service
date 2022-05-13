@@ -26,8 +26,8 @@ public class DBConnection {
 
 	public List<Document> getConditionalData(String patientId, String collectionName) {
 		this.collection = DB.getCollection(collectionName);
-//		FindIterable<Document> documents = this.collection.find(new Document("id", patientId)).projection(excludeId());
-		FindIterable<Document> documents = this.collection.find().projection(excludeId());
+		FindIterable<Document> documents = this.collection.find(new Document("id", patientId)).projection(excludeId());
+	//	FindIterable<Document> documents = this.collection.find().skip(10000).limit(15000).projection(excludeId());
 
 		MongoCursor<Document> cursor = documents.iterator();
 		List<Document> list = new LinkedList<>();
