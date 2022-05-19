@@ -97,7 +97,7 @@ public class Main {
                 "-mu=" + testResourcePath + folderName,
                 "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
                 "-c=Patient",
-                "-cv=130354"
+                "-cv=121173"
         };
 
         Main.run(args);

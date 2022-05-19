@@ -1,22 +1,25 @@
 package org.opencds.cqf.cql.evaluator.cli.command;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.Period;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.BasicDBList;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.lang3.tuple.Pair;
@@ -30,7 +33,7 @@ import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseDatatype;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.Library;
+import org.opencds.cqf.cql.engine.execution.CqlEngine;
 import org.opencds.cqf.cql.engine.execution.EvaluationResult;
 import org.opencds.cqf.cql.engine.model.ModelResolver;
 import org.opencds.cqf.cql.engine.retrieve.RetrieveProvider;
@@ -40,7 +43,6 @@ import org.opencds.cqf.cql.evaluator.builder.Constants;
 import org.opencds.cqf.cql.evaluator.builder.CqlEvaluatorBuilder;
 import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
-import org.opencds.cqf.cql.evaluator.builder.data.TypedRetrieveProviderFactory;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cql2elm.content.LibraryContentProvider;
 import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
@@ -52,8 +54,6 @@ import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-
-import javax.sound.sampled.BooleanControl;
 
 @Command(name = "cql", mixinStandardHelpOptions = true)
 public class CqlCommand implements Callable<Integer> {
@@ -119,7 +119,6 @@ public class CqlCommand implements Callable<Integer> {
     private Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     private Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
 
-
     List<RetrieveProvider> getPatientData() {
         DBConnection db = new DBConnection();
         PatientData patientData = new PatientData();
@@ -132,14 +131,18 @@ public class CqlCommand implements Callable<Integer> {
 
         List<Document> documents = db.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir");
         for(Document document:documents) {
-
-
+            patientData = new PatientData();
             patientData.setId(document.get("id").toString());
             patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
             patientData.setGender(document.get("gender").toString());
+            Object o = document.get("payerCodes");
+
+            List<String> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<String>>() {});
+
+            patientData.setPayerCodes(payerCodes);
 
             bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
-            RetrieveProvider retrieveProvider = null;
+            RetrieveProvider retrieveProvider;
             retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData);
             retrieveProviders.add(retrieveProvider);
         }
@@ -195,6 +198,11 @@ public class CqlCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
 
+        HashMap<String, PatientData> infoMap = new HashMap<>();
+        HashMap<String, Map<String, Object>> finalResult = new HashMap<>();
+        int chaipi = 0;
+        CqlEvaluator evaluator = null;
+        TerminologyProvider backupTerminologyProvider = null;
 
         List<RetrieveProvider> retrieveProviders = getPatientData();
         System.out.println("Patient List Size: "+retrieveProviders.size());
@@ -207,15 +215,7 @@ public class CqlCommand implements Callable<Integer> {
             options = CqlTranslatorOptionsMapper.fromFile(optionsPath);
         }
 
-        HashMap<String, PatientData> infoMap = new HashMap<>();
-
-        HashMap<String, Map<String, Object>> finalResult = new HashMap<>();
-        HashMap<String, Map<String, Object>> finalResultScoreSheetPatients = new HashMap<>();
-        int chaipi = 0;
-        CqlEvaluator evaluator = null;
-        List<String> patientIds = getPatientIds();
         for (LibraryParameter library : libraries) {
-
             CqlEvaluatorBuilder cqlEvaluatorBuilder = cqlEvaluatorComponent.createBuilder();
 
             if (options != null) {
@@ -239,8 +239,8 @@ public class CqlCommand implements Callable<Integer> {
                             .create(new EndpointInfo().setAddress(library.terminologyUrl));
                     this.terminologyProviderIndex.put(library.terminologyUrl, terminologyProvider);
                 }
-
                 cqlEvaluatorBuilder.withTerminologyProvider(terminologyProvider);
+                backupTerminologyProvider = terminologyProvider;
             }
 
             Triple<String, ModelResolver, RetrieveProvider> dataProvider = null;
@@ -254,73 +254,81 @@ public class CqlCommand implements Callable<Integer> {
             }
 
             //Changes need to be made here
-
             RetrieveProvider bundleRetrieveProvider =  dataProvider.getRight(); // here value sets are added
-
 
             List<Bundle.BundleEntryComponent> valueSetEntry = null, valueSetEntryTemp = null;
             Bundle valueSetBundle = null;
             Bundle copySetBundle = null;
-            if(bundleRetrieveProvider instanceof BundleRetrieveProvider)
-            {
+            if(bundleRetrieveProvider instanceof BundleRetrieveProvider) {
                 //having value sets entries
                 BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) bundleRetrieveProvider;
-                if(bundleRetrieveProvider1.bundle instanceof Bundle){
+
+                if(bundleRetrieveProvider1.bundle instanceof Bundle) {
                     valueSetBundle = (Bundle)bundleRetrieveProvider1.bundle;
                     copySetBundle = valueSetBundle.copy();
                     valueSetEntry = copySetBundle.getEntry();
-
                 }
             }
-            
+
+
             //having Patient data entries
             for(RetrieveProvider retrieveProvider : retrieveProviders) {
-                refreshValueSetBundles(valueSetBundle, copySetBundle, valueSetEntry);
-                valueSetEntryTemp = valueSetEntry;
+                PatientData patientData;
+                library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
 
-                if(retrieveProvider instanceof BundleRetrieveProvider)
-                {
-                    library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
+                refreshValueSetBundles(valueSetBundle, copySetBundle, valueSetEntry);
+                valueSetEntry = valueSetBundle.copy().getEntry();
+                valueSetEntryTemp = valueSetEntry; //tem having value set entries
+
+                if(retrieveProvider instanceof BundleRetrieveProvider) {
+
                     BundleRetrieveProvider retrieveProvider1 = (BundleRetrieveProvider) retrieveProvider;
-                    if(retrieveProvider1.bundle instanceof Bundle){
-                        Bundle bundle2 = (Bundle)retrieveProvider1.bundle;
-                        valueSetEntryTemp.addAll(bundle2.getEntry()); //adding value sets + patient entries
-                        RetrieveProvider retrieveProvider2;
+                    if(retrieveProvider1.bundle instanceof Bundle) {
+                        Bundle patientDataBundle = (Bundle)retrieveProvider1.bundle;
+                        valueSetEntryTemp.addAll(patientDataBundle.getEntry()); //adding value sets + patient entries
+
+                        RetrieveProvider finalPatientData;
 
                         Bundle bundle1 = new Bundle();
                         for (Bundle.BundleEntryComponent bundle :valueSetEntryTemp) {
-                            bundle1.addEntry(bundle);
+                            bundle1.addEntry(bundle);  //value set EntryTemp to new Bundle
                         }
 
-                        retrieveProvider2 = new BundleRetrieveProvider(fhirVersionEnum.newContext(), bundle1);
+                        finalPatientData = new BundleRetrieveProvider(fhirVersionEnum.newContext(), bundle1);
 
                         //Processing
-                        cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(),
-                                retrieveProvider2);
+                        cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(), finalPatientData);
 
+                        
                         if(chaipi == 0) {
                             evaluator = cqlEvaluatorBuilder.build();
+//                            backupTerminologyProvider = evaluator.getTerminologyProvider();
                         }
+                        
+                        if(finalPatientData instanceof BundleRetrieveProvider) {
+                            BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) finalPatientData;
+                            bundleRetrieveProvider1.setTerminologyProvider(backupTerminologyProvider);
+                            bundleRetrieveProvider1.setExpandValueSets(true);
+                        }
+
                         chaipi++;
-
                         VersionedIdentifier identifier = new VersionedIdentifier().withId(library.libraryName);
-
                         Pair<String, Object> contextParameter = null;
 
+                        String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
+                        library.context.contextValue = patientId;
                         if (library.context != null) {
                             contextParameter = Pair.of(library.context.contextName, library.context.contextValue);
                         }
 
                         EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
-                        System.out.println("Adding Patient Result: "+chaipi);
-                        finalResult.put(((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString(), result.expressionResults);
-                        PatientData patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                        infoMap.put(((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString(), patientData);
+                        System.out.println("Evaluation has done: "+chaipi);
 
-                        if(patientIds.contains(((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString())){
-                            finalResultScoreSheetPatients.put(((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString(), result.expressionResults);
-                            System.out.println("Adding match Patient Result: "+chaipi);
-                        }
+                        patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
+                        infoMap.put(patientId, patientData);
+
+                        finalResult.put(patientId, result.expressionResults);
+                        System.out.println("Patient processed: "+patientId);
                     }
                 }
             }
@@ -335,31 +343,32 @@ public class CqlCommand implements Callable<Integer> {
         try {
             String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
             String[] header = { "MemId", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
-            List<String> data = null;
-
-            for(Map.Entry<String, Map<String, Object>> map:finalResult.entrySet()) {
-                data = new ArrayList<>();
-                PatientData patientData = infoMap.get(map.getKey());
-                data.add(map.getKey());
-                data.add("CCS");
-                data.add("AA");
-                Map<String, Object> exp = map.getValue();
-
-
-                data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period").toString())));
-                data.add("Eve"); //event
-                data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString())));
-                data.add("Exc");
-                data.add(getIntegerString(Boolean.parseBoolean(exp.get("Numerator").toString())));
-                data.add("RExc");
-                data.add("RExclD");
-                data.add(getAge(patientData.getBirthDate(), measureDate));
-                data.add(getGenderSymbol(patientData.getGender()));
-            }
-            
             BufferedWriter writer = Files.newBufferedWriter(Paths.get(SAMPLE_CSV_FILE));
             CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
-            csvPrinter.printRecord(data);
+            List<String> data;
+            for(Map.Entry<String, Map<String, Object>> map : finalResult.entrySet()) {
+                PatientData patientData = infoMap.get(map.getKey());
+                Map<String, Object> exp = map.getValue();
+                List<String> payerCodes = patientData.getPayerCodes();
+
+                for(int i=0; i< payerCodes.size(); i++) {
+                    data = new ArrayList<>();
+                    data.add(map.getKey());
+                    data.add("CCS");
+                    data.add(String.valueOf(payerCodes.get(i)));
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period").toString())));
+                    data.add("0"); //event
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //d
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator Exceptions").toString()))); //exc
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Numerator").toString())));
+                    data.add("0"); //Rexl
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Exclusions").toString()))); //RexclId
+                    data.add(getAge(patientData.getBirthDate(), measureDate));
+                    data.add(getGenderSymbol(patientData.getGender()));
+                    csvPrinter.printRecord(data);
+                }
+            }
+
             csvPrinter.flush();
             System.out.println("Data has written to score file");
         } catch (Exception e) {
@@ -387,13 +396,19 @@ public class CqlCommand implements Callable<Integer> {
         return "N";
     }
 
-    public static String getAge(Date birthday, Date date) {
-        DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        int d1 = Integer.parseInt(formatter.format(birthday));
-        int d2 = Integer.parseInt(formatter.format(date));
-        int age = (d2-d1)/10000;
-        System.out.println("Age: "+age);
-        return String.valueOf(age);
+    public LocalDate convertToLocalDateViaInstant(Date dateToConvert) {
+        return dateToConvert.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+    }
+
+    public String getAge(Date birthday, Date date) {
+
+        LocalDate dob = convertToLocalDateViaInstant(birthday);
+        LocalDate curDate = convertToLocalDateViaInstant(date);
+        Period period = Period.between(dob, curDate);
+        System.out.println("Age: "+period.getYears());
+        return String.valueOf(period.getYears());
     }
 
     private String tempConvert(Object value) {
@@ -427,7 +442,6 @@ public class CqlCommand implements Callable<Integer> {
         } else {
             result = value.toString();
         }
-
         return result;
     }
 }
