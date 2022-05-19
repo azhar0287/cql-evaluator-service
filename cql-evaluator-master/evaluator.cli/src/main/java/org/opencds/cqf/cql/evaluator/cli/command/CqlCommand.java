@@ -1,18 +1,39 @@
 package org.opencds.cqf.cql.evaluator.cli.command;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.parser.IParser;
+
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.BasicDBList;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.bson.Document;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptions;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptionsMapper;
 import org.cqframework.cql.elm.execution.VersionedIdentifier;
 import org.hl7.fhir.instance.model.api.IBase;
+import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseDatatype;
 import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.r4.model.Bundle;
+import org.opencds.cqf.cql.engine.execution.CqlEngine;
 import org.opencds.cqf.cql.engine.execution.EvaluationResult;
 import org.opencds.cqf.cql.engine.model.ModelResolver;
 import org.opencds.cqf.cql.engine.retrieve.RetrieveProvider;
@@ -22,11 +43,14 @@ import org.opencds.cqf.cql.evaluator.builder.Constants;
 import org.opencds.cqf.cql.evaluator.builder.CqlEvaluatorBuilder;
 import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
+import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cql2elm.content.LibraryContentProvider;
 import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.dagger.DaggerCqlEvaluatorComponent;
 
 import ca.uhn.fhir.context.FhirVersionEnum;
+import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
+import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -95,11 +119,94 @@ public class CqlCommand implements Callable<Integer> {
     private Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     private Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
 
+    List<RetrieveProvider> getPatientData() {
+        DBConnection db = new DBConnection();
+        PatientData patientData = new PatientData();
+        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
+
+        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
+        IBaseBundle bundle;
+        FhirContext fhirContext = fhirVersionEnum.newContext();
+        IParser selectedParser = fhirContext.newJsonParser();
+
+        List<Document> documents = db.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir");
+        for(Document document:documents) {
+            patientData = new PatientData();
+            patientData.setId(document.get("id").toString());
+            patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
+            patientData.setGender(document.get("gender").toString());
+            Object o = document.get("payerCodes");
+
+            List<String> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<String>>() {});
+
+            patientData.setPayerCodes(payerCodes);
+
+            bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
+            RetrieveProvider retrieveProvider;
+            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData);
+            retrieveProviders.add(retrieveProvider);
+        }
+        return retrieveProviders;
+    }
+
+    Date getConvertedDate(String birthDate) {
+        Date date = null;
+        try {
+            date = new SimpleDateFormat("yyyy-MM-dd").parse(birthDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return date;
+    }
+
+    void refreshValueSetBundles(Bundle valueSetBundle , Bundle copySetBundle, List<Bundle.BundleEntryComponent> valueSetEntry  ) {
+        copySetBundle = valueSetBundle.copy();
+        valueSetEntry = copySetBundle.getEntry();
+    }
+
+    List<String> getPatientIds() {
+        StringBuilder builder = new StringBuilder();
+        List<String> patientIdList=new LinkedList<>();
+
+        // try block to check for exceptions where
+        // object of BufferedReader class us created
+        // to read filepath
+        try (BufferedReader buffer = new BufferedReader(
+                new FileReader("C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\patientIds.txt"))) {
+
+            String str;
+
+            // Condition check via buffer.readLine() method
+            // holding true upto that the while loop runs
+            while ((str = buffer.readLine()) != null) {
+                patientIdList.add(str);
+                builder.append(str).append("\n");
+            }
+        }
+
+        // Catch block to handle the exceptions
+        catch (IOException e) {
+
+            // Print the line number here exception
+            // using printStackTrace() method
+            e.printStackTrace();
+        }
+
+        // Returning a string
+        return patientIdList;
+    }
     @Override
     public Integer call() throws Exception {
 
-        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
+        HashMap<String, PatientData> infoMap = new HashMap<>();
+        HashMap<String, Map<String, Object>> finalResult = new HashMap<>();
+        int chaipi = 0;
+        CqlEvaluator evaluator = null;
+        TerminologyProvider backupTerminologyProvider = null;
 
+        List<RetrieveProvider> retrieveProviders = getPatientData();
+        System.out.println("Patient List Size: "+retrieveProviders.size());
+        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
         CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder()
                 .fhirContext(fhirVersionEnum.newContext()).build();
 
@@ -109,7 +216,6 @@ public class CqlCommand implements Callable<Integer> {
         }
 
         for (LibraryParameter library : libraries) {
-
             CqlEvaluatorBuilder cqlEvaluatorBuilder = cqlEvaluatorComponent.createBuilder();
 
             if (options != null) {
@@ -133,8 +239,8 @@ public class CqlCommand implements Callable<Integer> {
                             .create(new EndpointInfo().setAddress(library.terminologyUrl));
                     this.terminologyProviderIndex.put(library.terminologyUrl, terminologyProvider);
                 }
-
                 cqlEvaluatorBuilder.withTerminologyProvider(terminologyProvider);
+                backupTerminologyProvider = terminologyProvider;
             }
 
             Triple<String, ModelResolver, RetrieveProvider> dataProvider = null;
@@ -147,29 +253,162 @@ public class CqlCommand implements Callable<Integer> {
                 dataProvider = dataProviderFactory.create(new EndpointInfo().setType(Constants.HL7_FHIR_FILES_CODE));
             }
 
-            cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(),
-                    dataProvider.getRight());
+            //Changes need to be made here
+            RetrieveProvider bundleRetrieveProvider =  dataProvider.getRight(); // here value sets are added
 
-            CqlEvaluator evaluator = cqlEvaluatorBuilder.build();
+            List<Bundle.BundleEntryComponent> valueSetEntry = null, valueSetEntryTemp = null;
+            Bundle valueSetBundle = null;
+            Bundle copySetBundle = null;
+            if(bundleRetrieveProvider instanceof BundleRetrieveProvider) {
+                //having value sets entries
+                BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) bundleRetrieveProvider;
 
-            VersionedIdentifier identifier = new VersionedIdentifier().withId(library.libraryName);
-
-            Pair<String, Object> contextParameter = null;
-
-            if (library.context != null) {
-                contextParameter = Pair.of(library.context.contextName, library.context.contextValue);
+                if(bundleRetrieveProvider1.bundle instanceof Bundle) {
+                    valueSetBundle = (Bundle)bundleRetrieveProvider1.bundle;
+                    copySetBundle = valueSetBundle.copy();
+                    valueSetEntry = copySetBundle.getEntry();
+                }
             }
 
-            EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
-            for (Map.Entry<String, Object> libraryEntry : result.expressionResults.entrySet()) {
-                System.out.println(libraryEntry.getKey() + "=" + this.tempConvert(libraryEntry.getValue()));
+            //having Patient data entries
+            for(RetrieveProvider retrieveProvider : retrieveProviders) {
+                PatientData patientData;
+                library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
+
+                refreshValueSetBundles(valueSetBundle, copySetBundle, valueSetEntry);
+                valueSetEntry = valueSetBundle.copy().getEntry();
+                valueSetEntryTemp = valueSetEntry; //tem having value set entries
+
+                if(retrieveProvider instanceof BundleRetrieveProvider) {
+
+                    BundleRetrieveProvider retrieveProvider1 = (BundleRetrieveProvider) retrieveProvider;
+                    if(retrieveProvider1.bundle instanceof Bundle) {
+                        Bundle patientDataBundle = (Bundle)retrieveProvider1.bundle;
+                        valueSetEntryTemp.addAll(patientDataBundle.getEntry()); //adding value sets + patient entries
+
+                        RetrieveProvider finalPatientData;
+
+                        Bundle bundle1 = new Bundle();
+                        for (Bundle.BundleEntryComponent bundle :valueSetEntryTemp) {
+                            bundle1.addEntry(bundle);  //value set EntryTemp to new Bundle
+                        }
+
+                        finalPatientData = new BundleRetrieveProvider(fhirVersionEnum.newContext(), bundle1);
+
+                        //Processing
+                        cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(), finalPatientData);
+
+                        
+                        if(chaipi == 0) {
+                            evaluator = cqlEvaluatorBuilder.build();
+//                            backupTerminologyProvider = evaluator.getTerminologyProvider();
+                        }
+                        
+                        if(finalPatientData instanceof BundleRetrieveProvider) {
+                            BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) finalPatientData;
+                            bundleRetrieveProvider1.setTerminologyProvider(backupTerminologyProvider);
+                            bundleRetrieveProvider1.setExpandValueSets(true);
+                        }
+
+                        chaipi++;
+                        VersionedIdentifier identifier = new VersionedIdentifier().withId(library.libraryName);
+                        Pair<String, Object> contextParameter = null;
+
+                        String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
+                        library.context.contextValue = patientId;
+                        if (library.context != null) {
+                            contextParameter = Pair.of(library.context.contextName, library.context.contextValue);
+                        }
+
+                        EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
+                        System.out.println("Evaluation has done: "+chaipi);
+
+                        patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
+                        infoMap.put(patientId, patientData);
+
+                        finalResult.put(patientId, result.expressionResults);
+                        System.out.println("Patient processed: "+patientId);
+                    }
+                }
+            }
+        }
+        saveScoreFile(finalResult, infoMap, new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"));
+
+        System.out.println("AAAAAAAAA");
+        return 0;
+    }
+
+    void saveScoreFile(HashMap<String, Map<String, Object>> finalResult, HashMap<String, PatientData> infoMap, Date measureDate) {
+        try {
+            String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
+            String[] header = { "MemId", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
+            BufferedWriter writer = Files.newBufferedWriter(Paths.get(SAMPLE_CSV_FILE));
+            CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
+            List<String> data;
+            for(Map.Entry<String, Map<String, Object>> map : finalResult.entrySet()) {
+                PatientData patientData = infoMap.get(map.getKey());
+                Map<String, Object> exp = map.getValue();
+                List<String> payerCodes = patientData.getPayerCodes();
+
+                for(int i=0; i< payerCodes.size(); i++) {
+                    data = new ArrayList<>();
+                    data.add(map.getKey());
+                    data.add("CCS");
+                    data.add(String.valueOf(payerCodes.get(i)));
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period").toString())));
+                    data.add("0"); //event
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //d
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator Exceptions").toString()))); //exc
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Numerator").toString())));
+                    data.add("0"); //Rexl
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Exclusions").toString()))); //RexclId
+                    data.add(getAge(patientData.getBirthDate(), measureDate));
+                    data.add(getGenderSymbol(patientData.getGender()));
+                    csvPrinter.printRecord(data);
+                }
             }
 
-            System.out.println();
+            csvPrinter.flush();
+            System.out.println("Data has written to score file");
+        } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
-        return 0;
+    String getIntegerString(boolean value) {
+        if(value) {
+            return "1";
+        } else {
+            return "0";
+        }
+    }
+
+    String getGenderSymbol(String gender) {
+        if(!gender.isEmpty()) {
+            if(gender.equalsIgnoreCase("Female")) {
+                return "F";
+            }
+            if(gender.equalsIgnoreCase("male")) {
+                return "M";
+            }
+        }
+        return "N";
+    }
+
+    public LocalDate convertToLocalDateViaInstant(Date dateToConvert) {
+        return dateToConvert.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+    }
+
+    public String getAge(Date birthday, Date date) {
+
+        LocalDate dob = convertToLocalDateViaInstant(birthday);
+        LocalDate curDate = convertToLocalDateViaInstant(date);
+        Period period = Period.between(dob, curDate);
+        System.out.println("Age: "+period.getYears());
+        return String.valueOf(period.getYears());
     }
 
     private String tempConvert(Object value) {
@@ -203,8 +442,6 @@ public class CqlCommand implements Callable<Integer> {
         } else {
             result = value.toString();
         }
-
         return result;
     }
-
 }

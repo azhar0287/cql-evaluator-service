@@ -30,10 +30,12 @@ public class BundleRetrieveProvider extends TerminologyAwareRetrieveProvider {
 
 	private static final Logger logger = LoggerFactory.getLogger(BundleRetrieveProvider.class);
 
-	private final IBaseBundle bundle;
+	public final IBaseBundle bundle;
 	private final FhirContext fhirContext;
 	private final CodeUtil codeUtil;
 	private final IFhirPath fhirPath;
+	private PatientData patientData;
+
 
 	public BundleRetrieveProvider(final FhirContext fhirContext, final IBaseBundle iBaseBundle) {
 		
@@ -42,6 +44,16 @@ public class BundleRetrieveProvider extends TerminologyAwareRetrieveProvider {
 		this.codeUtil = new CodeUtil(fhirContext);
 		this.fhirPath = FhirPathCache.cachedForContext(fhirContext);
 	}
+
+	public BundleRetrieveProvider(final FhirContext fhirContext, final IBaseBundle iBaseBundle, PatientData patientData) {
+
+		this.fhirContext = requireNonNull(fhirContext, "bundle can not be null.");
+		this.bundle = requireNonNull(iBaseBundle, "bundle can not be null.");
+		this.codeUtil = new CodeUtil(fhirContext);
+		this.fhirPath = FhirPathCache.cachedForContext(fhirContext);
+		this.patientData = patientData;
+	}
+
 
 	@Override
 	public Iterable<Object> retrieve(final String context, final String contextPath, final Object contextValue, final String dataType,
@@ -250,4 +262,12 @@ public class BundleRetrieveProvider extends TerminologyAwareRetrieveProvider {
             return uri;
         }
     }
+
+	public PatientData getPatientData() {
+		return patientData;
+	}
+
+	public void setPatientData(PatientData patientData) {
+		this.patientData = patientData;
+	}
 }

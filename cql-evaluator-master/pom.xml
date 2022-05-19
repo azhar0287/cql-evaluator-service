@@ -16,7 +16,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
         <cql-translator.version>1.5.7-SNAPSHOT</cql-translator.version>
         <cql-engine.version>1.5.5-SNAPSHOT</cql-engine.version>
         <spring.version>5.3.6</spring.version>
@@ -28,6 +27,7 @@
         <org.mapstruct.version>1.4.2.Final</org.mapstruct.version>
         <guava.version>31.0.1-jre</guava.version>
     </properties>
+
     <modules>
         <module>evaluator</module>
         <module>evaluator.fhir</module>

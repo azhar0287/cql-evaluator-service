@@ -320,7 +320,7 @@ public class CqlEvaluatorBuilder {
         return this.decorate(libraryLoader);
     }
 
-    private TerminologyProvider buildTerminologyProvider() {
+    public TerminologyProvider buildTerminologyProvider() {
         TerminologyProvider terminologyProvider = null;
         if (terminologyProviders.size() > 1) {
             Collections.reverse(this.terminologyProviders);

@@ -88,4 +88,24 @@ public class CqlEvaluator {
     Set<String> expressions, Pair<String, Object> contextParameter, Map<String, Object> parameters) {
         return this.cqlEngine.evaluate(libraryIdentifier, expressions, contextParameter, parameters, null);
     }
+
+    public void setLibraryLoader(LibraryLoader libraryLoader) {
+        this.libraryLoader = libraryLoader;
+    }
+
+    public void setDataProviders(Map<String, DataProvider> dataProviders) {
+        this.dataProviders = dataProviders;
+    }
+
+    public void setTerminologyProvider(TerminologyProvider terminologyProvider) {
+        this.terminologyProvider = terminologyProvider;
+    }
+
+    public CqlEngine getCqlEngine() {
+        return cqlEngine;
+    }
+
+    public void setCqlEngine(CqlEngine cqlEngine) {
+        this.cqlEngine = cqlEngine;
+    }
 }
