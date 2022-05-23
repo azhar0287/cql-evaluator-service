@@ -15,10 +15,8 @@ public class Main {
     private static ByteArrayOutputStream errContent;
     private static final PrintStream originalOut = System.out;
     private static final PrintStream originalErr = System.err;
-
     private static final String testResourceRelativePath = "evaluator.cli/src/main/resources";
     private static String testResourcePath = null;
-
 
     static {
         File file = new File(testResourceRelativePath);
@@ -48,7 +46,6 @@ public class Main {
 
 
     public static void main(String[] args) {
-        //Main.testingAISE_Hedis_My2022();
         Main.CSS_HEDIS_MY2022();
         int exitCode = run(args);
         System.exit(exitCode);
@@ -97,7 +94,7 @@ public class Main {
                 "-mu=" + testResourcePath + folderName,
                 "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
                 "-c=Patient",
-                "-cv=121173"
+                "-cv=95262"
         };
 
         Main.run(args);

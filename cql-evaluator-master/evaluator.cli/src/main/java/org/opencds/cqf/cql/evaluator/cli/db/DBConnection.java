@@ -24,10 +24,10 @@ public class DBConnection {
 		this.DB = mongo.getDatabase("ihm");
     }
 
-	public List<Document> getConditionalData(String patientId, String collectionName) {
+	public List<Document> getConditionalData(String patientId, String collectionName, int skip, int limit) {
 		this.collection = DB.getCollection(collectionName);
 		FindIterable<Document> documents = this.collection.find(new Document("id", patientId)).projection(excludeId());
-		//FindIterable<Document> documents = this.collection.find().skip(0).limit(70).projection(excludeId());
+		//FindIterable<Document> documents = this.collection.find().skip(skip).limit(limit).projection(excludeId());
 
 		MongoCursor<Document> cursor = documents.iterator();
 		List<Document> list = new LinkedList<>();
@@ -35,5 +35,13 @@ public class DBConnection {
 			list.add(cursor.next());
 		}
 		return list;
+	}
+
+	public long getDataCount(String collectionName) {
+		this.collection = DB.getCollection(collectionName);
+
+		long count = this.collection.count();
+		return count;
+
 	}
 }

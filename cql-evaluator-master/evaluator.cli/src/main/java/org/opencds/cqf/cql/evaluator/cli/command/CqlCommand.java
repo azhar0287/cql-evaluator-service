@@ -10,8 +10,7 @@ import java.time.Period;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
@@ -19,11 +18,13 @@ import ca.uhn.fhir.parser.IParser;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.BasicDBList;
+
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptions;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptionsMapper;
@@ -33,7 +34,7 @@ import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseDatatype;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
-import org.opencds.cqf.cql.engine.execution.CqlEngine;
+
 import org.opencds.cqf.cql.engine.execution.EvaluationResult;
 import org.opencds.cqf.cql.engine.model.ModelResolver;
 import org.opencds.cqf.cql.engine.retrieve.RetrieveProvider;
@@ -57,6 +58,8 @@ import picocli.CommandLine.Option;
 
 @Command(name = "cql", mixinStandardHelpOptions = true)
 public class CqlCommand implements Callable<Integer> {
+    private static final Logger LOGGER = LogManager.getLogger(CqlCommand.class);
+
     @Option(names = { "-fv", "--fhir-version" }, required = true)
     public String fhirVersion;
 
@@ -119,9 +122,9 @@ public class CqlCommand implements Callable<Integer> {
     private Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     private Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
 
-    List<RetrieveProvider> getPatientData() {
+    List<RetrieveProvider> getPatientData(int skip, int limit) {
         DBConnection db = new DBConnection();
-        PatientData patientData = new PatientData();
+        PatientData patientData ;
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
 
         FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
@@ -129,8 +132,8 @@ public class CqlCommand implements Callable<Integer> {
         FhirContext fhirContext = fhirVersionEnum.newContext();
         IParser selectedParser = fhirContext.newJsonParser();
 
-        List<Document> documents = db.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir");
-        for(Document document:documents) {
+        List<Document> documents = db.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir", skip, limit);
+        for(Document document : documents) {
             patientData = new PatientData();
             patientData.setId(document.get("id").toString());
             patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
@@ -164,39 +167,39 @@ public class CqlCommand implements Callable<Integer> {
         valueSetEntry = copySetBundle.getEntry();
     }
 
-    List<String> getPatientIds() {
-        StringBuilder builder = new StringBuilder();
-        List<String> patientIdList=new LinkedList<>();
 
-        // try block to check for exceptions where
-        // object of BufferedReader class us created
-        // to read filepath
-        try (BufferedReader buffer = new BufferedReader(
-                new FileReader("C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\patientIds.txt"))) {
-
-            String str;
-
-            // Condition check via buffer.readLine() method
-            // holding true upto that the while loop runs
-            while ((str = buffer.readLine()) != null) {
-                patientIdList.add(str);
-                builder.append(str).append("\n");
-            }
-        }
-
-        // Catch block to handle the exceptions
-        catch (IOException e) {
-
-            // Print the line number here exception
-            // using printStackTrace() method
-            e.printStackTrace();
-        }
-
-        // Returning a string
-        return patientIdList;
-    }
     @Override
     public Integer call() throws Exception {
+        long startTime = System.currentTimeMillis();
+
+
+       DBConnection db = new DBConnection();
+       long count = db.getDataCount("ep_encounter_fhir");
+       LOGGER.info("total Data count: "+count);
+       int skip = 0;
+       int limit = 200;
+       List<RetrieveProvider> retrieveProviders = new ArrayList<>();
+       String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
+       String[] header = { "MemId", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
+       FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
+       CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
+
+       for(int i=0; i<5; i++) {
+           retrieveProviders.clear();
+           retrieveProviders = getPatientData(skip, limit);
+           processAndSavePatients(retrieveProviders, csvPrinter);
+           skip = limit;
+
+           LOGGER.info("First Iteration has completed: Skip"+skip+" Limit"+limit);
+       }
+        long stopTime = System.currentTimeMillis();
+        long milliseconds = stopTime - startTime;
+        System.out.println( ((milliseconds)/1000) / 60);
+
+       return 0;
+    }
+
+    Integer processAndSavePatients(List<RetrieveProvider> retrieveProviders, CSVPrinter csvPrinter) throws InterruptedException, ParseException {
 
         HashMap<String, PatientData> infoMap = new HashMap<>();
         HashMap<String, Map<String, Object>> finalResult = new HashMap<>();
@@ -204,8 +207,8 @@ public class CqlCommand implements Callable<Integer> {
         CqlEvaluator evaluator = null;
         TerminologyProvider backupTerminologyProvider = null;
 
-        List<RetrieveProvider> retrieveProviders = getPatientData();
-        System.out.println("Patient List Size: "+retrieveProviders.size());
+//        List<RetrieveProvider> retrieveProviders = getPatientData(skip, limit);
+        LOGGER.info("Patient List Size: "+retrieveProviders.size());
         FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
         CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder()
                 .fhirContext(fhirVersionEnum.newContext()).build();
@@ -270,12 +273,12 @@ public class CqlCommand implements Callable<Integer> {
                 }
             }
 
-
             //having Patient data entries
             for(RetrieveProvider retrieveProvider : retrieveProviders) {
                 PatientData patientData;
                 library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
-
+                String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
+                LOGGER.info("Patient Id in Loop "+patientId);
                 refreshValueSetBundles(valueSetBundle, copySetBundle, valueSetEntry);
                 valueSetEntry = valueSetBundle.copy().getEntry();
                 valueSetEntryTemp = valueSetEntry; //tem having value set entries
@@ -299,12 +302,12 @@ public class CqlCommand implements Callable<Integer> {
                         //Processing
                         cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(), finalPatientData);
 
-                        
+
                         if(chaipi == 0) {
                             evaluator = cqlEvaluatorBuilder.build();
 //                            backupTerminologyProvider = evaluator.getTerminologyProvider();
                         }
-                        
+
                         if(finalPatientData instanceof BundleRetrieveProvider) {
                             BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) finalPatientData;
                             bundleRetrieveProvider1.setTerminologyProvider(backupTerminologyProvider);
@@ -315,7 +318,7 @@ public class CqlCommand implements Callable<Integer> {
                         VersionedIdentifier identifier = new VersionedIdentifier().withId(library.libraryName);
                         Pair<String, Object> contextParameter = null;
 
-                        String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
+
                         library.context.contextValue = patientId;
                         if (library.context != null) {
                             contextParameter = Pair.of(library.context.contextName, library.context.contextValue);
@@ -328,23 +331,24 @@ public class CqlCommand implements Callable<Integer> {
                         infoMap.put(patientId, patientData);
 
                         finalResult.put(patientId, result.expressionResults);
-                        System.out.println("Patient processed: "+patientId);
+                        LOGGER.info("Patient processed: "+patientId);
+                        if(chaipi %15 == 0) {
+                            Thread.sleep(1000);
+                        }
                     }
                 }
             }
         }
-        saveScoreFile(finalResult, infoMap, new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"));
+        saveScoreFile(finalResult, infoMap, new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter);
 
         System.out.println("AAAAAAAAA");
         return 0;
     }
 
-    void saveScoreFile(HashMap<String, Map<String, Object>> finalResult, HashMap<String, PatientData> infoMap, Date measureDate) {
+    void saveScoreFile(HashMap<String, Map<String, Object>> finalResult, HashMap<String, PatientData> infoMap, Date measureDate, CSVPrinter csvPrinter) {
         try {
-            String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
-            String[] header = { "MemId", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
-            BufferedWriter writer = Files.newBufferedWriter(Paths.get(SAMPLE_CSV_FILE));
-            CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
+
+
             List<String> data;
             for(Map.Entry<String, Map<String, Object>> map : finalResult.entrySet()) {
                 PatientData patientData = infoMap.get(map.getKey());
