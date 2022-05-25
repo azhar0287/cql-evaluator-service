@@ -360,7 +360,7 @@ public class CqlCommand implements Callable<Integer> {
                     data.add(map.getKey());
                     data.add("CCS");
                     data.add(String.valueOf(payerCodes.get(i)));
-                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period").toString())));
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period For CE").toString())));
                     data.add("0"); //event
                     data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //d
                     data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator Exceptions").toString()))); //exc

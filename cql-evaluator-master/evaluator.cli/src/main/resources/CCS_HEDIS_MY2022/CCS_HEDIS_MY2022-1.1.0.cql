@@ -50,6 +50,27 @@ define "Enrolled During Participation Period":
   )
     else false
 
+define "Enrolled During Participation Period For CE":
+  if ( true
+  ) then (  Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
+    end of "Measurement Period", Interval[date from start of "Measurement Period" - 2 years, date from
+    end of "Measurement Period" - 2 years], 45 )
+      and Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
+      end of "Measurement Period", Interval[date from start of "Measurement Period" - 1 year, date from
+      end of "Measurement Period" - 1 year], 45 )
+      and Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
+      end of "Measurement Period", Interval[date from start of "Measurement Period", date from
+      end of "Measurement Period"], 45 )
+   )
+    else if (true
+  ) then ( Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
+    end of "Measurement Period", Interval[date from start of "Measurement Period", date from
+    end of "Measurement Period"], 45 )
+  )
+    else false
+
+
+
 define "Product Line as of December 31 of Measurement Period":
   flatten ( "Member Coverage" C
     where FHIRBase."Normalize Interval" ( C.period ) includes
