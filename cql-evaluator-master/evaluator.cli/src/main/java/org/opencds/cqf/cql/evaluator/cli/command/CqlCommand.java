@@ -57,9 +57,13 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "cql", mixinStandardHelpOptions = true)
-public class CqlCommand implements Callable<Integer> {
-    private static final Logger LOGGER = LogManager.getLogger(CqlCommand.class);
+public class CqlCommand implements Callable<Integer>  {
 
+    public static Logger LOGGER  = LogManager.getLogger(CqlCommand.class);
+//
+//    public void CqlCommand(Logger logger) {
+//        this.LOGGER = logger;
+//    }
     @Option(names = { "-fv", "--fhir-version" }, required = true)
     public String fhirVersion;
 
@@ -167,11 +171,9 @@ public class CqlCommand implements Callable<Integer> {
         valueSetEntry = copySetBundle.getEntry();
     }
 
-
     @Override
     public Integer call() throws Exception {
-        long startTime = System.currentTimeMillis();
-
+       long startTime = System.currentTimeMillis();
 
        DBConnection db = new DBConnection();
        long count = db.getDataCount("ep_encounter_fhir");
@@ -188,7 +190,7 @@ public class CqlCommand implements Callable<Integer> {
            retrieveProviders.clear();
            retrieveProviders = getPatientData(skip, limit);
            processAndSavePatients(retrieveProviders, csvPrinter);
-           skip = limit;
+           skip += limit;
 
            LOGGER.info("First Iteration has completed: Skip"+skip+" Limit"+limit);
        }
@@ -340,16 +342,15 @@ public class CqlCommand implements Callable<Integer> {
             }
         }
         saveScoreFile(finalResult, infoMap, new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter);
-
+        finalResult.clear();
         System.out.println("AAAAAAAAA");
         return 0;
     }
 
     void saveScoreFile(HashMap<String, Map<String, Object>> finalResult, HashMap<String, PatientData> infoMap, Date measureDate, CSVPrinter csvPrinter) {
         try {
-
-
             List<String> data;
+            String rexl = "0";
             for(Map.Entry<String, Map<String, Object>> map : finalResult.entrySet()) {
                 PatientData patientData = infoMap.get(map.getKey());
                 Map<String, Object> exp = map.getValue();
@@ -362,7 +363,12 @@ public class CqlCommand implements Callable<Integer> {
                     data.add(String.valueOf(payerCodes.get(i)));
                     data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period For CE").toString())));
                     data.add("0"); //event
-                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //d
+                    if( Boolean.parseBoolean(exp.get("Exclusions").toString())) {
+                        data.add("0"); //Epop
+                    }
+                    else {
+                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //Epop
+                    }
                     data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator Exceptions").toString()))); //exc
                     data.add(getIntegerString(Boolean.parseBoolean(exp.get("Numerator").toString())));
                     data.add("0"); //Rexl

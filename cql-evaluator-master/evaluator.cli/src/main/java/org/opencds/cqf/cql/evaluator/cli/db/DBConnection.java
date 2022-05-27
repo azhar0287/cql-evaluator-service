@@ -31,7 +31,7 @@ public class DBConnection {
 
 		MongoCursor<Document> cursor = documents.iterator();
 		List<Document> list = new LinkedList<>();
-		while(cursor.hasNext()){
+		while(cursor.hasNext()) {
 			list.add(cursor.next());
 		}
 		return list;
@@ -39,9 +39,8 @@ public class DBConnection {
 
 	public long getDataCount(String collectionName) {
 		this.collection = DB.getCollection(collectionName);
-
 		long count = this.collection.count();
 		return count;
-
 	}
+
 }

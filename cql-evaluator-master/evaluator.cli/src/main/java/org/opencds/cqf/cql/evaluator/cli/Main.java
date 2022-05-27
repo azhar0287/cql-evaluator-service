@@ -5,11 +5,15 @@ import java.io.File;
 import java.io.PrintStream;
 import java.util.Objects;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencds.cqf.cql.evaluator.cli.command.CliCommand;
 
 import picocli.CommandLine;
 
 public class Main {
+
+    private static final Logger LOGGER = LogManager.getLogger(Main.class);
 
     private static ByteArrayOutputStream outContent;
     private static ByteArrayOutputStream errContent;
@@ -46,6 +50,7 @@ public class Main {
 
 
     public static void main(String[] args) {
+        LOGGER.info("Processing start");
         Main.CSS_HEDIS_MY2022();
         int exitCode = run(args);
         System.exit(exitCode);
@@ -70,7 +75,7 @@ public class Main {
                 "-mu=" + testResourcePath + folderName,
                 "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
                 "-c=Patient",
-                "-cv=185214"
+                "-cv=185233"
         };
 
         Main.run(args);
@@ -94,7 +99,7 @@ public class Main {
                 "-mu=" + testResourcePath + folderName,
                 "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
                 "-c=Patient",
-                "-cv=95262"
+                "-cv=186905"
         };
 
         Main.run(args);
