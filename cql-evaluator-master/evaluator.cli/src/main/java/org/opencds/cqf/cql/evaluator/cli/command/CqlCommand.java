@@ -1,13 +1,8 @@
 package org.opencds.cqf.cql.evaluator.cli.command;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.Period;
-import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -45,6 +40,7 @@ import org.opencds.cqf.cql.evaluator.builder.CqlEvaluatorBuilder;
 import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
+import org.opencds.cqf.cql.evaluator.cli.util.Util;
 import org.opencds.cqf.cql.evaluator.cql2elm.content.LibraryContentProvider;
 import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.dagger.DaggerCqlEvaluatorComponent;
@@ -185,11 +181,15 @@ public class CqlCommand implements Callable<Integer>  {
        String[] header = { "MemId", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
        FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
-
+        List<String> codeCheckList = new ArrayList<>();
+        codeCheckList.add("MCS");
+        codeCheckList.add("MCR");
+        codeCheckList.add("MP");
+        codeCheckList.add("MC");
        for(int i=0; i<5; i++) {
            retrieveProviders.clear();
            retrieveProviders = getPatientData(skip, limit);
-           processAndSavePatients(retrieveProviders, csvPrinter);
+           processAndSavePatients(retrieveProviders, csvPrinter, codeCheckList);
            skip += limit;
 
            LOGGER.info("First Iteration has completed: Skip"+skip+" Limit"+limit);
@@ -201,7 +201,7 @@ public class CqlCommand implements Callable<Integer>  {
        return 0;
     }
 
-    Integer processAndSavePatients(List<RetrieveProvider> retrieveProviders, CSVPrinter csvPrinter) throws InterruptedException, ParseException {
+    Integer processAndSavePatients(List<RetrieveProvider> retrieveProviders, CSVPrinter csvPrinter, List<String> codeCheckList) throws InterruptedException, ParseException {
 
         HashMap<String, PatientData> infoMap = new HashMap<>();
         HashMap<String, Map<String, Object>> finalResult = new HashMap<>();
@@ -341,84 +341,11 @@ public class CqlCommand implements Callable<Integer>  {
                 }
             }
         }
-        saveScoreFile(finalResult, infoMap, new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter);
+        Util util = new Util();
+        util.saveScoreFile(finalResult, infoMap, new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter, codeCheckList);
+        LOGGER.info("Data batch has sent for score sheet generation");
         finalResult.clear();
-        System.out.println("AAAAAAAAA");
         return 0;
-    }
-
-    void saveScoreFile(HashMap<String, Map<String, Object>> finalResult, HashMap<String, PatientData> infoMap, Date measureDate, CSVPrinter csvPrinter) {
-        try {
-            List<String> data;
-            String rexl = "0";
-            for(Map.Entry<String, Map<String, Object>> map : finalResult.entrySet()) {
-                PatientData patientData = infoMap.get(map.getKey());
-                Map<String, Object> exp = map.getValue();
-                List<String> payerCodes = patientData.getPayerCodes();
-
-                for(int i=0; i< payerCodes.size(); i++) {
-                    data = new ArrayList<>();
-                    data.add(map.getKey());
-                    data.add("CCS");
-                    data.add(String.valueOf(payerCodes.get(i)));
-                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period For CE").toString())));
-                    data.add("0"); //event
-                    if( Boolean.parseBoolean(exp.get("Exclusions").toString())) {
-                        data.add("0"); //Epop
-                    }
-                    else {
-                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //Epop
-                    }
-                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator Exceptions").toString()))); //exc
-                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Numerator").toString())));
-                    data.add("0"); //Rexl
-                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Exclusions").toString()))); //RexclId
-                    data.add(getAge(patientData.getBirthDate(), measureDate));
-                    data.add(getGenderSymbol(patientData.getGender()));
-                    csvPrinter.printRecord(data);
-                }
-            }
-
-            csvPrinter.flush();
-            System.out.println("Data has written to score file");
-        } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-    String getIntegerString(boolean value) {
-        if(value) {
-            return "1";
-        } else {
-            return "0";
-        }
-    }
-
-    String getGenderSymbol(String gender) {
-        if(!gender.isEmpty()) {
-            if(gender.equalsIgnoreCase("Female")) {
-                return "F";
-            }
-            if(gender.equalsIgnoreCase("male")) {
-                return "M";
-            }
-        }
-        return "N";
-    }
-
-    public LocalDate convertToLocalDateViaInstant(Date dateToConvert) {
-        return dateToConvert.toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate();
-    }
-
-    public String getAge(Date birthday, Date date) {
-
-        LocalDate dob = convertToLocalDateViaInstant(birthday);
-        LocalDate curDate = convertToLocalDateViaInstant(date);
-        Period period = Period.between(dob, curDate);
-        System.out.println("Age: "+period.getYears());
-        return String.valueOf(period.getYears());
     }
 
     private String tempConvert(Object value) {

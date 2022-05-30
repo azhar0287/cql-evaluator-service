@@ -53,8 +53,13 @@ define "Enrolled During Participation Period":
 
 
 define "Enrolled During Participation Period For CE":
-  if ( true
-  ) then (  Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
+  if ( exists "Product Line as of December 31 of Measurement Period" ProductType
+      where FHIRHelpers.ToCode ( ProductType ) ~ Terminology."subsidized health program"
+  ) then ( Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
+    end of "Measurement Period", Interval[date from start of "Measurement Period", date from
+    end of "Measurement Period"], 45 )
+  )
+    else ( Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
     end of "Measurement Period", Interval[date from start of "Measurement Period" - 2 years, date from
     end of "Measurement Period" - 2 years], 45 )
       and Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
@@ -63,13 +68,8 @@ define "Enrolled During Participation Period For CE":
       and Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
       end of "Measurement Period", Interval[date from start of "Measurement Period", date from
       end of "Measurement Period"], 45 )
-   )
-    else if (true
-    ) then ( Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
-    end of "Measurement Period", Interval[date from start of "Measurement Period", date from
-    end of "Measurement Period"], 45 )
   )
-    else false
+
 
 
 define "Product Line as of December 31 of Measurement Period":
