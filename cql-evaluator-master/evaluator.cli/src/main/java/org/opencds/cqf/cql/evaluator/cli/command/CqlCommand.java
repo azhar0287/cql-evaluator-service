@@ -5,8 +5,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 
 import ca.uhn.fhir.context.FhirContext;
@@ -42,7 +40,7 @@ import org.opencds.cqf.cql.evaluator.builder.CqlEvaluatorBuilder;
 import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
-import org.opencds.cqf.cql.evaluator.cli.util.Util;
+import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import org.opencds.cqf.cql.evaluator.cql2elm.content.LibraryContentProvider;
 import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.dagger.DaggerCqlEvaluatorComponent;
@@ -286,7 +284,7 @@ public class CqlCommand implements Callable<Integer>  {
             }
 
             //having Patient data entries
-            for(RetrieveProvider retrieveProvider : retrieveProviders) {
+            for (RetrieveProvider retrieveProvider : retrieveProviders) {
                 PatientData patientData;
                 library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
                 String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
@@ -308,12 +306,10 @@ public class CqlCommand implements Callable<Integer>  {
                         for (Bundle.BundleEntryComponent bundle :valueSetEntryTemp) {
                             bundle1.addEntry(bundle);  //value set EntryTemp to new Bundle
                         }
-
                         finalPatientData = new BundleRetrieveProvider(fhirVersionEnum.newContext(), bundle1);
 
-                        //Processing
+                        //Processing Here
                         cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(), finalPatientData);
-
 
                         if(chaipi == 0) {
                             evaluator = cqlEvaluatorBuilder.build();
@@ -329,7 +325,6 @@ public class CqlCommand implements Callable<Integer>  {
                         chaipi++;
                         VersionedIdentifier identifier = new VersionedIdentifier().withId(library.libraryName);
                         Pair<String, Object> contextParameter = null;
-
 
                         library.context.contextValue = patientId;
                         if (library.context != null) {
@@ -351,7 +346,7 @@ public class CqlCommand implements Callable<Integer>  {
                 }
             }
         }
-        Util util = new Util();
+        UtilityFunction util = new UtilityFunction();
         util.saveScoreFile(finalResult, infoMap, new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter);
         LOGGER.info("Data batch has sent for score sheet generation");
         finalResult.clear();

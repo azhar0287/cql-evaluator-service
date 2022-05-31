@@ -1,10 +1,21 @@
 package org.opencds.cqf.cql.evaluator.cli.util;
 
+import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.context.FhirVersionEnum;
+import ca.uhn.fhir.parser.IParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
 import org.bson.Document;
+import org.hl7.fhir.instance.model.api.IBaseBundle;
+import org.opencds.cqf.cql.engine.retrieve.RetrieveProvider;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
+import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
+import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
@@ -12,7 +23,47 @@ import java.util.*;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 
-public class Util {
+public class UtilityFunction {
+
+    public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries) {
+        DBConnection db = new DBConnection();
+        PatientData patientData ;
+        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
+
+        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
+        IBaseBundle bundle;
+        FhirContext fhirContext = fhirVersionEnum.newContext();
+        IParser selectedParser = fhirContext.newJsonParser();
+
+        List<Document> documents = db.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir", skip, limit);
+        for(Document document : documents) {
+            patientData = new PatientData();
+            patientData.setId(document.get("id").toString());
+            patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
+            patientData.setGender(document.get("gender").toString());
+            Object o = document.get("payerCodes");
+
+            List<String> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<String>>() {});
+
+            patientData.setPayerCodes(payerCodes);
+
+            bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
+            RetrieveProvider retrieveProvider;
+            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData);
+            retrieveProviders.add(retrieveProvider);
+        }
+        return retrieveProviders;
+    }
+
+    Date getConvertedDate(String birthDate) {
+        Date date = null;
+        try {
+            date = new SimpleDateFormat("yyyy-MM-dd").parse(birthDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return date;
+    }
 
     public Map<String,String> assignCodeToType(List<String> payerCodes) {
         DBConnection db = new DBConnection();

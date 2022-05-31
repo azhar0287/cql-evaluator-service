@@ -9,6 +9,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opencds.cqf.cql.evaluator.cli.command.CliCommand;
 
+import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
+import org.opencds.cqf.cql.evaluator.cli.service.ProcessPatientService;
 import picocli.CommandLine;
 
 public class Main {
@@ -48,9 +50,15 @@ public class Main {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         LOGGER.info("Processing start");
-        Main.CSS_HEDIS_MY2022();
+        //Main.CSS_HEDIS_MY2022();
+
+        ProcessPatientService processPatientService = new ProcessPatientService();
+        LibraryOptions libraryOptions = processPatientService.setupLibrary();
+        processPatientService.libraries.add(libraryOptions);
+        processPatientService.dataBatchingAndProcessing();
+
         int exitCode = run(args);
         System.exit(exitCode);
     }
@@ -63,7 +71,7 @@ public class Main {
 
     public static void CSS_HEDIS_MY2022(){
         setUpStreams();
-        String folderName="/CCS_HEDIS_MY2022";
+        /*String folderName="/CCS_HEDIS_MY2022";
         String mainLibrary="CCS_HEDIS_MY2022";
         String[] args = new String[]{
                 "cql",
@@ -78,9 +86,11 @@ public class Main {
         };
 
         Main.run(args);
-
+        */
         String output = outContent.toString();
-        System.out.println("Test here");
+
+       System.out.println("Test here");
+
         restoreStreams();
     }
     public static void testingAISE_Hedis_My2022(){

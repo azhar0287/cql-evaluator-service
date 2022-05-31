@@ -1,21 +1,15 @@
-package org.opencds.cqf.cql.evaluator.cli.processPatient;
+package org.opencds.cqf.cql.evaluator.cli.service;
 
-import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.context.FhirVersionEnum;
-import ca.uhn.fhir.parser.IParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bson.Document;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptions;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptionsMapper;
 import org.cqframework.cql.elm.execution.VersionedIdentifier;
-import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.r4.model.Bundle;
 import org.opencds.cqf.cql.engine.execution.EvaluationResult;
 import org.opencds.cqf.cql.engine.model.ModelResolver;
@@ -28,82 +22,51 @@ import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
 import org.opencds.cqf.cql.evaluator.cli.command.CqlCommand;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
+import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ContextParameter;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
-import org.opencds.cqf.cql.evaluator.cli.util.Util;
+import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ModelParameter;
+import org.opencds.cqf.cql.evaluator.cli.mappers.SheetInputMapper;
+import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import org.opencds.cqf.cql.evaluator.cql2elm.content.LibraryContentProvider;
 import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.dagger.DaggerCqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
-
 import java.io.FileWriter;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
+
+import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 
 public class ProcessPatientService {
     public static Logger LOGGER  = LogManager.getLogger(CqlCommand.class);
-    public String fhirVersion;
+
     public String optionsPath;
 
-    List<LibraryOptions> libraries = new ArrayList<>();
+    public List<LibraryOptions> libraries = new ArrayList<>();
 
+    public Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
+    public Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
+    UtilityFunction utilityFunction = new UtilityFunction();
 
-    private Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
-    private Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
-
-    List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit) {
-        DBConnection db = new DBConnection();
-        PatientData patientData ;
-        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
-
-        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
-        IBaseBundle bundle;
-        FhirContext fhirContext = fhirVersionEnum.newContext();
-        IParser selectedParser = fhirContext.newJsonParser();
-
-        List<Document> documents = db.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir", skip, limit);
-        for(Document document : documents) {
-            patientData = new PatientData();
-            patientData.setId(document.get("id").toString());
-            patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
-            patientData.setGender(document.get("gender").toString());
-            Object o = document.get("payerCodes");
-
-            List<String> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<String>>() {});
-
-            patientData.setPayerCodes(payerCodes);
-
-            bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
-            RetrieveProvider retrieveProvider;
-            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData);
-            retrieveProviders.add(retrieveProvider);
-        }
-        return retrieveProviders;
+    public LibraryOptions setupLibrary() {
+        ContextParameter context = new ContextParameter(CONTEXT, "TEST");
+        ModelParameter modelParameter = new ModelParameter(MODEL, MODEL_URL);
+        LibraryOptions libraryOptions = new LibraryOptions (FHIR_VERSION, LIBRARY_URL, LIBRARY_NAME, FHIR_VERSION, TERMINOLOGY, context, modelParameter);
+        return libraryOptions;
     }
 
-    Date getConvertedDate(String birthDate) {
-        Date date = null;
-        try {
-            date = new SimpleDateFormat("yyyy-MM-dd").parse(birthDate);
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        return date;
-    }
-
-    void refreshValueSetBundles(Bundle valueSetBundle , Bundle copySetBundle, List<Bundle.BundleEntryComponent> valueSetEntry  ) {
+    public void refreshValueSetBundles(Bundle valueSetBundle , Bundle copySetBundle, List<Bundle.BundleEntryComponent> valueSetEntry ) {
         copySetBundle = valueSetBundle.copy();
         valueSetEntry = copySetBundle.getEntry();
     }
-    
-    public Integer call() throws Exception {
-        long startTime = System.currentTimeMillis();
 
+    public void dataBatchingAndProcessing() throws Exception {
+        long startTime = System.currentTimeMillis();
+        List<SheetInputMapper> sheetInputMapper = new ArrayList<>();
         DBConnection db = new DBConnection();
         //int totalCount = db.getDataCount("ep_encounter_fhir");
-        int totalCount = 75419;
-        LOGGER.info("total Data count: "+totalCount);
+        int totalCount = 5000;
         int skip = 0;
         int limit = 200;
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
@@ -120,30 +83,27 @@ public class ProcessPatientService {
             entriesLeft = totalCount - entriesProcessed;
             if(entriesLeft >= batchSize) {
                 retrieveProviders.clear();
-                retrieveProviders = mapToRetrieveProvider(skip, batchSize);
-                processAndSavePatients(retrieveProviders, csvPrinter);
+                retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries);
+                sheetInputMapper.add(processAndSavePatients(retrieveProviders, csvPrinter));
                 i+=batchSize-1;
                 skip += batchSize;
                 entriesProcessed +=batchSize;
             }
             else {
                 retrieveProviders.clear();
-                retrieveProviders = mapToRetrieveProvider(skip, batchSize);
-                processAndSavePatients(retrieveProviders, csvPrinter);
+                retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries);
+                sheetInputMapper.add(processAndSavePatients(retrieveProviders, csvPrinter));
                 i+=entriesLeft;
                 entriesProcessed+=entriesLeft;
             }
-
-            LOGGER.info("Iteration"+i+" has completed: Skip"+skip+" Limit"+limit);
+            LOGGER.info("Iteration"+i+" has completed: Skip"+skip+" Limit"+batchSize);
         }
         long stopTime = System.currentTimeMillis();
         long milliseconds = stopTime - startTime;
         System.out.println( ((milliseconds)/1000) / 60);
-
-        return 0;
     }
 
-    Integer processAndSavePatients(List<RetrieveProvider> retrieveProviders, CSVPrinter csvPrinter) throws InterruptedException, ParseException {
+    SheetInputMapper processAndSavePatients(List<RetrieveProvider> retrieveProviders, CSVPrinter csvPrinter) throws InterruptedException, ParseException {
 
         HashMap<String, PatientData> infoMap = new HashMap<>();
         HashMap<String, Map<String, Object>> finalResult = new HashMap<>();
@@ -151,7 +111,7 @@ public class ProcessPatientService {
         CqlEvaluator evaluator = null;
         TerminologyProvider backupTerminologyProvider = null;
         LOGGER.info("Patient List Size: "+retrieveProviders.size());
-        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
+        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(libraries.get(0).fhirVersion);
         CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder()
                 .fhirContext(fhirVersionEnum.newContext()).build();
 
@@ -280,11 +240,6 @@ public class ProcessPatientService {
                 }
             }
         }
-        Util util = new Util();
-        util.saveScoreFile(finalResult, infoMap, new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter);
-        LOGGER.info("Data batch has sent for score sheet generation");
-        finalResult.clear();
-        return 0;
+        return new SheetInputMapper(infoMap, finalResult);
     }
-
 }
