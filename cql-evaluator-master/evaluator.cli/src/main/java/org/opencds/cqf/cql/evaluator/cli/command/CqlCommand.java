@@ -56,10 +56,7 @@ import picocli.CommandLine.Option;
 public class CqlCommand implements Callable<Integer>  {
 
     public static Logger LOGGER  = LogManager.getLogger(CqlCommand.class);
-//
-//    public void CqlCommand(Logger logger) {
-//        this.LOGGER = logger;
-//    }
+
     @Option(names = { "-fv", "--fhir-version" }, required = true)
     public String fhirVersion;
 
@@ -181,15 +178,11 @@ public class CqlCommand implements Callable<Integer>  {
        String[] header = { "MemId", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
        FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
-        List<String> codeCheckList = new ArrayList<>();
-        codeCheckList.add("MCS");
-        codeCheckList.add("MCR");
-        codeCheckList.add("MP");
-        codeCheckList.add("MC");
+
        for(int i=0; i<5; i++) {
            retrieveProviders.clear();
            retrieveProviders = getPatientData(skip, limit);
-           processAndSavePatients(retrieveProviders, csvPrinter, codeCheckList);
+           processAndSavePatients(retrieveProviders, csvPrinter);
            skip += limit;
 
            LOGGER.info("First Iteration has completed: Skip"+skip+" Limit"+limit);
@@ -201,15 +194,13 @@ public class CqlCommand implements Callable<Integer>  {
        return 0;
     }
 
-    Integer processAndSavePatients(List<RetrieveProvider> retrieveProviders, CSVPrinter csvPrinter, List<String> codeCheckList) throws InterruptedException, ParseException {
+    Integer processAndSavePatients(List<RetrieveProvider> retrieveProviders, CSVPrinter csvPrinter) throws InterruptedException, ParseException {
 
         HashMap<String, PatientData> infoMap = new HashMap<>();
         HashMap<String, Map<String, Object>> finalResult = new HashMap<>();
         int chaipi = 0;
         CqlEvaluator evaluator = null;
         TerminologyProvider backupTerminologyProvider = null;
-
-//        List<RetrieveProvider> retrieveProviders = getPatientData(skip, limit);
         LOGGER.info("Patient List Size: "+retrieveProviders.size());
         FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
         CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder()
@@ -342,7 +333,7 @@ public class CqlCommand implements Callable<Integer>  {
             }
         }
         Util util = new Util();
-        util.saveScoreFile(finalResult, infoMap, new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter, codeCheckList);
+        util.saveScoreFile(finalResult, infoMap, new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter);
         LOGGER.info("Data batch has sent for score sheet generation");
         finalResult.clear();
         return 0;

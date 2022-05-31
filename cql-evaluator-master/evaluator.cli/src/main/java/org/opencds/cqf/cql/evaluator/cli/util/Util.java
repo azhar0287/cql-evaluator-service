@@ -14,7 +14,6 @@ import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 
 public class Util {
 
-
     public Map<String,String> assignCodeToType(List<String> payerCodes) {
         DBConnection db = new DBConnection();
         Map<String,String> codeTypes = new HashMap<>();
@@ -104,12 +103,17 @@ public class Util {
         }
     }
 
-    public void saveScoreFile(HashMap<String, Map<String, Object>> finalResult, HashMap<String, PatientData> infoMap, Date measureDate, CSVPrinter csvPrinter, List<String> codeCheckList) {
+    public void saveScoreFile(HashMap<String, Map<String, Object>> finalResult, HashMap<String, PatientData> infoMap, Date measureDate, CSVPrinter csvPrinter) {
         try {
             List<String> data;
             PatientData patientData;
             Map<String, Object> exp;
             List<String> payerCodes;
+            List<String> codeCheckList = new ArrayList<>();
+            codeCheckList.add("MCS");
+            codeCheckList.add("MCR");
+            codeCheckList.add("MP");
+            codeCheckList.add("MC");
 
             for(Map.Entry<String, Map<String, Object>> map : finalResult.entrySet()) {
 
