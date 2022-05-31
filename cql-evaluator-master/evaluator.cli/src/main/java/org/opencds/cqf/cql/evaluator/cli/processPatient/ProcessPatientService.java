@@ -1,21 +1,10 @@
-package org.opencds.cqf.cql.evaluator.cli.command;
-
-import java.io.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+package org.opencds.cqf.cql.evaluator.cli.processPatient;
 
 import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.context.FhirVersionEnum;
 import ca.uhn.fhir.parser.IParser;
-
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.lang3.tuple.Pair;
@@ -26,12 +15,8 @@ import org.bson.Document;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptions;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptionsMapper;
 import org.cqframework.cql.elm.execution.VersionedIdentifier;
-import org.hl7.fhir.instance.model.api.IBase;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
-import org.hl7.fhir.instance.model.api.IBaseDatatype;
-import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
-
 import org.opencds.cqf.cql.engine.execution.EvaluationResult;
 import org.opencds.cqf.cql.engine.model.ModelResolver;
 import org.opencds.cqf.cql.engine.retrieve.RetrieveProvider;
@@ -41,82 +26,28 @@ import org.opencds.cqf.cql.evaluator.builder.Constants;
 import org.opencds.cqf.cql.evaluator.builder.CqlEvaluatorBuilder;
 import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
+import org.opencds.cqf.cql.evaluator.cli.command.CqlCommand;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
+import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.cli.util.Util;
 import org.opencds.cqf.cql.evaluator.cql2elm.content.LibraryContentProvider;
 import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.dagger.DaggerCqlEvaluatorComponent;
-
-import ca.uhn.fhir.context.FhirVersionEnum;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
-import picocli.CommandLine.ArgGroup;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
 
-@Command(name = "cql", mixinStandardHelpOptions = true)
-public class CqlCommand implements Callable<Integer>  {
+import java.io.FileWriter;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
+public class ProcessPatientService {
     public static Logger LOGGER  = LogManager.getLogger(CqlCommand.class);
-
-    @Option(names = { "-fv", "--fhir-version" }, required = true)
     public String fhirVersion;
-
-    @Option(names= { "-op", "--options-path" })
     public String optionsPath;
 
-    @ArgGroup(multiplicity = "1..*", exclusive = false)
-    List<LibraryParameter> libraries;
+    List<LibraryOptions> libraries = new ArrayList<>();
 
-    static class LibraryParameter {
-        @Option(names = { "-lu", "--library-url" }, required = true)
-        public String libraryUrl;
-
-        @Option(names = { "-ln", "--library-name" }, required = true)
-        public String libraryName;
-
-        @Option(names = { "-lv", "--library-version" })
-        public String libraryVersion;
-
-        @Option(names = { "-t", "--terminology-url" })
-        public String terminologyUrl;
-
-        @ArgGroup(multiplicity = "0..1", exclusive = false)
-        public ModelParameter model;
-
-        @ArgGroup(multiplicity = "0..*", exclusive = false)
-        public List<ParameterParameter> parameters;
-
-        @Option(names = { "-e", "--expression" })
-        public String[] expression;
-
-        @ArgGroup(multiplicity = "0..1", exclusive = false)
-        public ContextParameter context;
-
-        static class ContextParameter {
-            @Option(names = { "-c", "--context" })
-            public String contextName;
-
-            @Option(names = { "-cv", "--context-value" })
-            public String contextValue;
-        }
-
-        static class ModelParameter {
-            @Option(names = { "-m", "--model" })
-            public String modelName;
-
-            @Option(names = { "-mu", "--model-url" })
-            public String modelUrl;
-        }
-
-        static class ParameterParameter {
-            @Option(names = { "-p", "--parameter" })
-            public String parameterName;
-
-            @Option(names = { "-pv", "--parameter-value" })
-            public String parameterValue;
-        }
-    }
 
     private Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     private Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
@@ -165,52 +96,51 @@ public class CqlCommand implements Callable<Integer>  {
         copySetBundle = valueSetBundle.copy();
         valueSetEntry = copySetBundle.getEntry();
     }
-
-    @Override
+    
     public Integer call() throws Exception {
-       long startTime = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
 
-       DBConnection db = new DBConnection();
-       //int totalCount = db.getDataCount("ep_encounter_fhir");
+        DBConnection db = new DBConnection();
+        //int totalCount = db.getDataCount("ep_encounter_fhir");
         int totalCount = 75419;
-       LOGGER.info("total Data count: "+totalCount);
-       int skip = 0;
-       int limit = 200;
-       List<RetrieveProvider> retrieveProviders = new ArrayList<>();
-       String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
-       String[] header = { "MemId", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
-       FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
-       CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
+        LOGGER.info("total Data count: "+totalCount);
+        int skip = 0;
+        int limit = 200;
+        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
+        String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
+        String[] header = { "MemId", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
+        FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
+        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
 
-       int batchSize = 200;
-       int entriesLeft = 0;
-       int entriesProcessed = 0;
+        int batchSize = 200;
+        int entriesLeft = 0;
+        int entriesProcessed = 0;
 
-       for(int i=0; i<totalCount; i++) {
-           entriesLeft = totalCount - entriesProcessed;
-           if(entriesLeft >= batchSize) {
-               retrieveProviders.clear();
-               retrieveProviders = mapToRetrieveProvider(skip, batchSize);
-               processAndSavePatients(retrieveProviders, csvPrinter);
-               i+=batchSize-1;
-               skip += batchSize;
-               entriesProcessed +=batchSize;
-           }
-           else {
-               retrieveProviders.clear();
-               retrieveProviders = mapToRetrieveProvider(skip, batchSize);
-               processAndSavePatients(retrieveProviders, csvPrinter);
-               i+=entriesLeft;
-               entriesProcessed+=entriesLeft;
-           }
+        for(int i=0; i<totalCount; i++) {
+            entriesLeft = totalCount - entriesProcessed;
+            if(entriesLeft >= batchSize) {
+                retrieveProviders.clear();
+                retrieveProviders = mapToRetrieveProvider(skip, batchSize);
+                processAndSavePatients(retrieveProviders, csvPrinter);
+                i+=batchSize-1;
+                skip += batchSize;
+                entriesProcessed +=batchSize;
+            }
+            else {
+                retrieveProviders.clear();
+                retrieveProviders = mapToRetrieveProvider(skip, batchSize);
+                processAndSavePatients(retrieveProviders, csvPrinter);
+                i+=entriesLeft;
+                entriesProcessed+=entriesLeft;
+            }
 
-           LOGGER.info("Iteration"+i+" has completed: Skip"+skip+" Limit"+limit);
-       }
+            LOGGER.info("Iteration"+i+" has completed: Skip"+skip+" Limit"+limit);
+        }
         long stopTime = System.currentTimeMillis();
         long milliseconds = stopTime - startTime;
         System.out.println( ((milliseconds)/1000) / 60);
 
-       return 0;
+        return 0;
     }
 
     Integer processAndSavePatients(List<RetrieveProvider> retrieveProviders, CSVPrinter csvPrinter) throws InterruptedException, ParseException {
@@ -230,7 +160,7 @@ public class CqlCommand implements Callable<Integer>  {
             options = CqlTranslatorOptionsMapper.fromFile(optionsPath);
         }
 
-        for (LibraryParameter library : libraries) {
+        for (LibraryOptions library : libraries) {
             CqlEvaluatorBuilder cqlEvaluatorBuilder = cqlEvaluatorComponent.createBuilder();
 
             if (options != null) {
@@ -317,7 +247,6 @@ public class CqlCommand implements Callable<Integer>  {
 
                         if(chaipi == 0) {
                             evaluator = cqlEvaluatorBuilder.build();
-//                            backupTerminologyProvider = evaluator.getTerminologyProvider();
                         }
 
                         if(finalPatientData instanceof BundleRetrieveProvider) {
@@ -358,37 +287,4 @@ public class CqlCommand implements Callable<Integer>  {
         return 0;
     }
 
-    private String tempConvert(Object value) {
-        if (value == null) {
-            return "null";
-        }
-
-        String result = "";
-        if (value instanceof Iterable) {
-            result += "[";
-            Iterable<?> values = (Iterable<?>) value;
-            for (Object o : values) {
-
-                result += (tempConvert(o) + ", ");
-            }
-
-            if (result.length() > 1) {
-                result = result.substring(0, result.length() - 2);
-            }
-
-            result += "]";
-        } else if (value instanceof IBaseResource) {
-            IBaseResource resource = (IBaseResource) value;
-            result = resource.fhirType() + (resource.getIdElement() != null && resource.getIdElement().hasIdPart()
-                    ? "(id=" + resource.getIdElement().getIdPart() + ")"
-                    : "");
-        } else if (value instanceof IBase) {
-            result = ((IBase) value).fhirType();
-        } else if (value instanceof IBaseDatatype) {
-            result = ((IBaseDatatype) value).fhirType();
-        } else {
-            result = value.toString();
-        }
-        return result;
-    }
 }

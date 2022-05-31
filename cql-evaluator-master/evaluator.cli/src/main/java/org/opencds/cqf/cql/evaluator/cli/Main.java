@@ -28,7 +28,6 @@ public class Main {
         System.out.println(String.format("Test resource directory: %s", testResourcePath));
     }
 
-
     public static void setUpStreams() {
         outContent = new ByteArrayOutputStream();
         errContent = new ByteArrayOutputStream();
@@ -62,6 +61,28 @@ public class Main {
         return cli.execute(args);
     }
 
+    public static void CSS_HEDIS_MY2022(){
+        setUpStreams();
+        String folderName="/CCS_HEDIS_MY2022";
+        String mainLibrary="CCS_HEDIS_MY2022";
+        String[] args = new String[]{
+                "cql",
+                "-fv=R4",
+                "-lu="+ testResourcePath + folderName,
+                "-ln="+mainLibrary,
+                "-m=FHIR",
+                "-mu=" + testResourcePath + folderName,
+                "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
+                "-c=Patient",
+                "-cv=186905"
+        };
+
+        Main.run(args);
+
+        String output = outContent.toString();
+        System.out.println("Test here");
+        restoreStreams();
+    }
     public static void testingAISE_Hedis_My2022(){
         setUpStreams();
         String folderName="/AISE_HEDIS_MY2022";
@@ -76,30 +97,6 @@ public class Main {
                 "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
                 "-c=Patient",
                 "-cv=185233"
-        };
-
-        Main.run(args);
-
-        String output = outContent.toString();
-        System.out.println("Test here");
-        restoreStreams();
-    }
-
-
-    public static void CSS_HEDIS_MY2022(){
-        setUpStreams();
-        String folderName="/CCS_HEDIS_MY2022";
-        String mainLibrary="CCS_HEDIS_MY2022";
-        String[] args = new String[]{
-                "cql",
-                "-fv=R4",
-                "-lu="+ testResourcePath + folderName,
-                "-ln="+mainLibrary,
-                "-m=FHIR",
-                "-mu=" + testResourcePath + folderName,
-                "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
-                "-c=Patient",
-                "-cv=183718"
         };
 
         Main.run(args);
