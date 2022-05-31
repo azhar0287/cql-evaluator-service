@@ -7,7 +7,6 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 
 import org.bson.Document;
-import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -24,16 +23,28 @@ public class DBConnection {
 		this.DB = mongo.getDatabase("ihm");
     }
 
-	public List<Document> getConditionalData(String patientId, String collectionName) {
+	public List<Document> getConditionalData(String patientId, String collectionName, int skip, int limit) {
 		this.collection = DB.getCollection(collectionName);
-		FindIterable<Document> documents = this.collection.find(new Document("id", patientId)).projection(excludeId());
-		//FindIterable<Document> documents = this.collection.find().skip(0).limit(70).projection(excludeId());
+		//FindIterable<Document> documents = this.collection.find(new Document("id", patientId)).projection(excludeId());
+		FindIterable<Document> documents = this.collection.find().skip(skip).limit(limit).projection(excludeId());
 
 		MongoCursor<Document> cursor = documents.iterator();
 		List<Document> list = new LinkedList<>();
-		while(cursor.hasNext()){
+		while(cursor.hasNext()) {
 			list.add(cursor.next());
 		}
 		return list;
+	}
+
+	public Document getOidInfo(String code, String collectionName) {
+		this.collection = DB.getCollection(collectionName);
+		FindIterable<Document> document = this.collection.find(new Document("values", code));
+		return document.first();
+	}
+
+	public long getDataCount(String collectionName) {
+		this.collection = DB.getCollection(collectionName);
+		long count = this.collection.count();
+		return count;
 	}
 }
