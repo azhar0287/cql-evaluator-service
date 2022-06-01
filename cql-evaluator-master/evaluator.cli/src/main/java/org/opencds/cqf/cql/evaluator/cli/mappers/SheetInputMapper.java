@@ -8,9 +8,14 @@ import java.util.Map;
 public class SheetInputMapper {
     public HashMap<String, PatientData> infoMap = new HashMap<>();
     public HashMap<String, Map<String, Object>> finalResult = new HashMap<>();
+    public Map<String, Object> documentMap = new HashMap<>();
 
     public SheetInputMapper() {
 
+    }
+
+    public SheetInputMapper(Map<String, Object> documentMap) {
+        this.documentMap = documentMap;
     }
 
     public SheetInputMapper(HashMap<String, PatientData> infoMap, HashMap<String, Map<String, Object>> finalResult) {

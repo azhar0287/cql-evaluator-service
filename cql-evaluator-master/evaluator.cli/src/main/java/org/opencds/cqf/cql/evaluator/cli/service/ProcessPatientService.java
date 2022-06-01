@@ -7,6 +7,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bson.Document;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptions;
 import org.cqframework.cql.cql2elm.CqlTranslatorOptionsMapper;
 import org.cqframework.cql.elm.execution.VersionedIdentifier;
@@ -64,9 +65,10 @@ public class ProcessPatientService {
     public List<SheetInputMapper> dataBatchingAndProcessing() throws Exception {
         long startTime = System.currentTimeMillis();
         List<SheetInputMapper> sheetInputMapper = new ArrayList<>();
+        List<Document> documents = new ArrayList<>();
         DBConnection db = new DBConnection();
         //int totalCount = db.getDataCount("ep_encounter_fhir_AllData");
-        int totalCount = 10000;
+        int totalCount = 500;
         LOGGER.info("totalCount: "+totalCount);
 
         int skip = 0;
@@ -76,20 +78,24 @@ public class ProcessPatientService {
         int entriesProcessed = 0;
 
         for(int i=0; i<totalCount; i++) {
+            documents = new ArrayList<>();
             entriesLeft = totalCount - entriesProcessed;
             if(entriesLeft >= batchSize) {
                 retrieveProviders.clear();
                 retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries);
-                sheetInputMapper.addAll(processAndSavePatients(retrieveProviders));
+                documents.addAll(processAndSavePatients(retrieveProviders));
+                db.insertProcessedDataInDb("ep_cql_processed_data", documents);
                 i+=batchSize-1;
                 skip += batchSize;
                 entriesProcessed +=batchSize;
+
             }
             else {
                 LOGGER.info("In else condition less from batch size");
                 retrieveProviders.clear();
                 retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, entriesLeft, libraries.get(0).fhirVersion, libraries);
-                sheetInputMapper.addAll(processAndSavePatients(retrieveProviders));
+                documents.addAll(processAndSavePatients(retrieveProviders));
+                db.insertProcessedDataInDb("ep_cql_processed_data", documents);
                 i+=entriesLeft;
                 entriesProcessed+=entriesLeft;
             }
@@ -102,10 +108,13 @@ public class ProcessPatientService {
         return sheetInputMapper;
     }
 
-    List<SheetInputMapper> processAndSavePatients(List<RetrieveProvider> retrieveProviders) throws InterruptedException, ParseException {
-        HashMap<String, PatientData> infoMap = new HashMap<>();
-        HashMap<String, Map<String, Object>> finalResult = new HashMap<>();
+    List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders) throws InterruptedException, ParseException {
+        HashMap<String, PatientData> infoMap;
+        HashMap<String, Map<String, Object>> finalResult;
         List<SheetInputMapper> finalList = new ArrayList<>();
+        Map<String, Object> documentMap;
+        List<Document> documents = new ArrayList<>();
+
         try {
 
             int chaipi = 0;
@@ -181,7 +190,7 @@ public class ProcessPatientService {
                     PatientData patientData;
                     finalResult = new HashMap<>();
                     infoMap = new HashMap<>();
-
+                    documentMap = new HashMap<>();
                     library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
                     String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
                     LOGGER.info("Patient Id in Loop "+patientId);
@@ -232,12 +241,21 @@ public class ProcessPatientService {
                             LOGGER.info("Patient being processed in engine: "+patientId);
                             EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
                             System.out.println("Evaluation Counter: "+processCounter);
-
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                            infoMap.put(patientId, patientData);
-                            finalResult.put(patientId, result.expressionResults);
 
-                            finalList.add(new SheetInputMapper(infoMap, finalResult));
+                            documents.add(this.createDocumentForResult(result.expressionResults, patientData));
+                            /*finalResult.put(patientId, result.expressionResults);
+
+
+                            documentMap.put("gender", patientData.getGender());
+                            documentMap.put("birthDate", patientData.getBirthDate());
+                            documentMap.put("payerCodes", patientData.getPayerCodes());
+
+                            //infoMap.put(patientId, patientData);
+
+                            finalList.add(new SheetInputMapper(documentMap));
+
+                             */
                         }
                     }
 
@@ -246,6 +264,27 @@ public class ProcessPatientService {
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
         }
-        return finalList;
+        return documents;
     }
+
+    public Document createDocumentForResult(Map<String, Object> expressionResults, PatientData patientData) {
+        Document document = new Document();
+
+        document.put("id", patientData.getId());
+        document.put("birthDate", patientData.getBirthDate());
+        document.put("gender", patientData.getGender());
+        document.put("payerCodes", patientData.getPayerCodes());
+
+        expressionResults.remove("Patient");
+        expressionResults.remove("Product Line as of December 31 of Measurement Period");
+        expressionResults.remove("Member Coverage");
+        expressionResults.remove("Cervical Cytology Within 3 Years");
+        expressionResults.remove("hrHPV Testing Within 5 Years");
+        expressionResults.remove("Absence of Cervix");
+        for(Map.Entry<String, Object> map : expressionResults.entrySet()) {
+            document.putAll(expressionResults);
+        }
+        return document;
+    }
+
 }

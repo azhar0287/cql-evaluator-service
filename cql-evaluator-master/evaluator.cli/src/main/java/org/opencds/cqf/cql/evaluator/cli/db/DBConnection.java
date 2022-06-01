@@ -3,20 +3,22 @@ package org.opencds.cqf.cql.evaluator.cli.db;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.mongodb.MongoClientOptions;
-import com.mongodb.ServerAddress;
+import com.mongodb.*;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.Document;
-import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import org.opencds.cqf.cql.evaluator.cli.command.CqlCommand;
+import org.opencds.cqf.cql.evaluator.cli.mappers.SheetInputMapper;
 
 import static com.mongodb.client.model.Projections.excludeId;
 
 public class DBConnection {
-
+	public static Logger LOGGER  = LogManager.getLogger(DBConnection.class);
 	private final MongoDatabase DB;
     private MongoCollection<org.bson.Document> collection ;
 
@@ -54,4 +56,12 @@ public class DBConnection {
 		int count = Math.toIntExact(this.collection.count());
 		return count;
 	}
+	public void insertProcessedDataInDb(String collectionName, List<Document> documents) {
+		this.collection = DB.getCollection(collectionName);
+		this.collection.insertMany(documents);
+		LOGGER.info("Data has pushed");
+
+	}
+
+
 }

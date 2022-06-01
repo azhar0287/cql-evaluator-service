@@ -69,14 +69,14 @@ public class Main {
         processPatientService.libraries.add(libraryOptions);
         List<SheetInputMapper> sheetInput = processPatientService.dataBatchingAndProcessing();
 
-
+        CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
         LOGGER.info("Sheet Generation has started: ");
-        for(SheetInputMapper sheetInputMapper: sheetInput) {
+        /*for(SheetInputMapper sheetInputMapper: sheetInput) {
             sheetEntryCount++;
             utilityFunction.saveScoreFile(sheetInputMapper.getFinalResult(), sheetInputMapper.getInfoMap(),
-                    new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), utilityFunction.setupSheetHeaders());
+                    new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter);
             LOGGER.info("Sheet process count: "+sheetEntryCount);
-        }
+        }*/
         LOGGER.info("Sheet generation has completed");
 
         int exitCode = run(args);
