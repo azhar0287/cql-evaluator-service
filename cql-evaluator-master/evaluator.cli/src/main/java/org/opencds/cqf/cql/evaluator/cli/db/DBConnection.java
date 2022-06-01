@@ -3,6 +3,8 @@ package org.opencds.cqf.cql.evaluator.cli.db;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.mongodb.MongoClientOptions;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 
@@ -19,7 +21,12 @@ public class DBConnection {
     private MongoCollection<org.bson.Document> collection ;
 
 	public DBConnection() {
-		MongoClient mongo = new MongoClient("10.20.30.212",27017);
+		MongoClientOptions.Builder builder = new MongoClientOptions.Builder();
+		//build the connection options
+		builder.maxConnectionIdleTime(86400000);//set the max wait time in (ms)
+		MongoClientOptions opts = builder.build();
+
+		MongoClient mongo = new MongoClient(new ServerAddress("10.20.30.212",27017), opts);
 		this.DB = mongo.getDatabase("ihm");
     }
 
