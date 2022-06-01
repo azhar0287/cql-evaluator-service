@@ -40,7 +40,7 @@ import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 
 public class ProcessPatientService {
     public static Logger LOGGER  = LogManager.getLogger(CqlCommand.class);
-
+    public static int processCounter = 0;
     public String optionsPath;
 
     public List<LibraryOptions> libraries = new ArrayList<>();
@@ -61,20 +61,16 @@ public class ProcessPatientService {
         valueSetEntry = copySetBundle.getEntry();
     }
 
-    public void dataBatchingAndProcessing() throws Exception {
+    public List<SheetInputMapper> dataBatchingAndProcessing() throws Exception {
         long startTime = System.currentTimeMillis();
         List<SheetInputMapper> sheetInputMapper = new ArrayList<>();
         DBConnection db = new DBConnection();
-        //int totalCount = db.getDataCount("ep_encounter_fhir");
-        int totalCount = 5000;
-        int skip = 0;
-        int limit = 200;
-        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
-        String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
-        String[] header = { "MemId", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
-        FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
-        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
+        //int totalCount = db.getDataCount("ep_encounter_fhir_AllData");
+        int totalCount = 10000;
+        LOGGER.info("totalCount: "+totalCount);
 
+        int skip = 0;
+        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
         int batchSize = 200;
         int entriesLeft = 0;
         int entriesProcessed = 0;
@@ -84,162 +80,172 @@ public class ProcessPatientService {
             if(entriesLeft >= batchSize) {
                 retrieveProviders.clear();
                 retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries);
-                sheetInputMapper.add(processAndSavePatients(retrieveProviders, csvPrinter));
+                sheetInputMapper.addAll(processAndSavePatients(retrieveProviders));
                 i+=batchSize-1;
                 skip += batchSize;
                 entriesProcessed +=batchSize;
             }
             else {
+                LOGGER.info("In else condition less from batch size");
                 retrieveProviders.clear();
-                retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries);
-                sheetInputMapper.add(processAndSavePatients(retrieveProviders, csvPrinter));
+                retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, entriesLeft, libraries.get(0).fhirVersion, libraries);
+                sheetInputMapper.addAll(processAndSavePatients(retrieveProviders));
                 i+=entriesLeft;
                 entriesProcessed+=entriesLeft;
             }
-            LOGGER.info("Iteration"+i+" has completed: Skip"+skip+" Limit"+batchSize);
+            LOGGER.info("Final Sheet Input List SIze: "+sheetInputMapper.size());
+            LOGGER.info("Iteration "+i+" has completed: Skip"+skip+" Limit"+batchSize);
         }
         long stopTime = System.currentTimeMillis();
         long milliseconds = stopTime - startTime;
-        System.out.println( ((milliseconds)/1000) / 60);
+        LOGGER.info("Time taken: "+((milliseconds)/1000/60)+" min");
+        return sheetInputMapper;
     }
 
-    SheetInputMapper processAndSavePatients(List<RetrieveProvider> retrieveProviders, CSVPrinter csvPrinter) throws InterruptedException, ParseException {
-
+    List<SheetInputMapper> processAndSavePatients(List<RetrieveProvider> retrieveProviders) throws InterruptedException, ParseException {
         HashMap<String, PatientData> infoMap = new HashMap<>();
         HashMap<String, Map<String, Object>> finalResult = new HashMap<>();
-        int chaipi = 0;
-        CqlEvaluator evaluator = null;
-        TerminologyProvider backupTerminologyProvider = null;
-        LOGGER.info("Patient List Size: "+retrieveProviders.size());
-        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(libraries.get(0).fhirVersion);
-        CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder()
-                .fhirContext(fhirVersionEnum.newContext()).build();
+        List<SheetInputMapper> finalList = new ArrayList<>();
+        try {
 
-        CqlTranslatorOptions options = null;
-        if (optionsPath != null) {
-            options = CqlTranslatorOptionsMapper.fromFile(optionsPath);
-        }
+            int chaipi = 0;
+            CqlEvaluator evaluator = null;
+            TerminologyProvider backupTerminologyProvider = null;
+            LOGGER.info("Patient List Size: "+retrieveProviders.size());
+            FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(libraries.get(0).fhirVersion);
+            CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder()
+                    .fhirContext(fhirVersionEnum.newContext()).build();
 
-        for (LibraryOptions library : libraries) {
-            CqlEvaluatorBuilder cqlEvaluatorBuilder = cqlEvaluatorComponent.createBuilder();
-
-            if (options != null) {
-                cqlEvaluatorBuilder.withCqlTranslatorOptions(options);
+            CqlTranslatorOptions options = null;
+            if (optionsPath != null) {
+                options = CqlTranslatorOptionsMapper.fromFile(optionsPath);
             }
 
-            LibraryContentProvider libraryContentProvider = libraryContentProviderIndex.get(library.libraryUrl);
+            for (LibraryOptions library : libraries) {
+                CqlEvaluatorBuilder cqlEvaluatorBuilder = cqlEvaluatorComponent.createBuilder();
 
-            if (libraryContentProvider == null) {
-                libraryContentProvider = cqlEvaluatorComponent.createLibraryContentProviderFactory()
-                        .create(new EndpointInfo().setAddress(library.libraryUrl));
-                this.libraryContentProviderIndex.put(library.libraryUrl, libraryContentProvider);
-            }
-
-            cqlEvaluatorBuilder.withLibraryContentProvider(libraryContentProvider);
-
-            if (library.terminologyUrl != null) {
-                TerminologyProvider terminologyProvider = this.terminologyProviderIndex.get(library.terminologyUrl);
-                if (terminologyProvider == null) {
-                    terminologyProvider = cqlEvaluatorComponent.createTerminologyProviderFactory()
-                            .create(new EndpointInfo().setAddress(library.terminologyUrl));
-                    this.terminologyProviderIndex.put(library.terminologyUrl, terminologyProvider);
+                if (options != null) {
+                    cqlEvaluatorBuilder.withCqlTranslatorOptions(options);
                 }
-                cqlEvaluatorBuilder.withTerminologyProvider(terminologyProvider);
-                backupTerminologyProvider = terminologyProvider;
-            }
 
-            Triple<String, ModelResolver, RetrieveProvider> dataProvider = null;
-            DataProviderFactory dataProviderFactory = cqlEvaluatorComponent.createDataProviderFactory();
-            if (library.model != null) {
-                dataProvider = dataProviderFactory.create(new EndpointInfo().setAddress(library.model.modelUrl));
-            }
-            // default to FHIR
-            else {
-                dataProvider = dataProviderFactory.create(new EndpointInfo().setType(Constants.HL7_FHIR_FILES_CODE));
-            }
+                LibraryContentProvider libraryContentProvider = libraryContentProviderIndex.get(library.libraryUrl);
 
-            //Changes need to be made here
-            RetrieveProvider bundleRetrieveProvider =  dataProvider.getRight(); // here value sets are added
-
-            List<Bundle.BundleEntryComponent> valueSetEntry = null, valueSetEntryTemp = null;
-            Bundle valueSetBundle = null;
-            Bundle copySetBundle = null;
-            if(bundleRetrieveProvider instanceof BundleRetrieveProvider) {
-                //having value sets entries
-                BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) bundleRetrieveProvider;
-
-                if(bundleRetrieveProvider1.bundle instanceof Bundle) {
-                    valueSetBundle = (Bundle)bundleRetrieveProvider1.bundle;
-                    copySetBundle = valueSetBundle.copy();
-                    valueSetEntry = copySetBundle.getEntry();
+                if (libraryContentProvider == null) {
+                    libraryContentProvider = cqlEvaluatorComponent.createLibraryContentProviderFactory()
+                            .create(new EndpointInfo().setAddress(library.libraryUrl));
+                    this.libraryContentProviderIndex.put(library.libraryUrl, libraryContentProvider);
                 }
-            }
 
-            //having Patient data entries
-            for(RetrieveProvider retrieveProvider : retrieveProviders) {
-                PatientData patientData;
-                library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
-                String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
-                LOGGER.info("Patient Id in Loop "+patientId);
-                refreshValueSetBundles(valueSetBundle, copySetBundle, valueSetEntry);
-                valueSetEntry = valueSetBundle.copy().getEntry();
-                valueSetEntryTemp = valueSetEntry; //tem having value set entries
+                cqlEvaluatorBuilder.withLibraryContentProvider(libraryContentProvider);
 
-                if(retrieveProvider instanceof BundleRetrieveProvider) {
+                if (library.terminologyUrl != null) {
+                    TerminologyProvider terminologyProvider = this.terminologyProviderIndex.get(library.terminologyUrl);
+                    if (terminologyProvider == null) {
+                        terminologyProvider = cqlEvaluatorComponent.createTerminologyProviderFactory()
+                                .create(new EndpointInfo().setAddress(library.terminologyUrl));
+                        this.terminologyProviderIndex.put(library.terminologyUrl, terminologyProvider);
+                    }
+                    cqlEvaluatorBuilder.withTerminologyProvider(terminologyProvider);
+                    backupTerminologyProvider = terminologyProvider;
+                }
 
-                    BundleRetrieveProvider retrieveProvider1 = (BundleRetrieveProvider) retrieveProvider;
-                    if(retrieveProvider1.bundle instanceof Bundle) {
-                        Bundle patientDataBundle = (Bundle)retrieveProvider1.bundle;
-                        valueSetEntryTemp.addAll(patientDataBundle.getEntry()); //adding value sets + patient entries
+                Triple<String, ModelResolver, RetrieveProvider> dataProvider = null;
+                DataProviderFactory dataProviderFactory = cqlEvaluatorComponent.createDataProviderFactory();
+                if (library.model != null) {
+                    dataProvider = dataProviderFactory.create(new EndpointInfo().setAddress(library.model.modelUrl));
+                }
+                // default to FHIR
+                else {
+                    dataProvider = dataProviderFactory.create(new EndpointInfo().setType(Constants.HL7_FHIR_FILES_CODE));
+                }
 
-                        RetrieveProvider finalPatientData;
+                //Changes need to be made here
+                RetrieveProvider bundleRetrieveProvider =  dataProvider.getRight(); // here value sets are added
 
-                        Bundle bundle1 = new Bundle();
-                        for (Bundle.BundleEntryComponent bundle :valueSetEntryTemp) {
-                            bundle1.addEntry(bundle);  //value set EntryTemp to new Bundle
-                        }
+                List<Bundle.BundleEntryComponent> valueSetEntry = null, valueSetEntryTemp = null;
+                Bundle valueSetBundle = null;
+                Bundle copySetBundle = null;
+                if(bundleRetrieveProvider instanceof BundleRetrieveProvider) {
+                    //having value sets entries
+                    BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) bundleRetrieveProvider;
 
-                        finalPatientData = new BundleRetrieveProvider(fhirVersionEnum.newContext(), bundle1);
-
-                        //Processing
-                        cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(), finalPatientData);
-
-
-                        if(chaipi == 0) {
-                            evaluator = cqlEvaluatorBuilder.build();
-                        }
-
-                        if(finalPatientData instanceof BundleRetrieveProvider) {
-                            BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) finalPatientData;
-                            bundleRetrieveProvider1.setTerminologyProvider(backupTerminologyProvider);
-                            bundleRetrieveProvider1.setExpandValueSets(true);
-                        }
-
-                        chaipi++;
-                        VersionedIdentifier identifier = new VersionedIdentifier().withId(library.libraryName);
-                        Pair<String, Object> contextParameter = null;
-
-
-                        library.context.contextValue = patientId;
-                        if (library.context != null) {
-                            contextParameter = Pair.of(library.context.contextName, library.context.contextValue);
-                        }
-
-                        EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
-                        System.out.println("Evaluation has done: "+chaipi);
-
-                        patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                        infoMap.put(patientId, patientData);
-
-                        finalResult.put(patientId, result.expressionResults);
-                        LOGGER.info("Patient processed: "+patientId);
-                        if(chaipi %15 == 0) {
-                            Thread.sleep(1000);
-                        }
+                    if(bundleRetrieveProvider1.bundle instanceof Bundle) {
+                        valueSetBundle = (Bundle)bundleRetrieveProvider1.bundle;
+                        copySetBundle = valueSetBundle.copy();
+                        valueSetEntry = copySetBundle.getEntry();
                     }
                 }
+
+                //having Patient data entries
+                for(RetrieveProvider retrieveProvider : retrieveProviders) {
+                    PatientData patientData;
+                    finalResult = new HashMap<>();
+                    infoMap = new HashMap<>();
+
+                    library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
+                    String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
+                    LOGGER.info("Patient Id in Loop "+patientId);
+                    refreshValueSetBundles(valueSetBundle, copySetBundle, valueSetEntry);
+                    valueSetEntry = valueSetBundle.copy().getEntry();
+                    valueSetEntryTemp = valueSetEntry; //tem having value set entries
+
+                    if(retrieveProvider instanceof BundleRetrieveProvider) {
+
+                        BundleRetrieveProvider retrieveProvider1 = (BundleRetrieveProvider) retrieveProvider;
+                        if(retrieveProvider1.bundle instanceof Bundle) {
+                            Bundle patientDataBundle = (Bundle)retrieveProvider1.bundle;
+                            valueSetEntryTemp.addAll(patientDataBundle.getEntry()); //adding value sets + patient entries
+
+                            RetrieveProvider finalPatientData;
+
+                            Bundle bundle1 = new Bundle();
+                            for (Bundle.BundleEntryComponent bundle :valueSetEntryTemp) {
+                                bundle1.addEntry(bundle);  //value set EntryTemp to new Bundle
+                            }
+
+                            finalPatientData = new BundleRetrieveProvider(fhirVersionEnum.newContext(), bundle1);
+
+                            //Processing
+                            cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(), finalPatientData);
+
+
+                            if(chaipi == 0) {
+                                evaluator = cqlEvaluatorBuilder.build();
+                            }
+
+                            if(finalPatientData instanceof BundleRetrieveProvider) {
+                                BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) finalPatientData;
+                                bundleRetrieveProvider1.setTerminologyProvider(backupTerminologyProvider);
+                                bundleRetrieveProvider1.setExpandValueSets(true);
+                            }
+
+                            chaipi++;
+                            processCounter++;
+                            VersionedIdentifier identifier = new VersionedIdentifier().withId(library.libraryName);
+                            Pair<String, Object> contextParameter = null;
+
+
+                            library.context.contextValue = patientId;
+                            if (library.context != null) {
+                                contextParameter = Pair.of(library.context.contextName, library.context.contextValue);
+                            }
+                            LOGGER.info("Patient being processed in engine: "+patientId);
+                            EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
+                            System.out.println("Evaluation Counter: "+processCounter);
+
+                            patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
+                            infoMap.put(patientId, patientData);
+                            finalResult.put(patientId, result.expressionResults);
+
+                            finalList.add(new SheetInputMapper(infoMap, finalResult));
+                        }
+                    }
+
+                }
             }
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
         }
-        return new SheetInputMapper(infoMap, finalResult);
+        return finalList;
     }
 }

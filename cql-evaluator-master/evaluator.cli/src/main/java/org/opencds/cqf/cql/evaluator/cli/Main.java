@@ -2,15 +2,23 @@ package org.opencds.cqf.cql.evaluator.cli;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.PrintStream;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opencds.cqf.cql.evaluator.cli.command.CliCommand;
 
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
+import org.opencds.cqf.cql.evaluator.cli.mappers.SheetInputMapper;
 import org.opencds.cqf.cql.evaluator.cli.service.ProcessPatientService;
+import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import picocli.CommandLine;
 
 public class Main {
@@ -52,12 +60,24 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         LOGGER.info("Processing start");
-        //Main.CSS_HEDIS_MY2022();
+       // Main.CSS_HEDIS_MY2022();
 
+        int sheetEntryCount = 0;
+        UtilityFunction utilityFunction = new UtilityFunction();
         ProcessPatientService processPatientService = new ProcessPatientService();
         LibraryOptions libraryOptions = processPatientService.setupLibrary();
         processPatientService.libraries.add(libraryOptions);
-        processPatientService.dataBatchingAndProcessing();
+        List<SheetInputMapper> sheetInput = processPatientService.dataBatchingAndProcessing();
+
+
+        LOGGER.info("Sheet Generation has started: ");
+        for(SheetInputMapper sheetInputMapper: sheetInput) {
+            sheetEntryCount++;
+            utilityFunction.saveScoreFile(sheetInputMapper.getFinalResult(), sheetInputMapper.getInfoMap(),
+                    new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), utilityFunction.setupSheetHeaders());
+            LOGGER.info("Sheet process count: "+sheetEntryCount);
+        }
+        LOGGER.info("Sheet generation has completed");
 
         int exitCode = run(args);
         System.exit(exitCode);
@@ -71,7 +91,7 @@ public class Main {
 
     public static void CSS_HEDIS_MY2022(){
         setUpStreams();
-        /*String folderName="/CCS_HEDIS_MY2022";
+        String folderName="/CCS_HEDIS_MY2022";
         String mainLibrary="CCS_HEDIS_MY2022";
         String[] args = new String[]{
                 "cql",
@@ -82,15 +102,13 @@ public class Main {
                 "-mu=" + testResourcePath + folderName,
                 "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
                 "-c=Patient",
-                "-cv=186905"
+                "-cv=182669"
         };
 
         Main.run(args);
-        */
+
         String output = outContent.toString();
-
-       System.out.println("Test here");
-
+        System.out.println("Test here");
         restoreStreams();
     }
     public static void testingAISE_Hedis_My2022(){

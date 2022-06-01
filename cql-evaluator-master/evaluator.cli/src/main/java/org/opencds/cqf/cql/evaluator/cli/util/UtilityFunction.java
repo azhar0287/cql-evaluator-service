@@ -5,6 +5,7 @@ import ca.uhn.fhir.context.FhirVersionEnum;
 import ca.uhn.fhir.parser.IParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.bson.Document;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
@@ -14,6 +15,8 @@ import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -25,6 +28,14 @@ import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 
 public class UtilityFunction {
 
+    public CSVPrinter setupSheetHeaders() throws IOException {
+        String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
+        String[] header = { "MemId", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
+        FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
+        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
+        return csvPrinter;
+    }
+
     public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries) {
         DBConnection db = new DBConnection();
         PatientData patientData ;
@@ -35,7 +46,7 @@ public class UtilityFunction {
         FhirContext fhirContext = fhirVersionEnum.newContext();
         IParser selectedParser = fhirContext.newJsonParser();
 
-        List<Document> documents = db.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir", skip, limit);
+        List<Document> documents = db.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir_AllData", skip, limit);
         for(Document document : documents) {
             patientData = new PatientData();
             patientData.setId(document.get("id").toString());
@@ -174,33 +185,32 @@ public class UtilityFunction {
 
                 this.updatePayerCodes(payerCodes);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
 
-                for(int i=0; i< payerCodes.size(); i++) {
-                    data = new ArrayList<>();
-                    data.add(map.getKey());
-                    data.add("CCS");
-                    String payerCode = payerCodes.get(i);
-                    data.add(String.valueOf(payerCode));
-                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period For CE").toString())));
-                    data.add("0"); //event
-                    Boolean bol = Boolean.parseBoolean(exp.get("Exclusions").toString());
-                    if(Boolean.parseBoolean(exp.get("Exclusions").toString()) || codeCheckList.stream().anyMatch(str -> str.trim().equals(payerCode))) {
-                        data.add("0"); //Epop
+                    for(int i=0; i< payerCodes.size(); i++) {
+                        data = new ArrayList<>();
+                        data.add(map.getKey());
+                        data.add("CCS");
+                        String payerCode = payerCodes.get(i);
+                        data.add(String.valueOf(payerCode));
+                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period For CE").toString())));
+                        data.add("0"); //event
+                        Boolean bol = Boolean.parseBoolean(exp.get("Exclusions").toString());
+                        if(Boolean.parseBoolean(exp.get("Exclusions").toString()) || codeCheckList.stream().anyMatch(str -> str.trim().equals(payerCode))) {
+                            data.add("0"); //Epop
+                        }
+                        else {
+                            data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //Epop
+                        }
+                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator Exceptions").toString()))); //exc
+                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Numerator").toString())));
+                        data.add("0"); //Rexl
+                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Exclusions").toString()))); //RexclId
+                        data.add(getAge(patientData.getBirthDate(), measureDate));
+                        data.add(getGenderSymbol(patientData.getGender()));
+                        csvPrinter.printRecord(data);
                     }
-                    else {
-                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //Epop
-                    }
-                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator Exceptions").toString()))); //exc
-                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Numerator").toString())));
-                    data.add("0"); //Rexl
-                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Exclusions").toString()))); //RexclId
-                    data.add(getAge(patientData.getBirthDate(), measureDate));
-                    data.add(getGenderSymbol(patientData.getGender()));
-                    csvPrinter.printRecord(data);
                 }
-            }
-
             csvPrinter.flush();
-            System.out.println("Data has written to score file");
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -233,11 +243,9 @@ public class UtilityFunction {
     }
 
     public String getAge(Date birthday, Date date) {
-
         LocalDate dob = convertToLocalDateViaInstant(birthday);
         LocalDate curDate = convertToLocalDateViaInstant(date);
         Period period = Period.between(dob, curDate);
-        System.out.println("Age: "+period.getYears());
         return String.valueOf(period.getYears());
     }
 }
