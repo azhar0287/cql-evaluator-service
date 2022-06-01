@@ -65,10 +65,10 @@ public class ProcessPatientService {
     public List<SheetInputMapper> dataBatchingAndProcessing() throws Exception {
         long startTime = System.currentTimeMillis();
         List<SheetInputMapper> sheetInputMapper = new ArrayList<>();
-        List<Document> documents = new ArrayList<>();
+        List<Document> documents;
         DBConnection db = new DBConnection();
-        //int totalCount = db.getDataCount("ep_encounter_fhir_AllData");
-        int totalCount = 500;
+        int totalCount = db.getDataCount("ep_encounter_fhir_AllData");
+//        int totalCount = 500;
         LOGGER.info("totalCount: "+totalCount);
 
         int skip = 0;
@@ -100,7 +100,7 @@ public class ProcessPatientService {
                 entriesProcessed+=entriesLeft;
             }
             LOGGER.info("Final Sheet Input List SIze: "+sheetInputMapper.size());
-            LOGGER.info("Iteration "+i+" has completed: Skip"+skip+" Limit"+batchSize);
+            LOGGER.info("Iteration: "+i+" has completed: Skip"+skip+" Limit"+batchSize);
         }
         long stopTime = System.currentTimeMillis();
         long milliseconds = stopTime - startTime;
@@ -269,21 +269,20 @@ public class ProcessPatientService {
 
     public Document createDocumentForResult(Map<String, Object> expressionResults, PatientData patientData) {
         Document document = new Document();
-
         document.put("id", patientData.getId());
         document.put("birthDate", patientData.getBirthDate());
         document.put("gender", patientData.getGender());
         document.put("payerCodes", patientData.getPayerCodes());
 
+        /* Removing extra fields also giving codex error*/
         expressionResults.remove("Patient");
         expressionResults.remove("Product Line as of December 31 of Measurement Period");
         expressionResults.remove("Member Coverage");
         expressionResults.remove("Cervical Cytology Within 3 Years");
         expressionResults.remove("hrHPV Testing Within 5 Years");
         expressionResults.remove("Absence of Cervix");
-        for(Map.Entry<String, Object> map : expressionResults.entrySet()) {
-            document.putAll(expressionResults);
-        }
+
+        document.putAll(expressionResults); /* Mapping into Document*/
         return document;
     }
 
