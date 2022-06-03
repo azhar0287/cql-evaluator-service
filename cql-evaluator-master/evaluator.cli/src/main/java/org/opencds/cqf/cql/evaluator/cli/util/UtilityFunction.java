@@ -30,11 +30,19 @@ public class UtilityFunction {
 
     public CSVPrinter setupSheetHeaders() throws IOException {
         String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
-        String[] header = { "MemId", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
+        String[] header = { "MemID", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
         FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
         CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
         return csvPrinter;
     }
+
+    public CSVPrinter setupSheetHeadersAppend() throws IOException {
+        String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
+        FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
+        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT);
+        return csvPrinter;
+    }
+
 
     public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries) {
         DBConnection db = new DBConnection();
@@ -76,24 +84,30 @@ public class UtilityFunction {
         return date;
     }
 
-    public Map<String,String> assignCodeToType(List<String> payerCodes) {
-        DBConnection db = new DBConnection();
+    public Map<String,String> assignCodeToType(List<String> payerCodes, DBConnection db) {
+        //DBConnection db = new DBConnection();
         Map<String,String> codeTypes = new HashMap<>();
         String oid;
         for (String pCode : payerCodes) {
-            Document document = db.getOidInfo(pCode, "dictionary_ep_2022_code");
-            if(document != null) {
-                oid = (String) document.get("oid");
-                if(oid.equalsIgnoreCase(CODE_TYPE_COMMERCIAL)) {
-                    codeTypes.put(pCode, CODE_TYPE_COMMERCIAL);
-                }
-                if(oid.equalsIgnoreCase(CODE_TYPE_MEDICAID)) {
-                    codeTypes.put(pCode, CODE_TYPE_MEDICAID);
-                }
-                if(oid.equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
-                    codeTypes.put(pCode, CODE_TYPE_MEDICARE);
+            //Document document = db.getOidInfo(pCode, "dictionary_ep_2022_code");
+            List<Document> documents = db.getOidInfo(pCode, "dictionary_ep_2022_code");
+            Document document;
+            if(documents.size() > 0) {
+                document = documents.get(0);
+                if(document != null) {
+                    oid = (String) document.get("oid");
+                    if(oid.equalsIgnoreCase(CODE_TYPE_COMMERCIAL)) {
+                        codeTypes.put(pCode, CODE_TYPE_COMMERCIAL);
+                    }
+                    if(oid.equalsIgnoreCase(CODE_TYPE_MEDICAID)) {
+                        codeTypes.put(pCode, CODE_TYPE_MEDICAID);
+                    }
+                    if(oid.equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
+                        codeTypes.put(pCode, CODE_TYPE_MEDICARE);
+                    }
                 }
             }
+
             if(pCode.equalsIgnoreCase("MCD")) {
                 codeTypes.put(pCode, CODE_TYPE_MEDICAID);
             }
@@ -101,13 +115,13 @@ public class UtilityFunction {
         return codeTypes;
     }
 
-    public void updatePayerCodes(List<String> payerCodes) {
+    public void updatePayerCodes(List<String> payerCodes, DBConnection db) {
         int flag1 = 0;
         int flag2 = 0;
         int flag3  = 0;
         Map<String,String> codeTypes;
         if(payerCodes.size() == 2) {
-            codeTypes = assignCodeToType(payerCodes);
+            codeTypes = assignCodeToType(payerCodes, db);
             for (String code : payerCodes) {
                 String codeType;
                 if(codeTypes != null) {
@@ -131,7 +145,6 @@ public class UtilityFunction {
                     if (codeType.equalsIgnoreCase(CODE_TYPE_MEDICAID)) {
                         flag3 += 1;
                     }
-
                 }
             }
 
@@ -142,7 +155,6 @@ public class UtilityFunction {
                         payerCodes.add(entry.getKey());
                     }
                 }
-
             }
 
             if(flag2 == 2) {
@@ -165,6 +177,16 @@ public class UtilityFunction {
         }
     }
 
+    public List<String> checkCodeForCCS() {
+
+        List<String> codeCheckList = new ArrayList<>();
+        codeCheckList.add("MCS");
+        codeCheckList.add("MCR");
+        codeCheckList.add("MP");
+        codeCheckList.add("MC");
+        return codeCheckList;
+    }
+
     public void saveScoreFile(HashMap<String, Map<String, Object>> finalResult, HashMap<String, PatientData> infoMap, Date measureDate, CSVPrinter csvPrinter) {
         try {
             List<String> data;
@@ -183,7 +205,7 @@ public class UtilityFunction {
                 exp = map.getValue();
                 payerCodes = patientData.getPayerCodes();
 
-                this.updatePayerCodes(payerCodes);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
+                //this.updatePayerCodes(payerCodes);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
 
                     for(int i=0; i< payerCodes.size(); i++) {
                         data = new ArrayList<>();
@@ -216,7 +238,7 @@ public class UtilityFunction {
         }
     }
 
-    String getIntegerString(boolean value) {
+    public String getIntegerString(boolean value) {
         if(value) {
             return "1";
         } else {
@@ -224,7 +246,7 @@ public class UtilityFunction {
         }
     }
 
-    String getGenderSymbol(String gender) {
+    public String getGenderSymbol(String gender) {
         if(!gender.isEmpty()) {
             if(gender.equalsIgnoreCase("Female")) {
                 return "F";

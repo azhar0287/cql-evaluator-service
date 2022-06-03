@@ -17,6 +17,7 @@ import org.opencds.cqf.cql.evaluator.cli.command.CliCommand;
 
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.cli.mappers.SheetInputMapper;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.SheetGenerationService;
 import org.opencds.cqf.cql.evaluator.cli.service.ProcessPatientService;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import picocli.CommandLine;
@@ -62,25 +63,35 @@ public class Main {
         LOGGER.info("Processing start");
        // Main.CSS_HEDIS_MY2022();
 
-        int sheetEntryCount = 0;
         UtilityFunction utilityFunction = new UtilityFunction();
         ProcessPatientService processPatientService = new ProcessPatientService();
+        //Setting library
         LibraryOptions libraryOptions = processPatientService.setupLibrary();
         processPatientService.libraries.add(libraryOptions);
-        List<SheetInputMapper> sheetInput = processPatientService.dataBatchingAndProcessing();
 
+        processPatientService.dataBatchingAndProcessing();
+
+/*
         CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
+
         LOGGER.info("Sheet Generation has started: ");
-        /*for(SheetInputMapper sheetInputMapper: sheetInput) {
+
+        SheetGenerationService sheetGenerationService = new SheetGenerationService();
+        sheetGenerationService.generateSheetCCS();
+
+        LOGGER.info("Sheet generation has completed");
+*/
+        int exitCode = run(args);
+        System.exit(exitCode);
+
+
+          /*for(SheetInputMapper sheetInputMapper: sheetInput) {
             sheetEntryCount++;
             utilityFunction.saveScoreFile(sheetInputMapper.getFinalResult(), sheetInputMapper.getInfoMap(),
                     new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter);
             LOGGER.info("Sheet process count: "+sheetEntryCount);
-        }*/
-        LOGGER.info("Sheet generation has completed");
-
-        int exitCode = run(args);
-        System.exit(exitCode);
+        }
+        */
     }
 
     public static int run(String[] args) {

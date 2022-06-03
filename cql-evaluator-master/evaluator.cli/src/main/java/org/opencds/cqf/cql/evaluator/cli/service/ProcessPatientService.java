@@ -1,8 +1,7 @@
 package org.opencds.cqf.cql.evaluator.cli.service;
 
 import ca.uhn.fhir.context.FhirVersionEnum;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
@@ -43,11 +42,11 @@ public class ProcessPatientService {
     public static Logger LOGGER  = LogManager.getLogger(CqlCommand.class);
     public static int processCounter = 0;
     public String optionsPath;
-
     public List<LibraryOptions> libraries = new ArrayList<>();
 
     public Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     public Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
+
     UtilityFunction utilityFunction = new UtilityFunction();
 
     public LibraryOptions setupLibrary() {
@@ -62,9 +61,9 @@ public class ProcessPatientService {
         valueSetEntry = copySetBundle.getEntry();
     }
 
-    public List<SheetInputMapper> dataBatchingAndProcessing() throws Exception {
+    public void dataBatchingAndProcessing() throws Exception {
+
         long startTime = System.currentTimeMillis();
-        List<SheetInputMapper> sheetInputMapper = new ArrayList<>();
         List<Document> documents;
         DBConnection db = new DBConnection();
         int totalCount = db.getDataCount("ep_encounter_fhir_AllData");
@@ -79,6 +78,7 @@ public class ProcessPatientService {
 
         for(int i=0; i<totalCount; i++) {
             documents = new ArrayList<>();
+
             entriesLeft = totalCount - entriesProcessed;
             if(entriesLeft >= batchSize) {
                 retrieveProviders.clear();
@@ -88,7 +88,7 @@ public class ProcessPatientService {
                 i+=batchSize-1;
                 skip += batchSize;
                 entriesProcessed +=batchSize;
-
+                documents = null;
             }
             else {
                 LOGGER.info("In else condition less from batch size");
@@ -98,25 +98,20 @@ public class ProcessPatientService {
                 db.insertProcessedDataInDb("ep_cql_processed_data", documents);
                 i+=entriesLeft;
                 entriesProcessed+=entriesLeft;
+                documents = null;
             }
-            LOGGER.info("Final Sheet Input List SIze: "+sheetInputMapper.size());
+
             LOGGER.info("Iteration: "+i+" has completed: Skip"+skip+" Limit"+batchSize);
+            System.gc(); // calling garbage collector
         }
         long stopTime = System.currentTimeMillis();
         long milliseconds = stopTime - startTime;
         LOGGER.info("Time taken: "+((milliseconds)/1000/60)+" min");
-        return sheetInputMapper;
     }
 
-    List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders) throws InterruptedException, ParseException {
-        HashMap<String, PatientData> infoMap;
-        HashMap<String, Map<String, Object>> finalResult;
-        List<SheetInputMapper> finalList = new ArrayList<>();
-        Map<String, Object> documentMap;
+    List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders) {
         List<Document> documents = new ArrayList<>();
-
         try {
-
             int chaipi = 0;
             CqlEvaluator evaluator = null;
             TerminologyProvider backupTerminologyProvider = null;
@@ -188,9 +183,6 @@ public class ProcessPatientService {
                 //having Patient data entries
                 for(RetrieveProvider retrieveProvider : retrieveProviders) {
                     PatientData patientData;
-                    finalResult = new HashMap<>();
-                    infoMap = new HashMap<>();
-                    documentMap = new HashMap<>();
                     library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
                     String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
                     LOGGER.info("Patient Id in Loop "+patientId);
@@ -244,21 +236,9 @@ public class ProcessPatientService {
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
 
                             documents.add(this.createDocumentForResult(result.expressionResults, patientData));
-                            /*finalResult.put(patientId, result.expressionResults);
 
-
-                            documentMap.put("gender", patientData.getGender());
-                            documentMap.put("birthDate", patientData.getBirthDate());
-                            documentMap.put("payerCodes", patientData.getPayerCodes());
-
-                            //infoMap.put(patientId, patientData);
-
-                            finalList.add(new SheetInputMapper(documentMap));
-
-                             */
                         }
                     }
-
                 }
             }
         } catch (Exception e) {
@@ -285,5 +265,4 @@ public class ProcessPatientService {
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
     }
-
 }
