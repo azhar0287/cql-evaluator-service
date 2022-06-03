@@ -40,7 +40,7 @@ import org.opencds.cqf.cql.evaluator.builder.CqlEvaluatorBuilder;
 import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
-import org.opencds.cqf.cql.evaluator.cli.util.Util;
+import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import org.opencds.cqf.cql.evaluator.cql2elm.content.LibraryContentProvider;
 import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.dagger.DaggerCqlEvaluatorComponent;
@@ -119,7 +119,7 @@ public class CqlCommand implements Callable<Integer>  {
     private Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     private Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
 
-    List<RetrieveProvider> getPatientData(int skip, int limit) {
+    List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit) {
         DBConnection db = new DBConnection();
         PatientData patientData ;
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
@@ -169,8 +169,9 @@ public class CqlCommand implements Callable<Integer>  {
        long startTime = System.currentTimeMillis();
 
        DBConnection db = new DBConnection();
-       long count = db.getDataCount("ep_encounter_fhir");
-       LOGGER.info("total Data count: "+count);
+       //int totalCount = db.getDataCount("ep_encounter_fhir");
+        int totalCount = 75419;
+       LOGGER.info("total Data count: "+totalCount);
        int skip = 0;
        int limit = 200;
        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
@@ -179,13 +180,29 @@ public class CqlCommand implements Callable<Integer>  {
        FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
 
-       for(int i=0; i<5; i++) {
-           retrieveProviders.clear();
-           retrieveProviders = getPatientData(skip, limit);
-           processAndSavePatients(retrieveProviders, csvPrinter);
-           skip += limit;
+       int batchSize = 200;
+       int entriesLeft = 0;
+       int entriesProcessed = 0;
 
-           LOGGER.info("First Iteration has completed: Skip"+skip+" Limit"+limit);
+       for(int i=0; i<totalCount; i++) {
+           entriesLeft = totalCount - entriesProcessed;
+           if(entriesLeft >= batchSize) {
+               retrieveProviders.clear();
+               retrieveProviders = mapToRetrieveProvider(skip, batchSize);
+               processAndSavePatients(retrieveProviders, csvPrinter);
+               i+=batchSize-1;
+               skip += batchSize;
+               entriesProcessed +=batchSize;
+           }
+           else {
+               retrieveProviders.clear();
+               retrieveProviders = mapToRetrieveProvider(skip, batchSize);
+               processAndSavePatients(retrieveProviders, csvPrinter);
+               i+=entriesLeft;
+               entriesProcessed+=entriesLeft;
+           }
+
+           LOGGER.info("Iteration"+i+" has completed: Skip"+skip+" Limit"+limit);
        }
         long stopTime = System.currentTimeMillis();
         long milliseconds = stopTime - startTime;
@@ -267,7 +284,7 @@ public class CqlCommand implements Callable<Integer>  {
             }
 
             //having Patient data entries
-            for(RetrieveProvider retrieveProvider : retrieveProviders) {
+            for (RetrieveProvider retrieveProvider : retrieveProviders) {
                 PatientData patientData;
                 library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
                 String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
@@ -289,12 +306,10 @@ public class CqlCommand implements Callable<Integer>  {
                         for (Bundle.BundleEntryComponent bundle :valueSetEntryTemp) {
                             bundle1.addEntry(bundle);  //value set EntryTemp to new Bundle
                         }
-
                         finalPatientData = new BundleRetrieveProvider(fhirVersionEnum.newContext(), bundle1);
 
-                        //Processing
+                        //Processing Here
                         cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(), finalPatientData);
-
 
                         if(chaipi == 0) {
                             evaluator = cqlEvaluatorBuilder.build();
@@ -310,7 +325,6 @@ public class CqlCommand implements Callable<Integer>  {
                         chaipi++;
                         VersionedIdentifier identifier = new VersionedIdentifier().withId(library.libraryName);
                         Pair<String, Object> contextParameter = null;
-
 
                         library.context.contextValue = patientId;
                         if (library.context != null) {
@@ -332,7 +346,7 @@ public class CqlCommand implements Callable<Integer>  {
                 }
             }
         }
-        Util util = new Util();
+        UtilityFunction util = new UtilityFunction();
         util.saveScoreFile(finalResult, infoMap, new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter);
         LOGGER.info("Data batch has sent for score sheet generation");
         finalResult.clear();

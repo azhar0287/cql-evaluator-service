@@ -2,13 +2,24 @@ package org.opencds.cqf.cql.evaluator.cli;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.PrintStream;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opencds.cqf.cql.evaluator.cli.command.CliCommand;
 
+import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
+import org.opencds.cqf.cql.evaluator.cli.mappers.SheetInputMapper;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.SheetGenerationService;
+import org.opencds.cqf.cql.evaluator.cli.service.ProcessPatientService;
+import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import picocli.CommandLine;
 
 public class Main {
@@ -27,7 +38,6 @@ public class Main {
         testResourcePath = file.getAbsolutePath();
         System.out.println(String.format("Test resource directory: %s", testResourcePath));
     }
-
 
     public static void setUpStreams() {
         outContent = new ByteArrayOutputStream();
@@ -49,11 +59,39 @@ public class Main {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         LOGGER.info("Processing start");
-        Main.CSS_HEDIS_MY2022();
+       // Main.CSS_HEDIS_MY2022();
+
+        UtilityFunction utilityFunction = new UtilityFunction();
+        ProcessPatientService processPatientService = new ProcessPatientService();
+        //Setting library
+        LibraryOptions libraryOptions = processPatientService.setupLibrary();
+        processPatientService.libraries.add(libraryOptions);
+
+        processPatientService.dataBatchingAndProcessing();
+
+/*
+        CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
+
+        LOGGER.info("Sheet Generation has started: ");
+
+        SheetGenerationService sheetGenerationService = new SheetGenerationService();
+        sheetGenerationService.generateSheetCCS();
+
+        LOGGER.info("Sheet generation has completed");
+*/
         int exitCode = run(args);
         System.exit(exitCode);
+
+
+          /*for(SheetInputMapper sheetInputMapper: sheetInput) {
+            sheetEntryCount++;
+            utilityFunction.saveScoreFile(sheetInputMapper.getFinalResult(), sheetInputMapper.getInfoMap(),
+                    new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter);
+            LOGGER.info("Sheet process count: "+sheetEntryCount);
+        }
+        */
     }
 
     public static int run(String[] args) {
@@ -61,30 +99,6 @@ public class Main {
         CommandLine cli = new CommandLine(new CliCommand());
         return cli.execute(args);
     }
-
-    public static void testingAISE_Hedis_My2022(){
-        setUpStreams();
-        String folderName="/AISE_HEDIS_MY2022";
-        String mainLibrary="AISE_HEDIS_MY2022";
-        String[] args = new String[]{
-                "cql",
-                "-fv=R4",
-                "-lu="+ testResourcePath + folderName,
-                "-ln="+mainLibrary,
-                "-m=FHIR",
-                "-mu=" + testResourcePath + folderName,
-                "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
-                "-c=Patient",
-                "-cv=185233"
-        };
-
-        Main.run(args);
-
-        String output = outContent.toString();
-        System.out.println("Test here");
-        restoreStreams();
-    }
-
 
     public static void CSS_HEDIS_MY2022(){
         setUpStreams();
@@ -99,7 +113,29 @@ public class Main {
                 "-mu=" + testResourcePath + folderName,
                 "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
                 "-c=Patient",
-                "-cv=183718"
+                "-cv=182669"
+        };
+
+        Main.run(args);
+
+        String output = outContent.toString();
+        System.out.println("Test here");
+        restoreStreams();
+    }
+    public static void testingAISE_Hedis_My2022(){
+        setUpStreams();
+        String folderName="/AISE_HEDIS_MY2022";
+        String mainLibrary="AISE_HEDIS_MY2022";
+        String[] args = new String[]{
+                "cql",
+                "-fv=R4",
+                "-lu="+ testResourcePath + folderName,
+                "-ln="+mainLibrary,
+                "-m=FHIR",
+                "-mu=" + testResourcePath + folderName,
+                "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
+                "-c=Patient",
+                "-cv=185233"
         };
 
         Main.run(args);
