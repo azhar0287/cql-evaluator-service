@@ -5,7 +5,7 @@ public class Constant {
    public static final  String CODE_TYPE_MEDICAID = "HEDIS.Medicaid.Custom.Codes.22";
    public static final String CODE_TYPE_MEDICARE = "HEDIS.Medicare.Custom.Codes.22";
    public static final String FOLDER_NAME="/CCS_HEDIS_MY2022";
-   private static final String testResourceRelativePath = "evaluator.cli/src/main/resources";
+   private static final String testResourceRelativePath = "resources";
 
 
 

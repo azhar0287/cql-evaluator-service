@@ -31,10 +31,10 @@ public class BundleRetrieveProvider extends TerminologyAwareRetrieveProvider {
 	private static final Logger logger = LoggerFactory.getLogger(BundleRetrieveProvider.class);
 
 	public final IBaseBundle bundle;
-	private final FhirContext fhirContext;
-	private final CodeUtil codeUtil;
-	private final IFhirPath fhirPath;
-	private PatientData patientData;
+	public final FhirContext fhirContext;
+	public final CodeUtil codeUtil;
+	public final IFhirPath fhirPath;
+	public PatientData patientData;
 
 
 	public BundleRetrieveProvider(final FhirContext fhirContext, final IBaseBundle iBaseBundle) {

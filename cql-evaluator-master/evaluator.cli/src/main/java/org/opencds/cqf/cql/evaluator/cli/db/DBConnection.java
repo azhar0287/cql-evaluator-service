@@ -1,5 +1,6 @@
 package org.opencds.cqf.cql.evaluator.cli.db;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -68,9 +69,17 @@ public class DBConnection {
 
 	public void insertProcessedDataInDb(String collectionName, List<Document> documents) {
 		this.collection = DB.getCollection(collectionName);
-		this.collection.createIndex(Indexes.ascending("id"));
+		//this.collection.createIndex(Indexes.ascending("id"));
 		this.collection.insertMany(documents);
+//		this.collection.bulkWrite(documents);
 		LOGGER.info("Data batch has pushed: "+documents.size());
+		documents.clear();
+		documents = null;
+		documents = new ArrayList<>();
+	}
+
+	public void createIndexes(){
+		this.collection.createIndex(Indexes.ascending("id"));
 	}
 
 }

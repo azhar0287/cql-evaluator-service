@@ -38,78 +38,62 @@ import java.util.*;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 
-public class ProcessPatientService {
+public class ProcessPatientService implements Runnable{
     public static Logger LOGGER  = LogManager.getLogger(CqlCommand.class);
     public static int processCounter = 0;
     public String optionsPath;
-    public List<LibraryOptions> libraries = new ArrayList<>();
+    public List<LibraryOptions> libraries;
 
     public Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     public Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
 
     UtilityFunction utilityFunction = new UtilityFunction();
 
-    public LibraryOptions setupLibrary() {
-        ContextParameter context = new ContextParameter(CONTEXT, "TEST");
-        ModelParameter modelParameter = new ModelParameter(MODEL, MODEL_URL);
-        LibraryOptions libraryOptions = new LibraryOptions (FHIR_VERSION, LIBRARY_URL, LIBRARY_NAME, FHIR_VERSION, TERMINOLOGY, context, modelParameter);
-        return libraryOptions;
+    ////////
+    int skip;
+    int batchSize = 10;
+
+    public ProcessPatientService(int skip, List<LibraryOptions> libraries) {
+        this.libraries = libraries;
+        this.skip = skip;
     }
+
 
     public void refreshValueSetBundles(Bundle valueSetBundle , Bundle copySetBundle, List<Bundle.BundleEntryComponent> valueSetEntry ) {
         copySetBundle = valueSetBundle.copy();
         valueSetEntry = copySetBundle.getEntry();
     }
 
-    public void dataBatchingAndProcessing() throws Exception {
-
-        long startTime = System.currentTimeMillis();
-        List<Document> documents;
+    public void dataBatchingAndProcessing() {
+        List<Document> documents = new ArrayList<>();
         DBConnection db = new DBConnection();
         int totalCount = db.getDataCount("ep_encounter_fhir_AllData");
-//        int totalCount = 500;
         LOGGER.info("totalCount: "+totalCount);
+        List<RetrieveProvider> retrieveProviders;
 
-        int skip = 0;
-        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
-        int batchSize = 200;
-        int entriesLeft = 0;
-        int entriesProcessed = 0;
+        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries);
 
-        for(int i=0; i<totalCount; i++) {
-            documents = new ArrayList<>();
+        documents =  processAndSavePatients(retrieveProviders, db);
+        documents.clear();
+        //documents.addAll(processAndSavePatients(retrieveProviders, db));
 
-            entriesLeft = totalCount - entriesProcessed;
-            if(entriesLeft >= batchSize) {
-                retrieveProviders.clear();
-                retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries);
-                documents.addAll(processAndSavePatients(retrieveProviders));
-                db.insertProcessedDataInDb("ep_cql_processed_data", documents);
-                i+=batchSize-1;
-                skip += batchSize;
-                entriesProcessed +=batchSize;
+        /*if(documents.size()>=10000) {
+
+                db.insertProcessedDataInDb("ep_cql_processed_data",documents);
+                documents.clear();
                 documents = null;
             }
             else {
                 LOGGER.info("In else condition less from batch size");
                 retrieveProviders.clear();
                 retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, entriesLeft, libraries.get(0).fhirVersion, libraries);
-                documents.addAll(processAndSavePatients(retrieveProviders));
-                db.insertProcessedDataInDb("ep_cql_processed_data", documents);
-                i+=entriesLeft;
-                entriesProcessed+=entriesLeft;
-                documents = null;
-            }
-
-            LOGGER.info("Iteration: "+i+" has completed: Skip"+skip+" Limit"+batchSize);
-            System.gc(); // calling garbage collector
-        }
-        long stopTime = System.currentTimeMillis();
-        long milliseconds = stopTime - startTime;
-        LOGGER.info("Time taken: "+((milliseconds)/1000/60)+" min");
+                //documents.addAll(processAndSavePatients(retrieveProviders));
+                db.insertProcessedDataInDb("ep_cql_processed_data", processAndSavePatients(retrieveProviders));
+                documents.clear();
+            }*/
     }
 
-    List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders) {
+    List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders, DBConnection dbConnection) {
         List<Document> documents = new ArrayList<>();
         try {
             int chaipi = 0;
@@ -230,16 +214,28 @@ public class ProcessPatientService {
                             if (library.context != null) {
                                 contextParameter = Pair.of(library.context.contextName, library.context.contextValue);
                             }
-                            LOGGER.info("Patient being processed in engine: "+patientId);
+          //                  LOGGER.info("Patient being processed in engine: "+patientId);
+                            System.out.println("Patient being processed in engine: "+patientId);
                             EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
-                            System.out.println("Evaluation Counter: "+processCounter);
+
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-
                             documents.add(this.createDocumentForResult(result.expressionResults, patientData));
-
+                            if(documents.size() >= 15) {
+                                dbConnection.insertProcessedDataInDb("ep_cql_processed_data", documents);
+                                System.out.println("Going to add 10 patients in db");
+                                documents.clear();
+                            }
+                            retrieveProvider = null;
                         }
                     }
                 }
+                retrieveProviders.clear();
+                retrieveProviders = null;
+                if(documents.size() >0 ) {
+                    dbConnection.insertProcessedDataInDb("ep_cql_processed_data", documents);
+                    documents.clear();
+                }
+                documents = null;
             }
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
@@ -264,5 +260,15 @@ public class ProcessPatientService {
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
+    }
+
+    @Override
+    public void run() {
+        try {
+            LOGGER.info("Thread is processing "+skip);
+            this.dataBatchingAndProcessing();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

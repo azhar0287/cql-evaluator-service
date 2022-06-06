@@ -5,9 +5,13 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -15,12 +19,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opencds.cqf.cql.evaluator.cli.command.CliCommand;
 
+import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
+import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ContextParameter;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
-import org.opencds.cqf.cql.evaluator.cli.mappers.SheetInputMapper;
-import org.opencds.cqf.cql.evaluator.cli.scoresheets.SheetGenerationService;
+import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ModelParameter;
 import org.opencds.cqf.cql.evaluator.cli.service.ProcessPatientService;
-import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import picocli.CommandLine;
+
+import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
+import static org.opencds.cqf.cql.evaluator.cli.util.Constant.TERMINOLOGY;
 
 public class Main {
 
@@ -30,7 +37,9 @@ public class Main {
     private static ByteArrayOutputStream errContent;
     private static final PrintStream originalOut = System.out;
     private static final PrintStream originalErr = System.err;
-    private static final String testResourceRelativePath = "evaluator.cli/src/main/resources";
+
+    private static final String testResourceRelativePath = "evaluator.cli/src/main/resources"; //for Jar
+    //private static final String testResourceRelativePath = "evaluator.cli/src/main/resources";
     private static String testResourcePath = null;
 
     static {
@@ -59,17 +68,45 @@ public class Main {
     }
 
 
+    public static LibraryOptions setupLibrary() {
+        ContextParameter context = new ContextParameter(CONTEXT, "TEST");
+        ModelParameter modelParameter = new ModelParameter(MODEL, MODEL_URL);
+        LibraryOptions libraryOptions = new LibraryOptions (FHIR_VERSION, LIBRARY_URL, LIBRARY_NAME, FHIR_VERSION, TERMINOLOGY, context, modelParameter);
+        return libraryOptions;
+    }
+
     public static void main(String[] args) throws Exception {
         LOGGER.info("Processing start");
+        DBConnection dbConnection = new DBConnection();
+        int totalCount = dbConnection.getDataCount("ep_encounter_fhir_AllData");
+
+        List<LibraryOptions> libraryOptions = new ArrayList<>();
+        libraryOptions.add(setupLibrary());
+
+        int totalSkips = (int) Math.ceil(totalCount/10);
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        for(int i=0; i<totalSkips; i++) {
+            executorService.execute(new ProcessPatientService(i, libraryOptions));
+        }
+
+
+
        // Main.CSS_HEDIS_MY2022();
 
-        UtilityFunction utilityFunction = new UtilityFunction();
-        ProcessPatientService processPatientService = new ProcessPatientService();
+        //UtilityFunction utilityFunction = new UtilityFunction();
+        //ProcessPatientService processPatientService = new ProcessPatientService();
         //Setting library
-        LibraryOptions libraryOptions = processPatientService.setupLibrary();
-        processPatientService.libraries.add(libraryOptions);
+//        LibraryOptions libraryOptions = processPatientService.setupLibrary();
+        //processPatientService.libraries.add(libraryOptions);
 
-        processPatientService.dataBatchingAndProcessing();
+
+        //processPatientService.dataBatchingAndProcessing();
+
+
+
+//        Thread thread = new Thread(processPatientService);
+//        thread.start();
+
 
 /*
         CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
@@ -81,8 +118,8 @@ public class Main {
 
         LOGGER.info("Sheet generation has completed");
 */
-        int exitCode = run(args);
-        System.exit(exitCode);
+//        int exitCode = run(args);
+//        System.exit(exitCode);
 
 
           /*for(SheetInputMapper sheetInputMapper: sheetInput) {
