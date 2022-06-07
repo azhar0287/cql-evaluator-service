@@ -56,18 +56,18 @@ public class UtilityFunction {
         IParser selectedParser = fhirContext.newJsonParser();
 
         List<Document> documents = dbFunctions.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir_AllData", skip, limit, connection);
-        for(Document document : documents) {
+        for(int i=0; i<documents.size(); i++) {
             patientData = new PatientData();
-            patientData.setId(document.get("id").toString());
-            patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
-            patientData.setGender(document.get("gender").toString());
-            Object o = document.get("payerCodes");
+            patientData.setId(documents.get(i).get("id").toString());
+            patientData.setBirthDate(getConvertedDate(documents.get(i).get("birthDate").toString()));
+            patientData.setGender(documents.get(i).get("gender").toString());
+            Object o = documents.get(i).get("payerCodes");
 
             List<String> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<String>>() {});
 
             patientData.setPayerCodes(payerCodes);
 
-            bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
+            bundle = (IBaseBundle) selectedParser.parseResource(documents.get(i).toJson());
             RetrieveProvider retrieveProvider;
             retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData);
             retrieveProviders.add(retrieveProvider);

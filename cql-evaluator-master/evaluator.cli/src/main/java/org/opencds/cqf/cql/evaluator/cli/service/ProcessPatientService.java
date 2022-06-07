@@ -52,11 +52,12 @@ public class ProcessPatientService implements Runnable {
     DbFunctions dbFunctions = new DbFunctions();
     int skip;
     int batchSize = 10;
-
-    public ProcessPatientService(int skip, List<LibraryOptions> libraries, DBConnection connection) {
+    int totalCount;
+    public ProcessPatientService(int skip, List<LibraryOptions> libraries, DBConnection connection, int totalCount) {
         this.libraries = libraries;
         this.skip = skip;
         this.dbConnection = connection;
+        this.totalCount = totalCount;
     }
 
     public void refreshValueSetBundles(Bundle valueSetBundle , Bundle copySetBundle, List<Bundle.BundleEntryComponent> valueSetEntry ) {
@@ -66,7 +67,7 @@ public class ProcessPatientService implements Runnable {
 
     public void dataBatchingAndProcessing() {
         List<Document> documents = new ArrayList<>();
-        int totalCount = dbFunctions.getDataCount("ep_encounter_fhir_AllData", dbConnection);
+//        int totalCount = dbFunctions.getDataCount("ep_encounter_fhir_AllData", dbConnection);
         LOGGER.info("totalCount: "+totalCount);
         List<RetrieveProvider> retrieveProviders;
         retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection);
@@ -161,18 +162,20 @@ public class ProcessPatientService implements Runnable {
                 }
 
                 //having Patient data entries
-                for(RetrieveProvider retrieveProvider : retrieveProviders) {
-                    PatientData patientData;
-                    library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
-                    String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
+                //for(RetrieveProvider retrieveProvider : retrieveProviders) {
+                    for(int i=0; i<retrieveProviders.size(); i++) {
+
+                        PatientData patientData;
+                    library.context.contextValue = ((BundleRetrieveProvider) retrieveProviders.get(i)).getPatientData().getId();
+                    String patientId = ((BundleRetrieveProvider) retrieveProviders.get(i)).bundle.getIdElement().toString();
                     LOGGER.info("Patient Id in Loop "+patientId);
                     refreshValueSetBundles(valueSetBundle, copySetBundle, valueSetEntry);
                     valueSetEntry = valueSetBundle.copy().getEntry();
                     valueSetEntryTemp = valueSetEntry; //tem having value set entries
 
-                    if(retrieveProvider instanceof BundleRetrieveProvider) {
+                    if(retrieveProviders.get(i) instanceof BundleRetrieveProvider) {
 
-                        BundleRetrieveProvider retrieveProvider1 = (BundleRetrieveProvider) retrieveProvider;
+                        BundleRetrieveProvider retrieveProvider1 = (BundleRetrieveProvider) retrieveProviders.get(i);
                         if(retrieveProvider1.bundle instanceof Bundle) {
                             Bundle patientDataBundle = (Bundle)retrieveProvider1.bundle;
                             valueSetEntryTemp.addAll(patientDataBundle.getEntry()); //adding value sets + patient entries
@@ -214,14 +217,13 @@ public class ProcessPatientService implements Runnable {
                             System.out.println("Patient being processed in engine: "+patientId);
                             EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
-                            patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
+                            patientData = ((BundleRetrieveProvider) retrieveProviders.get(i)).getPatientData();
                             documents.add(this.createDocumentForResult(result.expressionResults, patientData));
                             if(documents.size() >= 15) {
                                 dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
                                 System.out.println("Going to add 10 patients in db");
                                 documents.clear();
                             }
-                            retrieveProvider = null;
                         }
                     }
                 }

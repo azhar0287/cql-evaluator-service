@@ -1,9 +1,7 @@
 package org.opencds.cqf.cql.evaluator.cli;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.PrintStream;
+import java.io.*;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +22,9 @@ import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ContextParameter;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ModelParameter;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.SheetGenerationService;
 import org.opencds.cqf.cql.evaluator.cli.service.ProcessPatientService;
+import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import picocli.CommandLine;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
@@ -68,7 +68,6 @@ public class Main {
         System.err.println(sysError);
     }
 
-
     public static LibraryOptions setupLibrary() {
         ContextParameter context = new ContextParameter(CONTEXT, "TEST");
         ModelParameter modelParameter = new ModelParameter(MODEL, MODEL_URL);
@@ -78,7 +77,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         LOGGER.info("Processing start");
-        DBConnection connection = new DBConnection();
+        DBConnection connection = new DBConnection(); //setting up connection
         DbFunctions dbFunctions = new DbFunctions();
 
         int totalCount = dbFunctions.getDataCount("ep_encounter_fhir_AllData", connection);
@@ -88,10 +87,22 @@ public class Main {
         List<LibraryOptions> libraryOptions = new ArrayList<>();
         libraryOptions.add(setupLibrary());
 
-        ExecutorService executorService = Executors.newFixedThreadPool(5);
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
         for(int i=0; i<totalSkips; i++) {
-            executorService.execute(new ProcessPatientService(i, libraryOptions, connection));
+            executorService.execute(new ProcessPatientService(i, libraryOptions, connection, totalCount));
         }
+    }
+
+    public static void sheetGeneration() throws IOException, ParseException {
+        UtilityFunction utilityFunction = new UtilityFunction();
+        CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
+
+        LOGGER.info("Sheet Generation has started: ");
+
+        SheetGenerationService sheetGenerationService = new SheetGenerationService();
+        sheetGenerationService.generateSheetCCS();
+
+        LOGGER.info("Sheet generation has completed");
     }
 
     public static int run(String[] args) {

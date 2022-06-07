@@ -30,7 +30,7 @@ public class SheetGenerationService {
         CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
         Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
         List<Document> documents;
-        int skip = 75360;
+        int skip = 0;
         int batchSize = 500;
         int entriesLeft = 0;
         int entriesProcessed = 0;
