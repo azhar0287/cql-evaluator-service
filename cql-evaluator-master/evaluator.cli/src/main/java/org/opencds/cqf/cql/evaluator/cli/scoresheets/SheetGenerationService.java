@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
+import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import java.io.IOException;
 import java.text.ParseException;
@@ -19,12 +20,12 @@ public class SheetGenerationService {
 
     UtilityFunction utilityFunction = new UtilityFunction();
     DBConnection db = new DBConnection();
-
+    DbFunctions dbFunctions = new DbFunctions();
     static int processCount = 75360;
     static int sheetEntryCount = 0;
 
     public void generateSheetCCS() throws IOException, ParseException {
-        int totalCount = db.getDataCount("ep_cql_processed_data");
+        int totalCount = dbFunctions.getDataCount("ep_cql_processed_data", db);
         //int totalCount = 5000;
         CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
         Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
@@ -38,7 +39,7 @@ public class SheetGenerationService {
             documents = new ArrayList<>();
             entriesLeft = totalCount - entriesProcessed;
             if(entriesLeft >= batchSize) {
-                documents = db.getConditionalData("NoId", "ep_cql_processed_data", skip, batchSize);
+                documents = dbFunctions.getConditionalData("NoId", "ep_cql_processed_data", skip, batchSize, db);
                 generateSheet(documents, measureDate, csvPrinter, db);
                 documents = null;
                 i+=batchSize-1;
@@ -47,7 +48,7 @@ public class SheetGenerationService {
             }
             else {
                 batchSize = totalCount - entriesProcessed; //remaining
-                documents = db.getConditionalData("NoId", "ep_cql_processed_data", skip, batchSize);
+                documents = dbFunctions.getConditionalData("NoId", "ep_cql_processed_data", skip, batchSize, db);
                 generateSheet(documents, measureDate, csvPrinter, db);
                 i+=batchSize-1;
                 skip+=batchSize;
@@ -65,7 +66,7 @@ public class SheetGenerationService {
                 if(document.getBoolean("Age and Gender")) {
                     Object object = document.get("payerCodes");
                     payerCodes = new ObjectMapper().convertValue(object, new TypeReference<List<String>>() {});
-                    utilityFunction.updatePayerCodes(payerCodes, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
+                    utilityFunction.updatePayerCodes(payerCodes, dbFunctions, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
 
                     for(int i=0; i< payerCodes.size(); i++) {
                         sheetObj = new ArrayList<>();

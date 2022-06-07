@@ -22,6 +22,7 @@ import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
 import org.opencds.cqf.cql.evaluator.cli.command.CqlCommand;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
+import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ContextParameter;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ModelParameter;
@@ -38,26 +39,25 @@ import java.util.*;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 
-public class ProcessPatientService implements Runnable{
+public class ProcessPatientService implements Runnable {
+
     public static Logger LOGGER  = LogManager.getLogger(CqlCommand.class);
     public static int processCounter = 0;
     public String optionsPath;
     public List<LibraryOptions> libraries;
-
     public Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     public Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
-
     UtilityFunction utilityFunction = new UtilityFunction();
-
-    ////////
+    DBConnection dbConnection;
+    DbFunctions dbFunctions = new DbFunctions();
     int skip;
     int batchSize = 10;
 
-    public ProcessPatientService(int skip, List<LibraryOptions> libraries) {
+    public ProcessPatientService(int skip, List<LibraryOptions> libraries, DBConnection connection) {
         this.libraries = libraries;
         this.skip = skip;
+        this.dbConnection = connection;
     }
-
 
     public void refreshValueSetBundles(Bundle valueSetBundle , Bundle copySetBundle, List<Bundle.BundleEntryComponent> valueSetEntry ) {
         copySetBundle = valueSetBundle.copy();
@@ -66,14 +66,11 @@ public class ProcessPatientService implements Runnable{
 
     public void dataBatchingAndProcessing() {
         List<Document> documents = new ArrayList<>();
-        DBConnection db = new DBConnection();
-        int totalCount = db.getDataCount("ep_encounter_fhir_AllData");
+        int totalCount = dbFunctions.getDataCount("ep_encounter_fhir_AllData", dbConnection);
         LOGGER.info("totalCount: "+totalCount);
         List<RetrieveProvider> retrieveProviders;
-
-        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries);
-
-        documents =  processAndSavePatients(retrieveProviders, db);
+        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection);
+        documents =  processAndSavePatients(retrieveProviders, dbFunctions);
         documents.clear();
         //documents.addAll(processAndSavePatients(retrieveProviders, db));
 
@@ -93,7 +90,7 @@ public class ProcessPatientService implements Runnable{
             }*/
     }
 
-    List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders, DBConnection dbConnection) {
+    List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders, DbFunctions dbFunctions) {
         List<Document> documents = new ArrayList<>();
         try {
             int chaipi = 0;
@@ -101,8 +98,7 @@ public class ProcessPatientService implements Runnable{
             TerminologyProvider backupTerminologyProvider = null;
             LOGGER.info("Patient List Size: "+retrieveProviders.size());
             FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(libraries.get(0).fhirVersion);
-            CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder()
-                    .fhirContext(fhirVersionEnum.newContext()).build();
+            CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder().fhirContext(fhirVersionEnum.newContext()).build();
 
             CqlTranslatorOptions options = null;
             if (optionsPath != null) {
@@ -221,7 +217,7 @@ public class ProcessPatientService implements Runnable{
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
                             documents.add(this.createDocumentForResult(result.expressionResults, patientData));
                             if(documents.size() >= 15) {
-                                dbConnection.insertProcessedDataInDb("ep_cql_processed_data", documents);
+                                dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
                                 System.out.println("Going to add 10 patients in db");
                                 documents.clear();
                             }
@@ -232,7 +228,7 @@ public class ProcessPatientService implements Runnable{
                 retrieveProviders.clear();
                 retrieveProviders = null;
                 if(documents.size() >0 ) {
-                    dbConnection.insertProcessedDataInDb("ep_cql_processed_data", documents);
+                    dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
                     documents.clear();
                 }
                 documents = null;

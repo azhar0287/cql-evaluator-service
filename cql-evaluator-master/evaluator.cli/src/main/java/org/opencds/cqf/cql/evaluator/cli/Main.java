@@ -20,6 +20,7 @@ import org.apache.logging.log4j.Logger;
 import org.opencds.cqf.cql.evaluator.cli.command.CliCommand;
 
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
+import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ContextParameter;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ModelParameter;
@@ -77,58 +78,20 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         LOGGER.info("Processing start");
-        DBConnection dbConnection = new DBConnection();
-        int totalCount = dbConnection.getDataCount("ep_encounter_fhir_AllData");
+        DBConnection connection = new DBConnection();
+        DbFunctions dbFunctions = new DbFunctions();
 
+        int totalCount = dbFunctions.getDataCount("ep_encounter_fhir_AllData", connection);
+        int totalSkips = (int) Math.ceil(totalCount/10);
+
+        /*  Setting up cql and helper libraries */
         List<LibraryOptions> libraryOptions = new ArrayList<>();
         libraryOptions.add(setupLibrary());
 
-        int totalSkips = (int) Math.ceil(totalCount/10);
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
         for(int i=0; i<totalSkips; i++) {
-            executorService.execute(new ProcessPatientService(i, libraryOptions));
+            executorService.execute(new ProcessPatientService(i, libraryOptions, connection));
         }
-
-
-
-       // Main.CSS_HEDIS_MY2022();
-
-        //UtilityFunction utilityFunction = new UtilityFunction();
-        //ProcessPatientService processPatientService = new ProcessPatientService();
-        //Setting library
-//        LibraryOptions libraryOptions = processPatientService.setupLibrary();
-        //processPatientService.libraries.add(libraryOptions);
-
-
-        //processPatientService.dataBatchingAndProcessing();
-
-
-
-//        Thread thread = new Thread(processPatientService);
-//        thread.start();
-
-
-/*
-        CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
-
-        LOGGER.info("Sheet Generation has started: ");
-
-        SheetGenerationService sheetGenerationService = new SheetGenerationService();
-        sheetGenerationService.generateSheetCCS();
-
-        LOGGER.info("Sheet generation has completed");
-*/
-//        int exitCode = run(args);
-//        System.exit(exitCode);
-
-
-          /*for(SheetInputMapper sheetInputMapper: sheetInput) {
-            sheetEntryCount++;
-            utilityFunction.saveScoreFile(sheetInputMapper.getFinalResult(), sheetInputMapper.getInfoMap(),
-                    new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31"), csvPrinter);
-            LOGGER.info("Sheet process count: "+sheetEntryCount);
-        }
-        */
     }
 
     public static int run(String[] args) {

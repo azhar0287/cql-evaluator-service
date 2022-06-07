@@ -11,6 +11,7 @@ import org.bson.Document;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.opencds.cqf.cql.engine.retrieve.RetrieveProvider;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
+import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
@@ -44,7 +45,7 @@ public class UtilityFunction {
     }
 
 
-    public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries) {
+    public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection) {
         DBConnection db = new DBConnection();
         PatientData patientData ;
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
@@ -54,7 +55,7 @@ public class UtilityFunction {
         FhirContext fhirContext = fhirVersionEnum.newContext();
         IParser selectedParser = fhirContext.newJsonParser();
 
-        List<Document> documents = db.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir_AllData", skip, limit);
+        List<Document> documents = dbFunctions.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir_AllData", skip, limit, connection);
         for(Document document : documents) {
             patientData = new PatientData();
             patientData.setId(document.get("id").toString());
@@ -84,13 +85,13 @@ public class UtilityFunction {
         return date;
     }
 
-    public Map<String,String> assignCodeToType(List<String> payerCodes, DBConnection db) {
+    public Map<String,String> assignCodeToType(List<String> payerCodes, DbFunctions db, DBConnection connection) {
         //DBConnection db = new DBConnection();
         Map<String,String> codeTypes = new HashMap<>();
         String oid;
         for (String pCode : payerCodes) {
             //Document document = db.getOidInfo(pCode, "dictionary_ep_2022_code");
-            List<Document> documents = db.getOidInfo(pCode, "dictionary_ep_2022_code");
+            List<Document> documents = db.getOidInfo(pCode, "dictionary_ep_2022_code", connection);
             Document document;
             if(documents.size() > 0) {
                 document = documents.get(0);
@@ -115,13 +116,13 @@ public class UtilityFunction {
         return codeTypes;
     }
 
-    public void updatePayerCodes(List<String> payerCodes, DBConnection db) {
+    public void updatePayerCodes(List<String> payerCodes, DbFunctions dbFunctions, DBConnection db) {
         int flag1 = 0;
         int flag2 = 0;
         int flag3  = 0;
         Map<String,String> codeTypes;
         if(payerCodes.size() == 2) {
-            codeTypes = assignCodeToType(payerCodes, db);
+            codeTypes = assignCodeToType(payerCodes,dbFunctions, db);
             for (String code : payerCodes) {
                 String codeType;
                 if(codeTypes != null) {
