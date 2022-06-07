@@ -2,16 +2,12 @@ package org.opencds.cqf.cql.evaluator.cli;
 
 import java.io.*;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +18,7 @@ import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ContextParameter;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ModelParameter;
-import org.opencds.cqf.cql.evaluator.cli.scoresheets.SheetGenerationService;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.SheetGenerationTask;
 import org.opencds.cqf.cql.evaluator.cli.service.ProcessPatientService;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import picocli.CommandLine;
@@ -79,18 +75,37 @@ public class Main {
         LOGGER.info("Processing start");
         DBConnection connection = new DBConnection(); //setting up connection
         DbFunctions dbFunctions = new DbFunctions();
+        UtilityFunction utilityFunction = new UtilityFunction();
+
 
         int totalCount = dbFunctions.getDataCount("ep_encounter_fhir_AllData", connection);
-        int totalSkips = (int) Math.ceil(totalCount/10);
-
-        /*  Setting up cql and helper libraries */
+        int totalSkips = (int) Math.floor(totalCount/10);
+        totalSkips+=1; //for remaining records
+        // Setting up cql and helper libraries
         List<LibraryOptions> libraryOptions = new ArrayList<>();
         libraryOptions.add(setupLibrary());
 
+        //Patient processing
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         for(int i=0; i<totalSkips; i++) {
             executorService.execute(new ProcessPatientService(i, libraryOptions, connection, totalCount));
         }
+        System.out.println("Patients Processing has completed");
+
+        /*
+        //Sheet Generation
+        int totalDataCountForSheet = dbFunctions.getDataCount("ep_cql_processed_data", connection);
+        int totalSkipsForSheet = (int) Math.ceil(totalDataCountForSheet/500) ;
+        totalSkipsForSheet+=1; //for remaining records
+
+        CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
+        ExecutorService executorServiceForSheet = Executors.newFixedThreadPool(10);
+        for(int i=0; i<totalSkipsForSheet; i++) {
+            executorServiceForSheet.execute(new SheetGenerationTask(utilityFunction, connection, dbFunctions, i, csvPrinter));
+            System.out.println("Iteration: "+i);
+        }
+        System.out.println("Sheet generation has completed");
+        */
     }
 
     public static void sheetGeneration() throws IOException, ParseException {
@@ -99,8 +114,8 @@ public class Main {
 
         LOGGER.info("Sheet Generation has started: ");
 
-        SheetGenerationService sheetGenerationService = new SheetGenerationService();
-        sheetGenerationService.generateSheetCCS();
+       // SheetGenerationTask sheetGenerationService = new SheetGenerationTask();
+       // sheetGenerationService.generateSheetCCS();
 
         LOGGER.info("Sheet generation has completed");
     }
