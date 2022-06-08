@@ -8,22 +8,22 @@ import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
+import org.opencds.cqf.cql.evaluator.cli.util.ThreadTaskCompleted;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-
 public class SheetGenerationTask implements Runnable {
     public static Logger LOGGER  = LogManager.getLogger(SheetGenerationTask.class);
 
-    UtilityFunction utilityFunction = new UtilityFunction();
+    UtilityFunction utilityFunction;
     DBConnection db;
     DbFunctions dbFunctions;
     CSVPrinter csvPrinter;
 
-    int skip = 0;
+    int skip;
     int batchSize = 500;
 
     public SheetGenerationTask(UtilityFunction utilityFunction, DBConnection db, DbFunctions dbFunctions, int skip, CSVPrinter csvPrinter) {
@@ -36,7 +36,7 @@ public class SheetGenerationTask implements Runnable {
 
     @Override
     public void run() {
-        LOGGER.info("Thread is processing for sheet"+skip);
+        LOGGER.info("Thread is processing for sheet "+skip);
         try {
             this.generateSheetCCS();
         } catch (IOException e) {
@@ -46,13 +46,11 @@ public class SheetGenerationTask implements Runnable {
         }
     }
 
-    public void generateSheetCCS() throws IOException, ParseException {
-        int totalCount = dbFunctions.getDataCount("ep_cql_processed_data", db);
 
+    public void generateSheetCCS() throws IOException, ParseException {
+        
         Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
         List<Document> documents;
-
-
         documents = dbFunctions.getConditionalData("NoId", "ep_cql_processed_data", skip, batchSize, db);
         generateSheet(documents, measureDate, csvPrinter, db);
         documents.clear();
@@ -65,7 +63,7 @@ public class SheetGenerationTask implements Runnable {
             List<String> payerCodes;
             List<String> codeCheckList = utilityFunction.checkCodeForCCS();
             for(Document document : documents) {
-//                System.out.println("Processing patient: "+document.getString("id"));
+                System.out.println("Processing patient: "+document.getString("id"));
                 if(document.getBoolean("Age and Gender")) {
                     Object object = document.get("payerCodes");
                     payerCodes = new ObjectMapper().convertValue(object, new TypeReference<List<String>>() {});
@@ -92,11 +90,12 @@ public class SheetGenerationTask implements Runnable {
                         sheetObj.add(utilityFunction.getAge(document.getDate("birthDate"), measureDate));
                         sheetObj.add(utilityFunction.getGenderSymbol(document.getString("gender")));
                         csvPrinter.printRecord(sheetObj);
-
                     }
                 }
                 csvPrinter.flush();
                 }
+            documents.clear();
+            documents = null;
 
         } catch (Exception e) {
             e.printStackTrace();

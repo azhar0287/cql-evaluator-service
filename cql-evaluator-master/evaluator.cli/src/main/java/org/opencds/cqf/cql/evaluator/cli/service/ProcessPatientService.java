@@ -27,6 +27,7 @@ import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ContextParameter;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ModelParameter;
 import org.opencds.cqf.cql.evaluator.cli.mappers.SheetInputMapper;
+import org.opencds.cqf.cql.evaluator.cli.util.ThreadTaskCompleted;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import org.opencds.cqf.cql.evaluator.cql2elm.content.LibraryContentProvider;
 import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
@@ -50,14 +51,21 @@ public class ProcessPatientService implements Runnable {
     UtilityFunction utilityFunction = new UtilityFunction();
     DBConnection dbConnection;
     DbFunctions dbFunctions = new DbFunctions();
-    int skip;
+    int skip = 0;
     int batchSize = 10;
     int totalCount;
-    public ProcessPatientService(int skip, List<LibraryOptions> libraries, DBConnection connection, int totalCount) {
+    ThreadTaskCompleted threadTaskCompleted;
+
+    public ProcessPatientService() {
+
+    }
+
+    public ProcessPatientService(int skip, List<LibraryOptions> libraries, DBConnection connection, int totalCount, ThreadTaskCompleted threadTaskCompleted) {
         this.libraries = libraries;
         this.skip = skip;
         this.dbConnection = connection;
         this.totalCount = totalCount;
+        this.threadTaskCompleted = threadTaskCompleted;
     }
 
     public void refreshValueSetBundles(Bundle valueSetBundle , Bundle copySetBundle, List<Bundle.BundleEntryComponent> valueSetEntry ) {
@@ -65,34 +73,25 @@ public class ProcessPatientService implements Runnable {
         valueSetEntry = copySetBundle.getEntry();
     }
 
+
+    public void singleDataProcessing() {
+        List<RetrieveProvider> retrieveProviders;
+        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, 1, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection);
+        processAndSavePatients(retrieveProviders, dbFunctions);
+        threadTaskCompleted.isTaskCompleted = true;
+    }
+
+
     public void dataBatchingAndProcessing() {
-        List<Document> documents = new ArrayList<>();
-//        int totalCount = dbFunctions.getDataCount("ep_encounter_fhir_AllData", dbConnection);
-        LOGGER.info("totalCount: "+totalCount);
         List<RetrieveProvider> retrieveProviders;
         retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection);
-        documents =  processAndSavePatients(retrieveProviders, dbFunctions);
-        documents.clear();
-        //documents.addAll(processAndSavePatients(retrieveProviders, db));
-
-        /*if(documents.size()>=10000) {
-
-                db.insertProcessedDataInDb("ep_cql_processed_data",documents);
-                documents.clear();
-                documents = null;
-            }
-            else {
-                LOGGER.info("In else condition less from batch size");
-                retrieveProviders.clear();
-                retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, entriesLeft, libraries.get(0).fhirVersion, libraries);
-                //documents.addAll(processAndSavePatients(retrieveProviders));
-                db.insertProcessedDataInDb("ep_cql_processed_data", processAndSavePatients(retrieveProviders));
-                documents.clear();
-            }*/
+        processAndSavePatients(retrieveProviders, dbFunctions);
+        threadTaskCompleted.isTaskCompleted = true;
     }
 
     List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders, DbFunctions dbFunctions) {
         List<Document> documents = new ArrayList<>();
+        String globalPatientId = "";
         try {
             int chaipi = 0;
             CqlEvaluator evaluator = null;
@@ -162,20 +161,20 @@ public class ProcessPatientService implements Runnable {
                 }
 
                 //having Patient data entries
-                //for(RetrieveProvider retrieveProvider : retrieveProviders) {
-                    for(int i=0; i<retrieveProviders.size(); i++) {
+                for(RetrieveProvider retrieveProvider : retrieveProviders) {
+                //for(int i=0; i<retrieveProviders.size(); i++) {
 
                         PatientData patientData;
-                    library.context.contextValue = ((BundleRetrieveProvider) retrieveProviders.get(i)).getPatientData().getId();
-                    String patientId = ((BundleRetrieveProvider) retrieveProviders.get(i)).bundle.getIdElement().toString();
-                    LOGGER.info("Patient Id in Loop "+patientId);
+                    library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
+                    String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
+//                    LOGGER.info("Patient Id in Loop "+patientId);
                     refreshValueSetBundles(valueSetBundle, copySetBundle, valueSetEntry);
                     valueSetEntry = valueSetBundle.copy().getEntry();
                     valueSetEntryTemp = valueSetEntry; //tem having value set entries
 
-                    if(retrieveProviders.get(i) instanceof BundleRetrieveProvider) {
+                    if(retrieveProvider instanceof BundleRetrieveProvider) {
 
-                        BundleRetrieveProvider retrieveProvider1 = (BundleRetrieveProvider) retrieveProviders.get(i);
+                        BundleRetrieveProvider retrieveProvider1 = (BundleRetrieveProvider) retrieveProvider;
                         if(retrieveProvider1.bundle instanceof Bundle) {
                             Bundle patientDataBundle = (Bundle)retrieveProvider1.bundle;
                             valueSetEntryTemp.addAll(patientDataBundle.getEntry()); //adding value sets + patient entries
@@ -215,11 +214,12 @@ public class ProcessPatientService implements Runnable {
                             }
           //                  LOGGER.info("Patient being processed in engine: "+patientId);
                             System.out.println("Patient being processed in engine: "+patientId);
+                            globalPatientId = library.context.contextValue;
                             EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
-                            patientData = ((BundleRetrieveProvider) retrieveProviders.get(i)).getPatientData();
+                            patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
                             documents.add(this.createDocumentForResult(result.expressionResults, patientData));
-                            if(documents.size() >= 15) {
+                            if(documents.size() > 15) {
                                 dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
                                 System.out.println("Going to add 10 patients in db");
                                 documents.clear();
@@ -229,14 +229,14 @@ public class ProcessPatientService implements Runnable {
                 }
                 retrieveProviders.clear();
                 retrieveProviders = null;
-                if(documents.size() >0 ) {
+                if(documents.size() > 0 ) {
                     dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
                     documents.clear();
                 }
                 documents = null;
             }
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage()+globalPatientId, e);
         }
         return documents;
     }

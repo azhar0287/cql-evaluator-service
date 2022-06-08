@@ -1,14 +1,12 @@
 package org.opencds.cqf.cql.evaluator.cli.db;
 
 import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Indexes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
+import org.opencds.cqf.cql.evaluator.cli.util.ThreadTaskCompleted;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -57,5 +55,14 @@ public class DbFunctions {
 //    public void createIndexes(){
 //        this.collection.createIndex(Indexes.ascending("id"));
 //    }
+
+    public boolean isAllTasksCompletedByThreads(List<ThreadTaskCompleted> isAllTasksCompleted){
+        for(ThreadTaskCompleted isTaskCompleted : isAllTasksCompleted){
+            if(isTaskCompleted.isTaskCompleted==false){
+                return false;
+            }
+        }
+        return true;
+    }
 
 }

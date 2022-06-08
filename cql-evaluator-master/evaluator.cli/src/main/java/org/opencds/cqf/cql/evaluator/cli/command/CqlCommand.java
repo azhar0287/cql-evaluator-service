@@ -120,6 +120,7 @@ public class CqlCommand implements Callable<Integer>  {
     private Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     private Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
     DBConnection dbConnection = new DBConnection();
+
     List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, DbFunctions dbFunctions, DBConnection connection) {
         PatientData patientData ;
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
