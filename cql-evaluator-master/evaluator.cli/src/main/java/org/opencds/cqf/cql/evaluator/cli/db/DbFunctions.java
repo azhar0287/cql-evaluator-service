@@ -52,13 +52,21 @@ public class DbFunctions {
         documents = null;
     }
 
+    public void insertFailedPatients(String collectionName, List<Document> documents, DBConnection dbConnection) {
+        dbConnection.collection = dbConnection.database.getCollection(collectionName);
+        dbConnection.collection.insertMany(documents);
+        LOGGER.info("Data batch has pushed: "+documents.size());
+        documents.clear();
+    }
+
+
 //    public void createIndexes(){
 //        this.collection.createIndex(Indexes.ascending("id"));
 //    }
 
     public boolean isAllTasksCompletedByThreads(List<ThreadTaskCompleted> isAllTasksCompleted){
         for(ThreadTaskCompleted isTaskCompleted : isAllTasksCompleted){
-            if(isTaskCompleted.isTaskCompleted==false){
+            if(isTaskCompleted.isTaskCompleted == false){
                 return false;
             }
         }

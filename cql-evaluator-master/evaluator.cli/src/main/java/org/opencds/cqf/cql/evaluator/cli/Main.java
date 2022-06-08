@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bson.Document;
 import org.opencds.cqf.cql.evaluator.cli.command.CliCommand;
 
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
@@ -40,6 +41,7 @@ public class Main {
     private static final String testResourceRelativePath = "evaluator.cli/src/main/resources"; //for Jar
     //private static final String testResourceRelativePath = "evaluator.cli/src/main/resources";
     private static String testResourcePath = null;
+    public static List<String> failedPatients = new ArrayList<>();
 
     static {
         File file = new File(testResourceRelativePath);
@@ -78,12 +80,12 @@ public class Main {
         DBConnection connection = new DBConnection(); //setting up connection
         DbFunctions dbFunctions = new DbFunctions();
         processPatients(dbFunctions, connection);
-
-
-
+        insertFailedPatient(dbFunctions, connection);
 
         //generateSheet(dbFunctions, connection, utilityFunction);
     }
+
+
 
     public void processSinglePatient(DbFunctions dbFunctions, DBConnection connection) {
         List<LibraryOptions> libraryOptions = new ArrayList<>();
@@ -153,6 +155,16 @@ public class Main {
             System.out.println("Iteration: "+i);
         }
         System.out.println("Sheet generation has completed");
+    }
+
+    public static void insertFailedPatient(DbFunctions dbFunctions, DBConnection dbConnection) {
+        List<Document>documents = new ArrayList<>();
+        for (String failedPatient : failedPatients) {
+            Document document = new Document();
+            document.put("id", failedPatient);
+            documents.add(document);
+        }
+        dbFunctions.insertFailedPatients("ep_cql_failed_patients", documents, dbConnection);
     }
 
     public static int run(String[] args) {

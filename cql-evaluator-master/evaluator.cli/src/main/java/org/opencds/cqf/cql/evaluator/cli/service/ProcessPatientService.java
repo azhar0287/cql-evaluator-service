@@ -20,6 +20,7 @@ import org.opencds.cqf.cql.evaluator.builder.Constants;
 import org.opencds.cqf.cql.evaluator.builder.CqlEvaluatorBuilder;
 import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
+import org.opencds.cqf.cql.evaluator.cli.Main;
 import org.opencds.cqf.cql.evaluator.cli.command.CqlCommand;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
@@ -236,10 +237,14 @@ public class ProcessPatientService implements Runnable {
                 documents = null;
             }
         } catch (Exception e) {
-            LOGGER.error(e.getMessage()+globalPatientId, e);
+            LOGGER.error(e.getMessage()+" PatientId: "+globalPatientId, e);
+
+            Main.failedPatients.add(globalPatientId);
+
         }
         return documents;
     }
+
 
     public Document createDocumentForResult(Map<String, Object> expressionResults, PatientData patientData) {
         Document document = new Document();
