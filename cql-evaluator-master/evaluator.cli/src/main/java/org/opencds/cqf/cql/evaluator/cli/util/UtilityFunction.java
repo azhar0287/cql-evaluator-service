@@ -18,6 +18,8 @@ import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -55,7 +57,8 @@ public class UtilityFunction {
         FhirContext fhirContext = fhirVersionEnum.newContext();
         IParser selectedParser = fhirContext.newJsonParser();
 
-        List<Document> documents = dbFunctions.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir", skip, limit, connection);
+        //List<Document> documents = dbFunctions.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir_AllData", skip, limit, connection);
+        List<Document> documents = dbFunctions.getRemainingData(libraries.get(0).context.contextValue, "ep_encounter_fhir_AllData", skip, limit, connection);
         for(int i=0; i<documents.size(); i++) {
             patientData = new PatientData();
             patientData.setId(documents.get(i).get("id").toString());

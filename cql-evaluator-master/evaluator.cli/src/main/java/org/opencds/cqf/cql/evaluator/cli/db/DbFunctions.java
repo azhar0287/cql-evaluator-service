@@ -27,6 +27,18 @@ public class DbFunctions {
         return list;
     }
 
+    public List<Document> getRemainingData(String patientId, String collectionName, int skip, int limit, DBConnection connection) {
+        connection.collection = connection.database.getCollection(collectionName);
+        //FindIterable<Document> documents = this.collection.find(new Document("id", patientId)).projection(excludeId());
+        FindIterable<Document> documents = connection.collection.find().skip(skip).limit(limit).batchSize(20000).projection(excludeId());
+        MongoCursor<Document> cursor = documents.iterator();
+        List<Document> list = new LinkedList<>();
+        while(cursor.hasNext()) {
+            list.add(cursor.next());
+        }
+        return list;
+    }
+
     public List<Document> getOidInfo(String code, String collectionName, DBConnection connection) {
         connection.collection = connection.database.getCollection(collectionName);
         FindIterable<Document> documents = connection.collection.find(new Document("values", code)).batchSize(10000);

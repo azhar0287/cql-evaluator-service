@@ -77,9 +77,10 @@ public class ProcessPatientService implements Runnable {
 
     public void singleDataProcessing() {
         List<RetrieveProvider> retrieveProviders;
-        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, 1, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection);
+        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, 10, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection);
         processAndSavePatients(retrieveProviders, dbFunctions);
         threadTaskCompleted.isTaskCompleted = true;
+
     }
 
 
