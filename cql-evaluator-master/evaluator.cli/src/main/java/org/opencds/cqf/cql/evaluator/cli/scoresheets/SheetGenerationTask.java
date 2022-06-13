@@ -114,10 +114,15 @@ public class SheetGenerationTask {
                             sheetObj.add(utilityFunction.getGenderSymbol(document.getString("gender")));
                             csvPrinter.printRecord(sheetObj);
                         }
+                    }else{
+                        Main.failedPatients.add(document.getString("id"));
                     }
                 }
-                globalPatientId = document.getString("id");
-                Main.failedPatients.add(globalPatientId);
+                else{
+                    Main.failedPatients.add(document.getString("id"));
+                }
+//                globalPatientId = document.getString("id");
+//                Main.failedPatients.add(globalPatientId);
                 csvPrinter.flush();
             }
             documents.clear();

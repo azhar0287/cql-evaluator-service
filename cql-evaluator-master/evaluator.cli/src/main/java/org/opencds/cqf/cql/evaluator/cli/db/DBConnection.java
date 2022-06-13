@@ -27,7 +27,7 @@ public class DBConnection {
 		MongoClientOptions opts = builder.build();
 
 		if(mongoClient == null) {
-			mongoClient = new MongoClient(new ServerAddress("10.20.30.212",27017), opts);
+			mongoClient = new MongoClient(new ServerAddress("localhost",27017), opts);
 			this.database = mongoClient.getDatabase("ihm");
 		}
 		else {

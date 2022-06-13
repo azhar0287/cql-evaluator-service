@@ -47,7 +47,7 @@ public class UtilityFunction {
     }
 
 
-    public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection) {
+    public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
         DBConnection db = new DBConnection();
         PatientData patientData ;
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
@@ -58,7 +58,7 @@ public class UtilityFunction {
         IParser selectedParser = fhirContext.newJsonParser();
 
         //List<Document> documents = dbFunctions.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir_AllData", skip, limit, connection);
-        List<Document> documents = dbFunctions.getRemainingData(libraries.get(0).context.contextValue, "ep_encounter_fhir_AllData", skip, limit, connection);
+        List<Document> documents = dbFunctions.getRemainingData(libraries.get(0).context.contextValue, CollectionName, skip, limit, connection);
         for(int i=0; i<documents.size(); i++) {
             patientData = new PatientData();
             patientData.setId(documents.get(i).get("id").toString());

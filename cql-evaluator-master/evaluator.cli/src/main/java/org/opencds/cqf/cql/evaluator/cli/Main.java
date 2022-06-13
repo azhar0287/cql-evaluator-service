@@ -22,6 +22,7 @@ import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ModelParameter;
 import org.opencds.cqf.cql.evaluator.cli.scoresheets.SheetGenerationTask;
 import org.opencds.cqf.cql.evaluator.cli.service.ProcessPatientService;
+import org.opencds.cqf.cql.evaluator.cli.util.Constant;
 import org.opencds.cqf.cql.evaluator.cli.util.ThreadTaskCompleted;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import picocli.CommandLine;
@@ -80,11 +81,12 @@ public class Main {
         DBConnection connection = new DBConnection(); //setting up connection
         DbFunctions dbFunctions = new DbFunctions();
 
-        processPatients(dbFunctions, connection);
-        insertFailedPatient(dbFunctions, connection);
+//        processPatients(dbFunctions, connection);
+//        processRemainingPatients(dbFunctions, connection);
+//        insertFailedPatient(dbFunctions, connection,"ep_cql_CCS_SampleDeck_failed_patients");
 
-        //generateSheet(dbFunctions, connection, new UtilityFunction());
-       // insertFailedPatient(dbFunctions, connection);
+        generateSheet(dbFunctions, connection, new UtilityFunction());
+        insertFailedPatient(dbFunctions, connection,"ep_cql_CCS_Sample_Sheet_failed_patients");
 
     }
 
@@ -94,13 +96,9 @@ public class Main {
 
         ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
 
-        int testSkip = 75160;
-        for(int i=0; i<27; i++) {
 
-            ProcessPatientService processPatientService = new ProcessPatientService(testSkip, libraryOptions, connection, 1, isTaskCompleted);
-            processPatientService.singleDataProcessing();
-            testSkip+=10;
-        }
+        ProcessPatientService processPatientService = new ProcessPatientService(0, libraryOptions, connection, 1, isTaskCompleted);
+        processPatientService.singleDataProcessing();
 
         System.out.println("Finished");
     }
@@ -110,11 +108,11 @@ public class Main {
         System.out.println("Patient processing has started");
 
         List<ThreadTaskCompleted> isAllTasksCompleted=new LinkedList<>();
-        int totalCount = dbFunctions.getDataCount("ep_encounter_fhir_AllData", connection);
+        int totalCount = dbFunctions.getDataCount(Constant.MAIN_FHIR_COLLECTION_NAME, connection);
 
 
         int totalSkips = (int) Math.ceil(totalCount/10);
-        int totalSkipped = 60000;
+        int totalSkipped = 0;
         if(totalCount % 10 > 0) { //remaining missing records issue fix
             totalSkips+=1;
         }
@@ -124,7 +122,7 @@ public class Main {
 
         //Patient processing
         ExecutorService executorService = Executors.newFixedThreadPool(10);
-        for(int i=0; i < 1600; i++) {
+        for(int i=0; i < totalSkips; i++) {
             //connection = new DBConnection();
             ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
             isAllTasksCompleted.add(isTaskCompleted);
@@ -148,6 +146,20 @@ public class Main {
         }
         System.out.println("Patients Processing has completed");
         executorService.shutdown();
+    }
+
+    public static void processRemainingPatients(DbFunctions dbFunctions, DBConnection connection) {
+
+        System.out.println("Patient processing has started");
+
+        int totalCount = dbFunctions.getDataCount(FHIR_UNPROCESSED_COLLECTION_NAME, connection);
+        if(totalCount>0) {
+            List<LibraryOptions> libraryOptions = new ArrayList<>();
+            libraryOptions.add(setupLibrary());
+
+            ProcessPatientService processPatientService = new ProcessPatientService(libraryOptions, connection, totalCount);
+            processPatientService.processRemainingPatients();
+        }
     }
 
     public static void generateSheet(DbFunctions dbFunctions, DBConnection connection, UtilityFunction utilityFunction) throws IOException, ParseException {
@@ -189,15 +201,17 @@ public class Main {
         System.out.println("Sheet generation has completed");
     }
 
-    public static void insertFailedPatient(DbFunctions dbFunctions, DBConnection dbConnection) {
+    public static void insertFailedPatient(DbFunctions dbFunctions, DBConnection dbConnection,String collectionName) {
         List<Document>documents = new ArrayList<>();
         for (String failedPatient : failedPatients) {
             Document document = new Document();
             document.put("id", failedPatient);
             documents.add(document);
         }
-        dbFunctions.insertFailedPatients("ep_cql_failed_patients", documents, dbConnection);
+        dbFunctions.insertFailedPatients(collectionName, documents, dbConnection);
     }
+
+
 
     public static int run(String[] args) {
         Objects.requireNonNull(args);
