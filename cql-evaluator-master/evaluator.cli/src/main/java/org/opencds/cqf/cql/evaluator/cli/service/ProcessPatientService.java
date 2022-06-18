@@ -20,12 +20,16 @@ import org.opencds.cqf.cql.evaluator.builder.Constants;
 import org.opencds.cqf.cql.evaluator.builder.CqlEvaluatorBuilder;
 import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
+import org.opencds.cqf.cql.evaluator.cli.Main;
 import org.opencds.cqf.cql.evaluator.cli.command.CqlCommand;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
+import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ContextParameter;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ModelParameter;
 import org.opencds.cqf.cql.evaluator.cli.mappers.SheetInputMapper;
+import org.opencds.cqf.cql.evaluator.cli.util.Constant;
+import org.opencds.cqf.cql.evaluator.cli.util.ThreadTaskCompleted;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import org.opencds.cqf.cql.evaluator.cql2elm.content.LibraryContentProvider;
 import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
@@ -38,22 +42,39 @@ import java.util.*;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 
-public class ProcessPatientService {
+public class ProcessPatientService implements Runnable {
+
     public static Logger LOGGER  = LogManager.getLogger(CqlCommand.class);
     public static int processCounter = 0;
     public String optionsPath;
-    public List<LibraryOptions> libraries = new ArrayList<>();
-
+    public List<LibraryOptions> libraries;
     public Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     public Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
-
     UtilityFunction utilityFunction = new UtilityFunction();
+    DBConnection dbConnection;
+    DbFunctions dbFunctions = new DbFunctions();
+    int skip = 0;
+    int batchSize = 10;
+    int totalCount;
+    ThreadTaskCompleted threadTaskCompleted;
 
-    public LibraryOptions setupLibrary() {
-        ContextParameter context = new ContextParameter(CONTEXT, "TEST");
-        ModelParameter modelParameter = new ModelParameter(MODEL, MODEL_URL);
-        LibraryOptions libraryOptions = new LibraryOptions (FHIR_VERSION, LIBRARY_URL, LIBRARY_NAME, FHIR_VERSION, TERMINOLOGY, context, modelParameter);
-        return libraryOptions;
+    public ProcessPatientService() {
+
+    }
+
+    public ProcessPatientService(int skip, List<LibraryOptions> libraries, DBConnection connection, int totalCount, ThreadTaskCompleted threadTaskCompleted) {
+        this.libraries = libraries;
+        this.skip = skip;
+        this.dbConnection = connection;
+        this.totalCount = totalCount;
+        this.threadTaskCompleted = threadTaskCompleted;
+    }
+    public ProcessPatientService( List<LibraryOptions> libraries, DBConnection connection, int totalCount) {
+        this.libraries = libraries;
+
+        this.dbConnection = connection;
+        this.totalCount = totalCount;
+        this.batchSize=totalCount;
     }
 
     public void refreshValueSetBundles(Bundle valueSetBundle , Bundle copySetBundle, List<Bundle.BundleEntryComponent> valueSetEntry ) {
@@ -61,64 +82,40 @@ public class ProcessPatientService {
         valueSetEntry = copySetBundle.getEntry();
     }
 
-    public void dataBatchingAndProcessing() throws Exception {
 
-        long startTime = System.currentTimeMillis();
-        List<Document> documents;
-        DBConnection db = new DBConnection();
-        int totalCount = db.getDataCount("ep_encounter_fhir_AllData");
-//        int totalCount = 500;
-        LOGGER.info("totalCount: "+totalCount);
+    public void singleDataProcessing() {
+        List<RetrieveProvider> retrieveProviders;
+        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, 1, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection, Constant.MAIN_FHIR_COLLECTION_NAME);
+        processAndSavePatients(retrieveProviders, dbFunctions);
+        threadTaskCompleted.isTaskCompleted = true;
 
-        int skip = 0;
-        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
-        int batchSize = 200;
-        int entriesLeft = 0;
-        int entriesProcessed = 0;
-
-        for(int i=0; i<totalCount; i++) {
-            documents = new ArrayList<>();
-
-            entriesLeft = totalCount - entriesProcessed;
-            if(entriesLeft >= batchSize) {
-                retrieveProviders.clear();
-                retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries);
-                documents.addAll(processAndSavePatients(retrieveProviders));
-                db.insertProcessedDataInDb("ep_cql_processed_data", documents);
-                i+=batchSize-1;
-                skip += batchSize;
-                entriesProcessed +=batchSize;
-                documents = null;
-            }
-            else {
-                LOGGER.info("In else condition less from batch size");
-                retrieveProviders.clear();
-                retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, entriesLeft, libraries.get(0).fhirVersion, libraries);
-                documents.addAll(processAndSavePatients(retrieveProviders));
-                db.insertProcessedDataInDb("ep_cql_processed_data", documents);
-                i+=entriesLeft;
-                entriesProcessed+=entriesLeft;
-                documents = null;
-            }
-
-            LOGGER.info("Iteration: "+i+" has completed: Skip"+skip+" Limit"+batchSize);
-            System.gc(); // calling garbage collector
-        }
-        long stopTime = System.currentTimeMillis();
-        long milliseconds = stopTime - startTime;
-        LOGGER.info("Time taken: "+((milliseconds)/1000/60)+" min");
     }
 
-    List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders) {
+    public void processRemainingPatients(){
+        List<RetrieveProvider> retrieveProviders;
+        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection, FHIR_UNPROCESSED_COLLECTION_NAME);
+        List<Document> processedPatients= processAndSaveUnprocessedPatients(retrieveProviders, dbFunctions);
+        int a=0;
+
+    }
+
+    public void dataBatchingAndProcessing() {
+        List<RetrieveProvider> retrieveProviders;
+        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection,Constant.MAIN_FHIR_COLLECTION_NAME);
+        processAndSavePatients(retrieveProviders, dbFunctions);
+        threadTaskCompleted.isTaskCompleted = true;
+    }
+
+    List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders, DbFunctions dbFunctions) {
         List<Document> documents = new ArrayList<>();
+        String globalPatientId = "";
         try {
             int chaipi = 0;
             CqlEvaluator evaluator = null;
             TerminologyProvider backupTerminologyProvider = null;
             LOGGER.info("Patient List Size: "+retrieveProviders.size());
             FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(libraries.get(0).fhirVersion);
-            CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder()
-                    .fhirContext(fhirVersionEnum.newContext()).build();
+            CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder().fhirContext(fhirVersionEnum.newContext()).build();
 
             CqlTranslatorOptions options = null;
             if (optionsPath != null) {
@@ -182,10 +179,12 @@ public class ProcessPatientService {
 
                 //having Patient data entries
                 for(RetrieveProvider retrieveProvider : retrieveProviders) {
+                    //for(int i=0; i<retrieveProviders.size(); i++) {
+
                     PatientData patientData;
                     library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
                     String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
-                    LOGGER.info("Patient Id in Loop "+patientId);
+//                    LOGGER.info("Patient Id in Loop "+patientId);
                     refreshValueSetBundles(valueSetBundle, copySetBundle, valueSetEntry);
                     valueSetEntry = valueSetBundle.copy().getEntry();
                     valueSetEntryTemp = valueSetEntry; //tem having value set entries
@@ -230,22 +229,207 @@ public class ProcessPatientService {
                             if (library.context != null) {
                                 contextParameter = Pair.of(library.context.contextName, library.context.contextValue);
                             }
-                            LOGGER.info("Patient being processed in engine: "+patientId);
+                            //                  LOGGER.info("Patient being processed in engine: "+patientId);
+                            System.out.println("Patient being processed in engine: "+patientId);
+                            globalPatientId = library.context.contextValue;
                             EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
-                            System.out.println("Evaluation Counter: "+processCounter);
+
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-
                             documents.add(this.createDocumentForResult(result.expressionResults, patientData));
-
+                            if(documents.size() > 15) {
+                                dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
+                                System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
+                                Thread.sleep(100);
+                                documents.clear();
+                            }
                         }
                     }
                 }
+                retrieveProviders.clear();
+                retrieveProviders = null;
+                if(documents.size() > 0 ) {
+                    dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
+                    documents.clear();
+                }
+                documents = null;
             }
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage()+" PatientId: "+globalPatientId, e);
+
+            Main.failedPatients.add(globalPatientId);
+
         }
         return documents;
     }
+
+
+    List<Document> processAndSaveUnprocessedPatients(List<RetrieveProvider> retrieveProviders, DbFunctions dbFunctions) {
+        List<Document> documents = new ArrayList<>();
+        String globalPatientId = "";
+        int count=0;
+//        while(count<totalCount) {
+        try {
+            int chaipi = 0;
+            CqlEvaluator evaluator = null;
+            TerminologyProvider backupTerminologyProvider = null;
+            LOGGER.info("Patient List Size: " + retrieveProviders.size());
+            FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(libraries.get(0).fhirVersion);
+            CqlEvaluatorComponent cqlEvaluatorComponent = DaggerCqlEvaluatorComponent.builder().fhirContext(fhirVersionEnum.newContext()).build();
+
+            CqlTranslatorOptions options = null;
+            if (optionsPath != null) {
+                options = CqlTranslatorOptionsMapper.fromFile(optionsPath);
+            }
+
+            for (LibraryOptions library : libraries) {
+                CqlEvaluatorBuilder cqlEvaluatorBuilder = cqlEvaluatorComponent.createBuilder();
+
+                if (options != null) {
+                    cqlEvaluatorBuilder.withCqlTranslatorOptions(options);
+                }
+
+                LibraryContentProvider libraryContentProvider = libraryContentProviderIndex.get(library.libraryUrl);
+
+                if (libraryContentProvider == null) {
+                    libraryContentProvider = cqlEvaluatorComponent.createLibraryContentProviderFactory()
+                            .create(new EndpointInfo().setAddress(library.libraryUrl));
+                    this.libraryContentProviderIndex.put(library.libraryUrl, libraryContentProvider);
+                }
+
+                cqlEvaluatorBuilder.withLibraryContentProvider(libraryContentProvider);
+
+                if (library.terminologyUrl != null) {
+                    TerminologyProvider terminologyProvider = this.terminologyProviderIndex.get(library.terminologyUrl);
+                    if (terminologyProvider == null) {
+                        terminologyProvider = cqlEvaluatorComponent.createTerminologyProviderFactory()
+                                .create(new EndpointInfo().setAddress(library.terminologyUrl));
+                        this.terminologyProviderIndex.put(library.terminologyUrl, terminologyProvider);
+                    }
+                    cqlEvaluatorBuilder.withTerminologyProvider(terminologyProvider);
+                    backupTerminologyProvider = terminologyProvider;
+                }
+
+                Triple<String, ModelResolver, RetrieveProvider> dataProvider = null;
+                DataProviderFactory dataProviderFactory = cqlEvaluatorComponent.createDataProviderFactory();
+                if (library.model != null) {
+                    dataProvider = dataProviderFactory.create(new EndpointInfo().setAddress(library.model.modelUrl));
+                }
+                // default to FHIR
+                else {
+                    dataProvider = dataProviderFactory.create(new EndpointInfo().setType(Constants.HL7_FHIR_FILES_CODE));
+                }
+
+                //Changes need to be made here
+                RetrieveProvider bundleRetrieveProvider = dataProvider.getRight(); // here value sets are added
+
+                List<Bundle.BundleEntryComponent> valueSetEntry = null, valueSetEntryTemp = null;
+                Bundle valueSetBundle = null;
+                Bundle copySetBundle = null;
+                if (bundleRetrieveProvider instanceof BundleRetrieveProvider) {
+                    //having value sets entries
+                    BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) bundleRetrieveProvider;
+
+                    if (bundleRetrieveProvider1.bundle instanceof Bundle) {
+                        valueSetBundle = (Bundle) bundleRetrieveProvider1.bundle;
+                        copySetBundle = valueSetBundle.copy();
+                        valueSetEntry = copySetBundle.getEntry();
+                    }
+                }
+
+                //having Patient data entries
+                for (RetrieveProvider retrieveProvider : retrieveProviders) {
+                    try{
+                        //for(int i=0; i<retrieveProviders.size(); i++) {
+
+                        PatientData patientData;
+                        library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
+                        String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
+//                    LOGGER.info("Patient Id in Loop "+patientId);
+                        refreshValueSetBundles(valueSetBundle, copySetBundle, valueSetEntry);
+                        valueSetEntry = valueSetBundle.copy().getEntry();
+                        valueSetEntryTemp = valueSetEntry; //tem having value set entries
+
+                        if (retrieveProvider instanceof BundleRetrieveProvider) {
+
+                            BundleRetrieveProvider retrieveProvider1 = (BundleRetrieveProvider) retrieveProvider;
+                            if (retrieveProvider1.bundle instanceof Bundle) {
+                                Bundle patientDataBundle = (Bundle) retrieveProvider1.bundle;
+                                valueSetEntryTemp.addAll(patientDataBundle.getEntry()); //adding value sets + patient entries
+
+                                RetrieveProvider finalPatientData;
+
+                                Bundle bundle1 = new Bundle();
+                                for (Bundle.BundleEntryComponent bundle : valueSetEntryTemp) {
+                                    bundle1.addEntry(bundle);  //value set EntryTemp to new Bundle
+                                }
+
+                                finalPatientData = new BundleRetrieveProvider(fhirVersionEnum.newContext(), bundle1);
+
+                                //Processing
+                                cqlEvaluatorBuilder.withModelResolverAndRetrieveProvider(dataProvider.getLeft(), dataProvider.getMiddle(), finalPatientData);
+
+
+                                if (chaipi == 0) {
+                                    evaluator = cqlEvaluatorBuilder.build();
+                                }
+
+                                if (finalPatientData instanceof BundleRetrieveProvider) {
+                                    BundleRetrieveProvider bundleRetrieveProvider1 = (BundleRetrieveProvider) finalPatientData;
+                                    bundleRetrieveProvider1.setTerminologyProvider(backupTerminologyProvider);
+                                    bundleRetrieveProvider1.setExpandValueSets(true);
+                                }
+
+                                chaipi++;
+                                processCounter++;
+                                VersionedIdentifier identifier = new VersionedIdentifier().withId(library.libraryName);
+                                Pair<String, Object> contextParameter = null;
+
+
+                                library.context.contextValue = patientId;
+                                if (library.context != null) {
+                                    contextParameter = Pair.of(library.context.contextName, library.context.contextValue);
+                                }
+                                //                  LOGGER.info("Patient being processed in engine: "+patientId);
+                                System.out.println("Patient being processed in engine: " + patientId);
+                                globalPatientId = library.context.contextValue;
+                                EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
+
+                                patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
+                                documents.add(this.createDocumentForResult(result.expressionResults, patientData));
+                                count++;
+                                if (documents.size() > 15) {
+                                    dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
+                                    System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
+                                    Thread.sleep(100);
+                                    documents.clear();
+                                }
+                            }
+                        }
+                    }catch(Exception e){
+                        LOGGER.error(e.getMessage() + " PatientId: " + globalPatientId, e);
+
+                        Main.failedPatients.add(globalPatientId);
+                    }
+                }
+                retrieveProviders.clear();
+                retrieveProviders = null;
+                if (documents.size() > 0) {
+                    dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
+                    documents.clear();
+                }
+                documents = null;
+            }
+        } catch (Exception e) {
+//                LOGGER.error(e.getMessage() + " PatientId: " + globalPatientId, e);
+//
+//                Main.failedPatients.add(globalPatientId);
+//                count++;
+
+        }
+//        }
+        return documents;
+    }
+
 
     public Document createDocumentForResult(Map<String, Object> expressionResults, PatientData patientData) {
         Document document = new Document();
@@ -264,5 +448,15 @@ public class ProcessPatientService {
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
+    }
+
+    @Override
+    public void run() {
+        try {
+            LOGGER.info("Thread is processing "+skip);
+            this.dataBatchingAndProcessing();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

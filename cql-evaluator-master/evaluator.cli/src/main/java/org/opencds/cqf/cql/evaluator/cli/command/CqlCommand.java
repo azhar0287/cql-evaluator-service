@@ -40,6 +40,7 @@ import org.opencds.cqf.cql.evaluator.builder.CqlEvaluatorBuilder;
 import org.opencds.cqf.cql.evaluator.builder.DataProviderFactory;
 import org.opencds.cqf.cql.evaluator.builder.EndpointInfo;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
+import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import org.opencds.cqf.cql.evaluator.cql2elm.content.LibraryContentProvider;
 import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
@@ -118,9 +119,9 @@ public class CqlCommand implements Callable<Integer>  {
 
     private Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     private Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
+    DBConnection dbConnection = new DBConnection();
 
-    List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit) {
-        DBConnection db = new DBConnection();
+    List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, DbFunctions dbFunctions, DBConnection connection) {
         PatientData patientData ;
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
 
@@ -129,7 +130,7 @@ public class CqlCommand implements Callable<Integer>  {
         FhirContext fhirContext = fhirVersionEnum.newContext();
         IParser selectedParser = fhirContext.newJsonParser();
 
-        List<Document> documents = db.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir", skip, limit);
+        List<Document> documents = dbFunctions.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir", skip, limit, connection);
         for(Document document : documents) {
             patientData = new PatientData();
             patientData.setId(document.get("id").toString());
@@ -169,6 +170,7 @@ public class CqlCommand implements Callable<Integer>  {
        long startTime = System.currentTimeMillis();
 
        DBConnection db = new DBConnection();
+       DbFunctions dbFunctions = new DbFunctions();
        //int totalCount = db.getDataCount("ep_encounter_fhir");
         int totalCount = 75419;
        LOGGER.info("total Data count: "+totalCount);
@@ -188,7 +190,7 @@ public class CqlCommand implements Callable<Integer>  {
            entriesLeft = totalCount - entriesProcessed;
            if(entriesLeft >= batchSize) {
                retrieveProviders.clear();
-               retrieveProviders = mapToRetrieveProvider(skip, batchSize);
+               retrieveProviders = mapToRetrieveProvider(skip, batchSize, dbFunctions, dbConnection);
                processAndSavePatients(retrieveProviders, csvPrinter);
                i+=batchSize-1;
                skip += batchSize;
@@ -196,7 +198,7 @@ public class CqlCommand implements Callable<Integer>  {
            }
            else {
                retrieveProviders.clear();
-               retrieveProviders = mapToRetrieveProvider(skip, batchSize);
+               retrieveProviders = mapToRetrieveProvider(skip, batchSize,  dbFunctions, dbConnection);
                processAndSavePatients(retrieveProviders, csvPrinter);
                i+=entriesLeft;
                entriesProcessed+=entriesLeft;
