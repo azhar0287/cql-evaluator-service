@@ -57,7 +57,8 @@ public class UtilityFunction {
         FhirContext fhirContext = fhirVersionEnum.newContext();
         IParser selectedParser = fhirContext.newJsonParser();
 
-        //List<Document> documents = dbFunctions.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir_AllData", skip, limit, connection);
+       // List<Document> documents = dbFunctions.getRemainingData("151701", CollectionName, skip, limit, connection);
+
         List<Document> documents = dbFunctions.getRemainingData(libraries.get(0).context.contextValue, CollectionName, skip, limit, connection);
         for(int i=0; i<documents.size(); i++) {
             patientData = new PatientData();

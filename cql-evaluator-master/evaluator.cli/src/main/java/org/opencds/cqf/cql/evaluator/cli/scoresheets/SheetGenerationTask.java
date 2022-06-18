@@ -85,51 +85,60 @@ public class SheetGenerationTask {
             List<String> payerCodes;
             List<String> codeCheckList = utilityFunction.checkCodeForCCS();
             for(Document document : documents) {
+                if(document.getString("id").equals("95645")){
+                    int a=0;
+                }
                 System.out.println("Processing patient: "+document.getString("id"));
-                if(document.getBoolean("Age and Gender") != null) {
-                    if(document.getBoolean("Age and Gender")) {
-                        Object object = document.get("payerCodes");
-                        payerCodes = new ObjectMapper().convertValue(object, new TypeReference<List<String>>() {});
-                        utilityFunction.updatePayerCodes(payerCodes, dbFunctions, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
+                int age=Integer.parseInt(utilityFunction.getAge(document.getDate("birthDate"), measureDate));
+                if((age>23 && age<65) && utilityFunction.getGenderSymbol(document.getString("gender") ).equalsIgnoreCase("F")) {
+//                    if(!document.getBoolean("Age and Gender")) {
+                    Object object = document.get("payerCodes");
+                    payerCodes = new ObjectMapper().convertValue(object, new TypeReference<List<String>>() {
+                    });
+                    utilityFunction.updatePayerCodes(payerCodes, dbFunctions, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
 
-                        for(int i=0; i< payerCodes.size(); i++) {
-                            sheetObj = new ArrayList<>();
-                            sheetObj.add(document.getString("id"));
-                            sheetObj.add("CCS"); //Measure
-                            String payerCode = payerCodes.get(i);
-                            sheetObj.add(String.valueOf(payerCode));
-                            sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period For CE")));
-                            sheetObj.add("0"); //event
-                            if(document.getBoolean("Exclusions") || codeCheckList.stream().anyMatch(str -> str.trim().equals(payerCode))) {
-                                sheetObj.add("0"); //Epop
-                            }
-                            else {
-                                sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Denominator"))); //Epop
-                            }
-                            sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Denominator Exceptions"))); //exc
-                            sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Numerator")));
-                            sheetObj.add("0"); //Rexl
-                            sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions"))); //RexclId
-                            sheetObj.add(utilityFunction.getAge(document.getDate("birthDate"), measureDate));
-                            sheetObj.add(utilityFunction.getGenderSymbol(document.getString("gender")));
-                            csvPrinter.printRecord(sheetObj);
+                    if (payerCodes.size() != 0) {
+
+
+                    for (int i = 0; i < payerCodes.size(); i++) {
+                        sheetObj = new ArrayList<>();
+                        sheetObj.add(document.getString("id"));
+                        sheetObj.add("CCS"); //Measure
+                        String payerCode = payerCodes.get(i);
+                        sheetObj.add(String.valueOf(payerCode));
+                        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period For CE")));
+                        sheetObj.add("0"); //event
+                        if (document.getBoolean("Exclusions") || codeCheckList.stream().anyMatch(str -> str.trim().equals(payerCode))) {
+                            sheetObj.add("0"); //Epop
+                        } else {
+                            sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Denominator"))); //Epop
                         }
-                    }else{
-                        Main.failedPatients.add(document.getString("id"));
+                        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Denominator Exceptions"))); //exc
+                        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Numerator")));
+                        sheetObj.add("0"); //Rexl
+                        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions"))); //RexclId
+                        sheetObj.add(utilityFunction.getAge(document.getDate("birthDate"), measureDate));
+                        sheetObj.add(utilityFunction.getGenderSymbol(document.getString("gender")));
+                        csvPrinter.printRecord(sheetObj);
                     }
                 }
+                else {
+                        Main.failedPatients.add(document.getString("id"));//patients missed due to payerlist size=0
+                    }
+
+                }
                 else{
-                    Main.failedPatients.add(document.getString("id"));
+//                    Main.failedPatients.add(document.getString("id"));//patients missed due to gendre and age
                 }
 //                globalPatientId = document.getString("id");
 //                Main.failedPatients.add(globalPatientId);
                 csvPrinter.flush();
             }
             documents.clear();
-            documents = null;
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
 }

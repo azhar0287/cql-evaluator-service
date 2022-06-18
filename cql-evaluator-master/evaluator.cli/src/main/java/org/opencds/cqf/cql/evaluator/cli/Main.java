@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.mongodb.client.model.Indexes;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,8 +40,8 @@ public class Main {
     private static final PrintStream originalOut = System.out;
     private static final PrintStream originalErr = System.err;
 
-    private static final String testResourceRelativePath = "evaluator.cli/src/main/resources"; //for Jar
-    //private static final String testResourceRelativePath = "evaluator.cli/src/main/resources";
+//    private static final String testResourceRelativePath = "evaluator.cli/src/main/resources"; //for Jar
+    private static final String testResourceRelativePath = "evaluator.cli/src/main/resources";
     private static String testResourcePath = null;
     public static List<String> failedPatients = new ArrayList<>();
 
@@ -81,13 +82,19 @@ public class Main {
         DBConnection connection = new DBConnection(); //setting up connection
         DbFunctions dbFunctions = new DbFunctions();
 
-//        processPatients(dbFunctions, connection);
-//        processRemainingPatients(dbFunctions, connection);
-//        insertFailedPatient(dbFunctions, connection,"ep_cql_CCS_SampleDeck_failed_patients");
+        connection.collection = connection.database.getCollection("ep_cql_processed_data");
+        connection.collection.createIndex(Indexes.ascending("id"));
 
+        /* To Process Patients*/
+        processPatients(dbFunctions, connection);
+        /*To Process Patients*/
+        processRemainingPatients(dbFunctions, connection);
+        /*To generate Sheet CCS*/
         generateSheet(dbFunctions, connection, new UtilityFunction());
         insertFailedPatient(dbFunctions, connection,"ep_cql_CCS_Sample_Sheet_failed_patients");
 
+        /*Process Single Patient*/
+        processSinglePatient(dbFunctions, connection);
     }
 
     public static void processSinglePatient(DbFunctions dbFunctions, DBConnection connection) {
@@ -175,15 +182,13 @@ public class Main {
         ExecutorService executorServiceForSheet = Executors.newFixedThreadPool(10);
 
         for(int i=0; i<totalSkipsForSheet; i++) {
-            //ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
-            //isAllTasksCompleted.add(isTaskCompleted);
-            //executorServiceForSheet.execute(new SheetGenerationTask(utilityFunction, connection, dbFunctions, totalSkipped, csvPrinter, isTaskCompleted));
             SheetGenerationTask sheetGenerationTask = new SheetGenerationTask(utilityFunction, connection, dbFunctions, totalSkipped, csvPrinter);
             sheetGenerationTask.generateSheetV2();
 
             System.out.println("Iteration: "+i);
             totalSkipped+=500;
         }
+
         /*Shutting Down service*/
         while(true) {
             if(dbFunctions.isAllTasksCompletedByThreads(isAllTasksCompleted)){
