@@ -41,7 +41,7 @@ public class Main {
     private static final PrintStream originalErr = System.err;
 
 //    private static final String testResourceRelativePath = "evaluator.cli/src/main/resources"; //for Jar
-    private static final String testResourceRelativePath = "evaluator.cli/src/main/resources";
+  //  private static final String testResourceRelativePath = "evaluator.cli/src/main/resources";
     private static String testResourcePath = null;
     public static List<String> failedPatients = new ArrayList<>();
 
