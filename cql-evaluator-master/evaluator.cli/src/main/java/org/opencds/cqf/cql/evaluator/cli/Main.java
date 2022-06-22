@@ -172,7 +172,7 @@ public class Main {
 
         for(int i=0; i<totalSkipsForSheet; i++) {
             SheetGenerationTask sheetGenerationTask = new SheetGenerationTask(utilityFunction, connection, dbFunctions, totalSkipped, csvPrinter);
-            sheetGenerationTask.generateSheetV2();
+            sheetGenerationTask.generateSheetForDMSE();
             System.out.println("Iteration: "+i);
             totalSkipped+=500;
         }

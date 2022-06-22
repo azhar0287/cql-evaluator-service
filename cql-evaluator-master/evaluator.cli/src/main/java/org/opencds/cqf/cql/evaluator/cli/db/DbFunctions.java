@@ -15,9 +15,8 @@ import static com.mongodb.client.model.Projections.excludeId;
 public class DbFunctions {
     public static Logger LOGGER  = LogManager.getLogger(DbFunctions.class);
 
-    public List<Document> getConditionalData(String patientId, String collectionName, int skip, int limit, DBConnection connection) {
+    public List<Document> getConditionalData( String collectionName, int skip, int limit, DBConnection connection) {
         connection.collection = connection.database.getCollection(collectionName);
-        //FindIterable<Document> documents = this.collection.find(new Document("id", patientId)).projection(excludeId());
         FindIterable<Document> documents = connection.collection.find().skip(skip).limit(limit).batchSize(20000).projection(excludeId());
         MongoCursor<Document> cursor = documents.iterator();
         List<Document> list = new LinkedList<>();

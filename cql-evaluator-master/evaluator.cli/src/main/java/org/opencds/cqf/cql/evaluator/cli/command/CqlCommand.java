@@ -131,7 +131,7 @@ public class CqlCommand implements Callable<Integer>  {
         FhirContext fhirContext = fhirVersionEnum.newContext();
         IParser selectedParser = fhirContext.newJsonParser();
 
-        List<Document> documents = dbFunctions.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir", skip, limit, connection);
+        List<Document> documents = dbFunctions.getConditionalData( "ep_encounter_fhir", skip, limit, connection);
         for(Document document : documents) {
             patientData = new PatientData();
             patientData.setId(document.get("id").toString());

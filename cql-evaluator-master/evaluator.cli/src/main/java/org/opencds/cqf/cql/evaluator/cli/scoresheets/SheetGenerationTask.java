@@ -35,11 +35,18 @@ public class SheetGenerationTask {
         this.csvPrinter = csvPrinter;
     }
 
-    public void generateSheetV2() throws IOException, ParseException {
+    public void generateSheetForDMSE() throws IOException, ParseException {
         Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
         List<Document> documents;
-        documents = dbFunctions.getConditionalData("NoId", "ep_cql_processed_data", skip, batchSize, db);
+        documents = dbFunctions.getConditionalData("ep_cql_processed_data", skip, batchSize, db);
         sheetGenerationService.generateSheetForDMSE(documents, measureDate, csvPrinter, db);
+        documents.clear();
+    }
+    public void generateSheetForCCS() throws IOException, ParseException {
+        Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
+        List<Document> documents;
+        documents = dbFunctions.getConditionalData( "ep_cql_processed_data", skip, batchSize, db);
+        sheetGenerationService.generateSheetForCCS(documents, measureDate, csvPrinter, db);
         documents.clear();
     }
 
