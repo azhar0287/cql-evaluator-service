@@ -4,7 +4,7 @@ import java.util.Date;
 
 
 public class PayerInfo {
-    String payerCode;
+    public String payerCode;
     Date coverageStartDate;
     Date coverageEndDate;
     String coverageStartDateString;

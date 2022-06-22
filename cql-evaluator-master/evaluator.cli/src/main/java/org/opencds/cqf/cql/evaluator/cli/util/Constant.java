@@ -18,6 +18,10 @@ public class Constant {
    public static final String LIBRARY_NAME = "DMSE_HEDIS_MY2022";
 
 
+   public static final String EP_DICTIONARY = "dictionary_ep_2022_code";
+
+
+
    public static final String MAIN_FHIR_COLLECTION_NAME = "ep_encounter_fhir_DMS_Sample_Deck";
    public static final String FHIR_UNPROCESSED_COLLECTION_NAME = "DMSE_Sample_Deck_Fhir_Unprocessed_Patients";
 
