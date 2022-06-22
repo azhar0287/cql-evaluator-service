@@ -12,7 +12,6 @@
         <module name="evaluator.fhir" />
         <module name="evaluator.expression" />
         <module name="evaluator.plandefinition" />
-        <module name="evaluator.content-test" />
         <module name="evaluator.library" />
         <module name="evaluator.builder" />
         <module name="evaluator.measure-hapi" />
@@ -69,6 +68,9 @@
         <module name="evaluator" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="evaluator.content-test" target="8" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
