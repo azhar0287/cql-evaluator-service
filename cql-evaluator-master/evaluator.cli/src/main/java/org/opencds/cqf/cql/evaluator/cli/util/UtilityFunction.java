@@ -21,6 +21,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -119,6 +120,13 @@ public class UtilityFunction {
             e.printStackTrace();
         }
         return date;
+    }
+
+    public String getConvertedDateString(Date birthDate) {
+        DateFormat dateFormat = null;
+        dateFormat = new SimpleDateFormat("yyyyMMdd");
+        dateFormat.format(birthDate);
+        return  dateFormat.format(birthDate);
     }
 
     public Map<String,String> assignCodeToType(List<String> payerCodes, DbFunctions db, DBConnection connection) {
@@ -308,6 +316,22 @@ public class UtilityFunction {
         Period period = Period.between(dob, curDate);
         return String.valueOf(period.getYears());
     }
+    public String getAgeV2(String birthday) {
+        Calendar measurementDate = new GregorianCalendar(2022, 01, 01);
+        Calendar dob = new GregorianCalendar(Integer.parseInt(birthday.substring(0,4)), Integer.parseInt(birthday.substring(4,6)), Integer.parseInt(birthday.substring(6,8)));
+//
+//determines the year of DOB and current date
+        int age = measurementDate.get(Calendar.YEAR) - dob.get(Calendar.YEAR);
+        if ((dob.get(Calendar.MONTH) > measurementDate.get(Calendar.MONTH)) || (dob.get(Calendar.MONTH) == measurementDate.get(Calendar.MONTH) && dob.get(Calendar.DAY_OF_MONTH) > measurementDate.get(Calendar.DAY_OF_MONTH)))
+        {
+//decrements age by 1
+            age--;
+        }
+//prints the age
+        return String.valueOf(age);
+    }
+
+
 
     public static Date getParsedDateInRequiredFormat(String date, String format){
         SimpleDateFormat sdformat = new SimpleDateFormat(format);

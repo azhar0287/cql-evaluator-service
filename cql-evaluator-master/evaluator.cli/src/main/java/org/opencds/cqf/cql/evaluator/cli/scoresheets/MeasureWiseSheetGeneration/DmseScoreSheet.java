@@ -12,6 +12,7 @@ import org.opencds.cqf.cql.evaluator.cli.util.Constant;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
@@ -62,8 +63,11 @@ public class DmseScoreSheet {
         csvPrinter.printRecord(sheetObj);
     }
 
-    String getPayerCodeType(String payerCode){
-        return dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,new DBConnection()).get(0).getString("oid");
+    String getPayerCodeType(String payerCode ,DBConnection dbConnection){
+        if(dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,dbConnection).size()>0){
+           return  dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,new DBConnection()).get(0).getString("oid");
+        }
+        return "";
     }
 
     public Map<String,String> assignCodeToTypeDMS(List<PayerInfo> payerCodes, DbFunctions db, DBConnection connection) {
@@ -229,7 +233,7 @@ public class DmseScoreSheet {
             List<String> codeCheckList = utilityFunction.checkCodeForCCS();
             for(Document document : documents) {
                 System.out.println("Processing patient: "+document.getString("id"));
-                int patientAge = Integer.parseInt(utilityFunction.getAge(document.getDate("birthDate"), measureDate));
+                int patientAge = Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
                 if(patientAge>11 ) {
                     Object object = document.get("payerCodes");
                     payerInfoList = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {});
@@ -238,7 +242,7 @@ public class DmseScoreSheet {
 
                     if (payersList.size() != 0) {
                         for (String payerCode:payersList) {
-                            String payerCodeType = getPayerCodeType(payerCode);
+                            String payerCodeType = getPayerCodeType(payerCode,db);
                             if (((payerCodeType.equals(Constant.CODE_TYPE_COMMERCIAL) || payerCodeType.equals(Constant.CODE_TYPE_MEDICAID)) && patientAge>11)
                                     || (payerCodeType.equals(Constant.CODE_TYPE_MEDICARE) && patientAge>17)){
                                 sheetObj = new ArrayList<>();
