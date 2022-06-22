@@ -33,6 +33,7 @@ import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.dagger.DaggerCqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
+import org.opencds.cqf.cql.evaluator.engine.retrieve.PayerInfo;
 
 import java.util.*;
 
@@ -426,20 +427,45 @@ public class ProcessPatientService implements Runnable {
     }
 
 
+    public List<HashMap<String,String>> getPayerInfoMap(List<PayerInfo> list) {
+        List<HashMap<String,String>> mapList = new ArrayList<>();
+
+        for(PayerInfo payerInfo: list) {
+            HashMap<String,String> patientMap = new HashMap<>();
+            patientMap.put("payerCode", payerInfo.getPayerCode());
+            patientMap.put("coverageStartDate", payerInfo.getCoverageStartDate().toString());
+            patientMap.put("coverageEndDate", payerInfo.getCoverageEndDate().toString());
+            patientMap.put("coverageStartDateString", payerInfo.getCoverageStartDateString());
+            patientMap.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
+            mapList.add(patientMap);
+        }
+        return mapList;
+    }
+
     public Document createDocumentForResult(Map<String, Object> expressionResults, PatientData patientData) {
         Document document = new Document();
         document.put("id", patientData.getId());
         document.put("birthDate", patientData.getBirthDate());
         document.put("gender", patientData.getGender());
-        document.put("payerCodes", patientData.getPayerInfo());
+        document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
+
 
         /* Removing extra fields also giving codex error*/
         expressionResults.remove("Patient");
-        expressionResults.remove("Product Line as of December 31 of Measurement Period");
         expressionResults.remove("Member Coverage");
-        expressionResults.remove("Cervical Cytology Within 3 Years");
-        expressionResults.remove("hrHPV Testing Within 5 Years");
-        expressionResults.remove("Absence of Cervix");
+        expressionResults.remove("PHQ-9 Modified for Teens");
+        expressionResults.remove("PHQ-9 Assessment With A Score Documented");
+        expressionResults.remove("PHQ-9 Assessment With A Score Documented aa");
+        expressionResults.remove("Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia");
+        expressionResults.remove("Assessment Period One");
+        expressionResults.remove("April 30 of Measurement Period");
+        expressionResults.remove("Assessment Period Two");
+        expressionResults.remove("May 1 of Measurement Period");
+        expressionResults.remove("August 31 of Measurement Period");
+        expressionResults.remove("Assessment Period Three");
+        expressionResults.remove("September 1 of Measurement Period");
+        expressionResults.remove("May 1 of Measurement Period");
+
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;

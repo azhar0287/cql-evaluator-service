@@ -119,13 +119,6 @@ define "Exclusions 1":
   )
     or Hospice."Hospice Intervention or Encounter"
 
-define "test":
-( Status."Active Condition" ( [Condition: "Bipolar Disorder"]
-      union [Condition: "Other Bipolar Disorder"]
-      union [Condition: "Personality Disorder"]
-      union [Condition: "Psychotic Disorders"]
-      union [Condition: "Pervasive Developmental Disorder"] ) ) ExclusionDiagnosis
-
 define "Exclusions 2":
   "Exclusions 1"
 
@@ -143,9 +136,6 @@ define "PHQ-9 Assessment With A Score Documented":
         where PHQ9.value is not null
     )
   )
-
-define "PHQ-9 Assessment With A Score Documented aa":
-  (  [Observation: "Patient Health Questionnaire 9 item (PHQ-9) total score [Reported]"] ) PHQ9
 
 
 define "PHQ-9 Modified for Teens":
