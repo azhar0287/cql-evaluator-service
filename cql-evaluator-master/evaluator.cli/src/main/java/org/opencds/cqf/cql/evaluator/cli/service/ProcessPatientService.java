@@ -433,8 +433,8 @@ public class ProcessPatientService implements Runnable {
         for(PayerInfo payerInfo: list) {
             HashMap<String,String> patientMap = new HashMap<>();
             patientMap.put("payerCode", payerInfo.getPayerCode());
-            patientMap.put("coverageStartDate", payerInfo.getCoverageStartDate().toString());
-            patientMap.put("coverageEndDate", payerInfo.getCoverageEndDate().toString());
+            //patientMap.put("coverageStartDate", payerInfo.getCoverageStartDate().toString());
+            //patientMap.put("coverageEndDate", payerInfo.getCoverageEndDate().toString());
             patientMap.put("coverageStartDateString", payerInfo.getCoverageStartDateString());
             patientMap.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
             mapList.add(patientMap);

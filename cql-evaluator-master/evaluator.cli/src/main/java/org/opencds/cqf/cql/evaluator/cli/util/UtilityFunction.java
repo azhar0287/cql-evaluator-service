@@ -152,7 +152,7 @@ public class UtilityFunction {
         return codeTypes;
     }
 
-    public void updatePayerCodes(List<String> payerCodes, DbFunctions dbFunctions, DBConnection db) {
+    public void updatePayerCodesCCS(List<String> payerCodes, DbFunctions dbFunctions, DBConnection db) {
         int flag1 = 0;
         int flag2 = 0;
         int flag3  = 0;
@@ -213,6 +213,7 @@ public class UtilityFunction {
             }
         }
     }
+
 
     public List<String> checkCodeForCCS() {
 
