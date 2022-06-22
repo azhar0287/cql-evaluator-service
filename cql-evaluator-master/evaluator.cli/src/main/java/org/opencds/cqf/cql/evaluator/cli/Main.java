@@ -74,7 +74,7 @@ public class Main {
         //Process Single Patient
         String patientId = "95067";
         processSinglePatient(patientId, dbFunctions, connection);
-
+        ////////////////////
 
         //To generate Sheet and failed patients
         //generateSheet(dbFunctions, connection, new UtilityFunction());
