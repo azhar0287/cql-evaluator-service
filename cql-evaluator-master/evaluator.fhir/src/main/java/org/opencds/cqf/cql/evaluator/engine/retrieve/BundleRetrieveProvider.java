@@ -35,7 +35,7 @@ public class BundleRetrieveProvider extends TerminologyAwareRetrieveProvider {
 	public final CodeUtil codeUtil;
 	public final IFhirPath fhirPath;
 	public PatientData patientData;
-
+	public PayerInfo payerInfo;
 
 	public BundleRetrieveProvider(final FhirContext fhirContext, final IBaseBundle iBaseBundle) {
 		
@@ -45,13 +45,15 @@ public class BundleRetrieveProvider extends TerminologyAwareRetrieveProvider {
 		this.fhirPath = FhirPathCache.cachedForContext(fhirContext);
 	}
 
-	public BundleRetrieveProvider(final FhirContext fhirContext, final IBaseBundle iBaseBundle, PatientData patientData) {
+	public BundleRetrieveProvider(final FhirContext fhirContext, final IBaseBundle iBaseBundle, PatientData patientData, PayerInfo payerInfo) {
 
 		this.fhirContext = requireNonNull(fhirContext, "bundle can not be null.");
 		this.bundle = requireNonNull(iBaseBundle, "bundle can not be null.");
 		this.codeUtil = new CodeUtil(fhirContext);
 		this.fhirPath = FhirPathCache.cachedForContext(fhirContext);
 		this.patientData = patientData;
+		this.payerInfo = payerInfo;
+
 	}
 
 

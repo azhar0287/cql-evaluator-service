@@ -24,10 +24,7 @@ import org.opencds.cqf.cql.evaluator.cli.Main;
 import org.opencds.cqf.cql.evaluator.cli.command.CqlCommand;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
-import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ContextParameter;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
-import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ModelParameter;
-import org.opencds.cqf.cql.evaluator.cli.mappers.SheetInputMapper;
 import org.opencds.cqf.cql.evaluator.cli.util.Constant;
 import org.opencds.cqf.cql.evaluator.cli.util.ThreadTaskCompleted;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
@@ -36,8 +33,7 @@ import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.dagger.DaggerCqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
-import java.io.FileWriter;
-import java.text.ParseException;
+
 import java.util.*;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
@@ -71,7 +67,6 @@ public class ProcessPatientService implements Runnable {
     }
     public ProcessPatientService( List<LibraryOptions> libraries, DBConnection connection, int totalCount) {
         this.libraries = libraries;
-
         this.dbConnection = connection;
         this.totalCount = totalCount;
         this.batchSize=totalCount;
@@ -83,9 +78,9 @@ public class ProcessPatientService implements Runnable {
     }
 
 
-    public void singleDataProcessing() {
+    public void singleDataProcessing(String patientId) {
         List<RetrieveProvider> retrieveProviders;
-        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, 1, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection, Constant.MAIN_FHIR_COLLECTION_NAME);
+        retrieveProviders = utilityFunction.mapToRetrieveProviderForSingle(patientId, skip, 1, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection, Constant.MAIN_FHIR_COLLECTION_NAME);
         processAndSavePatients(retrieveProviders, dbFunctions);
         threadTaskCompleted.isTaskCompleted = true;
 
@@ -436,7 +431,7 @@ public class ProcessPatientService implements Runnable {
         document.put("id", patientData.getId());
         document.put("birthDate", patientData.getBirthDate());
         document.put("gender", patientData.getGender());
-        document.put("payerCodes", patientData.getPayerCodes());
+        document.put("payerCodes", patientData.getPayerInfo());
 
         /* Removing extra fields also giving codex error*/
         expressionResults.remove("Patient");

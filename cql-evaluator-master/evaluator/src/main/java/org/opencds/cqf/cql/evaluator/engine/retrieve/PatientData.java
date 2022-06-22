@@ -7,7 +7,7 @@ public class PatientData {
     private String gender;
     private Date birthDate;
     private String id;
-    List<String> payerCodes;
+    List<PayerInfo> payerInfo;
 
     public PatientData() {
     }
@@ -36,11 +36,11 @@ public class PatientData {
         this.id = id;
     }
 
-    public List<String> getPayerCodes() {
-        return payerCodes;
+    public List<PayerInfo> getPayerInfo() {
+        return payerInfo;
     }
 
-    public void setPayerCodes(List<String> payerCodes) {
-        this.payerCodes = payerCodes;
+    public void setPayerInfo(List<PayerInfo> payerInfo) {
+        this.payerInfo = payerInfo;
     }
 }

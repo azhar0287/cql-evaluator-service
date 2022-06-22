@@ -15,6 +15,7 @@ import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
+import org.opencds.cqf.cql.evaluator.engine.retrieve.PayerInfo;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -46,10 +47,10 @@ public class UtilityFunction {
         return csvPrinter;
     }
 
-
-    public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
+    public List<RetrieveProvider> mapToRetrieveProviderForSingle(String patientId, int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
         DBConnection db = new DBConnection();
-        PatientData patientData ;
+        PatientData patientData;
+        PayerInfo payerInfo = new PayerInfo();
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
 
         FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
@@ -57,23 +58,54 @@ public class UtilityFunction {
         FhirContext fhirContext = fhirVersionEnum.newContext();
         IParser selectedParser = fhirContext.newJsonParser();
 
-       // List<Document> documents = dbFunctions.getRemainingData("151701", CollectionName, skip, limit, connection);
+        List<Document> documents = dbFunctions.getSinglePatient(patientId, CollectionName, skip, limit, connection);
+        for (Document document : documents) {
+            patientData = new PatientData();
+            patientData.setId(document.get("id").toString());
+            patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
+            patientData.setGender(document.get("gender").toString());
+            Object o = document.get("payerInfo");
+
+            List<PayerInfo> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<PayerInfo>>() {
+            });
+
+            patientData.setPayerInfo(payerCodes);
+
+            bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
+            RetrieveProvider retrieveProvider;
+            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData, payerInfo);
+            retrieveProviders.add(retrieveProvider);
+        }
+        return retrieveProviders;
+    }
+
+    public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
+        DBConnection db = new DBConnection();
+        PatientData patientData;
+        PayerInfo payerInfo = new PayerInfo();
+        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
+
+        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
+        IBaseBundle bundle;
+        FhirContext fhirContext = fhirVersionEnum.newContext();
+        IParser selectedParser = fhirContext.newJsonParser();
 
         List<Document> documents = dbFunctions.getRemainingData(libraries.get(0).context.contextValue, CollectionName, skip, limit, connection);
         for(int i=0; i<documents.size(); i++) {
+
             patientData = new PatientData();
             patientData.setId(documents.get(i).get("id").toString());
             patientData.setBirthDate(getConvertedDate(documents.get(i).get("birthDate").toString()));
             patientData.setGender(documents.get(i).get("gender").toString());
-            Object o = documents.get(i).get("payerCodes");
+            Object o = documents.get(i).get("payerInfo");
 
-            List<String> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<String>>() {});
+            List<PayerInfo> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<PayerInfo>>() {});
 
-            patientData.setPayerCodes(payerCodes);
+            patientData.setPayerInfo(payerCodes);
 
             bundle = (IBaseBundle) selectedParser.parseResource(documents.get(i).toJson());
             RetrieveProvider retrieveProvider;
-            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData);
+            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData, payerInfo);
             retrieveProviders.add(retrieveProvider);
         }
         return retrieveProviders;
@@ -197,7 +229,7 @@ public class UtilityFunction {
             List<String> data;
             PatientData patientData;
             Map<String, Object> exp;
-            List<String> payerCodes;
+            List<String> payerCodes = null;
             List<String> codeCheckList = new ArrayList<>();
             codeCheckList.add("MCS");
             codeCheckList.add("MCR");
@@ -208,7 +240,7 @@ public class UtilityFunction {
 
                 patientData = infoMap.get(map.getKey());
                 exp = map.getValue();
-                payerCodes = patientData.getPayerCodes();
+                //payerCodes = patientData.getPayerCodes();
 
                 //this.updatePayerCodes(payerCodes);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
 

@@ -25,6 +25,11 @@ code "Patient Health Questionnaire-9: Modified for Teens total score [Reported.P
 parameter "Measurement Period" default Interval [@2022-01-01T00:00:00.0, @2022-12-31T23:59:59.0)
 
 context Patient
+define "Event 1":
+  ( AgeInYearsAt(date from start of "Measurement Period")>= 12
+      and exists ( "Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia" ) DepressionEncounter
+        where start of FHIRBase."Normalize Interval" ( DepressionEncounter.period ) during "Assessment Period One"
+  )
 
 define "Initial Population 1":
   ( AgeInYearsAt(date from start of "Measurement Period")>= 12
@@ -53,6 +58,12 @@ define "Enrolled During Participation Period":
   end of "Measurement Period", Interval[date from start of "Measurement Period", date from 
   end of "Measurement Period"], 45 )
 
+define "Event 2":
+  ( AgeInYearsAt(date from start of "Measurement Period")>= 12
+      and exists ( "Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia" ) DepressionEncounter
+        where start of FHIRBase."Normalize Interval" ( DepressionEncounter.period ) during "Assessment Period Two"
+  )
+
 define "Initial Population 2":
   ( AgeInYearsAt(date from start of "Measurement Period")>= 12
       and exists ( "Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia" ) DepressionEncounter
@@ -69,10 +80,16 @@ define "May 1 of Measurement Period":
 define "August 31 of Measurement Period":
   DateTime((year from start of "Measurement Period"), 08, 31, 23, 59, 59, 0, 0)
 
+define "Event 3":
+  ( AgeInYearsAt(date from start of "Measurement Period")>= 12
+      and exists ( "Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia" ) DepressionEncounter
+      where start of FHIRBase."Normalize Interval" ( DepressionEncounter.period ) during "Assessment Period Three"
+  )
+
 define "Initial Population 3":
   ( AgeInYearsAt(date from start of "Measurement Period")>= 12
       and exists ( "Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia" ) DepressionEncounter
-        where start of FHIRBase."Normalize Interval" ( DepressionEncounter.period ) during "Assessment Period Three"
+      where start of FHIRBase."Normalize Interval" ( DepressionEncounter.period ) during "Assessment Period Three"
   )
     and "Enrolled During Participation Period"
 
@@ -102,6 +119,13 @@ define "Exclusions 1":
   )
     or Hospice."Hospice Intervention or Encounter"
 
+define "test":
+( Status."Active Condition" ( [Condition: "Bipolar Disorder"]
+      union [Condition: "Other Bipolar Disorder"]
+      union [Condition: "Personality Disorder"]
+      union [Condition: "Psychotic Disorders"]
+      union [Condition: "Pervasive Developmental Disorder"] ) ) ExclusionDiagnosis
+
 define "Exclusions 2":
   "Exclusions 1"
 
@@ -119,6 +143,10 @@ define "PHQ-9 Assessment With A Score Documented":
         where PHQ9.value is not null
     )
   )
+
+define "PHQ-9 Assessment With A Score Documented aa":
+  (  [Observation: "Patient Health Questionnaire 9 item (PHQ-9) total score [Reported]"] ) PHQ9
+
 
 define "PHQ-9 Modified for Teens":
   ( [Observation: "Patient Health Questionnaire-9: Modified for Teens total score [Reported.PHQ.Teen]"] PHQ9M

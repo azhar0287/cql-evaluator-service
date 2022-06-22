@@ -51,24 +51,6 @@ public class Main {
         System.out.println(String.format("Test resource directory: %s", testResourcePath));
     }
 
-    public static void setUpStreams() {
-        outContent = new ByteArrayOutputStream();
-        errContent = new ByteArrayOutputStream();
-
-        System.setOut(new PrintStream(outContent));
-        System.setErr(new PrintStream(errContent));
-    }
-
-    public static void restoreStreams() {
-        String sysOut = outContent.toString();
-        String sysError = errContent.toString();
-
-        System.setOut(originalOut);
-        System.setErr(originalErr);
-
-        System.out.println(sysOut);
-        System.err.println(sysError);
-    }
 
     public static LibraryOptions setupLibrary() {
         ContextParameter context = new ContextParameter(CONTEXT, "TEST");
@@ -85,27 +67,34 @@ public class Main {
         connection.collection = connection.database.getCollection("ep_cql_processed_data");
         connection.collection.createIndex(Indexes.ascending("id"));
 
-        /* To Process Patients*/
-        processPatients(dbFunctions, connection);
-        /*To Process Patients*/
-        processRemainingPatients(dbFunctions, connection);
-        /*To generate Sheet CCS*/
-        generateSheet(dbFunctions, connection, new UtilityFunction());
-        insertFailedPatient(dbFunctions, connection,"ep_cql_CCS_Sample_Sheet_failed_patients");
+        // To Process Patients
+        // processPatients(dbFunctions, connection);
 
-        /*Process Single Patient*/
-        processSinglePatient(dbFunctions, connection);
+
+        //Process Single Patient
+        String patientId = "95067";
+        processSinglePatient(patientId, dbFunctions, connection);
+
+
+        //To generate Sheet and failed patients
+        //generateSheet(dbFunctions, connection, new UtilityFunction());
+        //insertFailedPatient(dbFunctions, connection,"ep_cql_CCS_Sample_Sheet_failed_patients");
+
+
+
+        //This function is not in our use now, can be refactored later
+        //To Process Patients
+        //processRemainingPatients(dbFunctions, connection);
+
     }
 
-    public static void processSinglePatient(DbFunctions dbFunctions, DBConnection connection) {
+    public static void processSinglePatient(String patientId, DbFunctions dbFunctions, DBConnection connection) {
         List<LibraryOptions> libraryOptions = new ArrayList<>();
         libraryOptions.add(setupLibrary());
 
         ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
-
-
         ProcessPatientService processPatientService = new ProcessPatientService(0, libraryOptions, connection, 1, isTaskCompleted);
-        processPatientService.singleDataProcessing();
+        processPatientService.singleDataProcessing(patientId);
 
         System.out.println("Finished");
     }
@@ -114,7 +103,7 @@ public class Main {
 
         System.out.println("Patient processing has started");
 
-        List<ThreadTaskCompleted> isAllTasksCompleted=new LinkedList<>();
+        List<ThreadTaskCompleted> isAllTasksCompleted = new LinkedList<>();
         int totalCount = dbFunctions.getDataCount(Constant.MAIN_FHIR_COLLECTION_NAME, connection);
 
 
@@ -184,7 +173,6 @@ public class Main {
         for(int i=0; i<totalSkipsForSheet; i++) {
             SheetGenerationTask sheetGenerationTask = new SheetGenerationTask(utilityFunction, connection, dbFunctions, totalSkipped, csvPrinter);
             sheetGenerationTask.generateSheetV2();
-
             System.out.println("Iteration: "+i);
             totalSkipped+=500;
         }
@@ -216,80 +204,10 @@ public class Main {
         dbFunctions.insertFailedPatients(collectionName, documents, dbConnection);
     }
 
+//    public static int run(String[] args) {
+//        Objects.requireNonNull(args);
+//        CommandLine cli = new CommandLine(new CliCommand());
+//        return cli.execute(args);
+//    }
 
-
-    public static int run(String[] args) {
-        Objects.requireNonNull(args);
-        CommandLine cli = new CommandLine(new CliCommand());
-        return cli.execute(args);
-    }
-
-    public static void CSS_HEDIS_MY2022(){
-        setUpStreams();
-        String folderName="/CCS_HEDIS_MY2022";
-        String mainLibrary="CCS_HEDIS_MY2022";
-        String[] args = new String[]{
-                "cql",
-                "-fv=R4",
-                "-lu="+ testResourcePath + folderName,
-                "-ln="+mainLibrary,
-                "-m=FHIR",
-                "-mu=" + testResourcePath + folderName,
-                "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
-                "-c=Patient",
-                "-cv=182669"
-        };
-
-        Main.run(args);
-
-        String output = outContent.toString();
-        System.out.println("Test here");
-        restoreStreams();
-    }
-
-    public static void testingAISE_Hedis_My2022(){
-        setUpStreams();
-        String folderName="/AISE_HEDIS_MY2022";
-        String mainLibrary="AISE_HEDIS_MY2022";
-        String[] args = new String[]{
-                "cql",
-                "-fv=R4",
-                "-lu="+ testResourcePath + folderName,
-                "-ln="+mainLibrary,
-                "-m=FHIR",
-                "-mu=" + testResourcePath + folderName,
-                "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
-                "-c=Patient",
-                "-cv=185233"
-        };
-
-        Main.run(args);
-
-        String output = outContent.toString();
-        System.out.println("Test here");
-        restoreStreams();
-    }
-
-    public static void BCSE_HEDIS_MY2022(){
-        setUpStreams();
-        String folderName="/HedisMeasureTesting";
-        String mainLibrary="BCSE_HEDIS_MY2022";
-        String[] args = new String[]{
-                "cql",
-                "-fv=R4",
-                "-lu="+ testResourcePath + folderName,
-                "-ln="+mainLibrary,
-                "-m=FHIR",
-                "-mu=" + testResourcePath + folderName,
-                "-t=" + testResourcePath + folderName+"/vocabulary/ValueSet",
-                "-c=Patient",
-                "-cv=Patient-18"
-        };
-
-        Main.run(args);
-
-        String output = outContent.toString();
-        System.out.println("Test here");
-        restoreStreams();
-    }
 }
