@@ -245,30 +245,30 @@ public class UtilityFunction {
 
                 //this.updatePayerCodes(payerCodes);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
 
-                    for(int i=0; i< payerCodes.size(); i++) {
-                        data = new ArrayList<>();
-                        data.add(map.getKey());
-                        data.add("CCS");
-                        String payerCode = payerCodes.get(i);
-                        data.add(String.valueOf(payerCode));
-                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period For CE").toString())));
-                        data.add("0"); //event
-                        Boolean bol = Boolean.parseBoolean(exp.get("Exclusions").toString());
-                        if(Boolean.parseBoolean(exp.get("Exclusions").toString()) || codeCheckList.stream().anyMatch(str -> str.trim().equals(payerCode))) {
-                            data.add("0"); //Epop
-                        }
-                        else {
-                            data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //Epop
-                        }
-                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator Exceptions").toString()))); //exc
-                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Numerator").toString())));
-                        data.add("0"); //Rexl
-                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Exclusions").toString()))); //RexclId
-                        data.add(getAge(patientData.getBirthDate(), measureDate));
-                        data.add(getGenderSymbol(patientData.getGender()));
-                        csvPrinter.printRecord(data);
+                for(int i=0; i< payerCodes.size(); i++) {
+                    data = new ArrayList<>();
+                    data.add(map.getKey());
+                    data.add("CCS");
+                    String payerCode = payerCodes.get(i);
+                    data.add(String.valueOf(payerCode));
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period For CE").toString())));
+                    data.add("0"); //event
+                    Boolean bol = Boolean.parseBoolean(exp.get("Exclusions").toString());
+                    if(Boolean.parseBoolean(exp.get("Exclusions").toString()) || codeCheckList.stream().anyMatch(str -> str.trim().equals(payerCode))) {
+                        data.add("0"); //Epop
                     }
+                    else {
+                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //Epop
+                    }
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator Exceptions").toString()))); //exc
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Numerator").toString())));
+                    data.add("0"); //Rexl
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Exclusions").toString()))); //RexclId
+                    data.add(getAge(patientData.getBirthDate(), measureDate));
+                    data.add(getGenderSymbol(patientData.getGender()));
+                    csvPrinter.printRecord(data);
                 }
+            }
             csvPrinter.flush();
 
         } catch (Exception e) {
@@ -307,5 +307,15 @@ public class UtilityFunction {
         LocalDate curDate = convertToLocalDateViaInstant(date);
         Period period = Period.between(dob, curDate);
         return String.valueOf(period.getYears());
+    }
+
+    public static Date getParsedDateInRequiredFormat(String date, String format){
+        SimpleDateFormat sdformat = new SimpleDateFormat(format);
+        try{
+            return sdformat.parse(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

@@ -94,43 +94,14 @@ public class SheetGenerationService {
         sheetObj.add(payerCode);
         sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
 
-        /*int eventSum = 0;
-        if(document.getBoolean("Event 1")) {
-            eventSum+=1;
-        }
-        if(document.getBoolean("Event 2")) {
-            eventSum+=1;
-        }
-        if(document.getBoolean("Event 3")) {
-            eventSum+=1;
-        }*/
 
         sheetObj.add(getFieldCount("Event", document));   //event
 
-//        int epopSum = 0;
-//        if(document.getBoolean("Denominator 1")) {
-//            epopSum+=1;
-//        }
-//        if(document.getBoolean("Denominator 2")) {
-//            epopSum+=1;
-//        }
-//        if(document.getBoolean("Denominator 3")) {
-//            epopSum+=1;
-//        }
         sheetObj.add(getFieldCount("Denominator", document)); //epop
 
         sheetObj.add("0"); //excl
 
-//        int numSum = 0;
-//        if(document.getBoolean("Numerator 1")) {
-//            numSum+=1;
-//        }
-//        if(document.getBoolean("Numerator 2")) {
-//            numSum+=1;
-//        }
-//        if(document.getBoolean("Numerator 3")) {
-//            numSum+=1;
-//        }
+
         sheetObj.add(getFieldCount("Numerator", document)); //Num
 
         sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
@@ -146,46 +117,7 @@ public class SheetGenerationService {
         return dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,new DBConnection()).get(0).getString("oid");
     }
 
-    public void generateSheetForDMSE(List<Document> documents, Date measureDate, CSVPrinter csvPrinter, DBConnection db) throws IOException {
-        try {
-            String globalPatientId;
-            List<String> sheetObj;
-            List<PayerInfo> payerInfoList;
-            List<String> codeCheckList = utilityFunction.checkCodeForCCS();
-            for(Document document : documents) {
-                System.out.println("Processing patient: "+document.getString("id"));
-                int patientAge = Integer.parseInt(utilityFunction.getAge(document.getDate("birthDate"), measureDate));
-                if(patientAge>11 ) {
-                    Object object = document.get("payerCodes");
-                    payerInfoList = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {});
-                    updatePayerCodesDMS(payerInfoList, dbFunctions, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
 
-                    if (payerInfoList.size() != 0) {
-                        for (PayerInfo payerInfo:payerInfoList) {
-                            String payerCodeType = getPayerCodeType(payerInfo.payerCode);
-                            if (((payerCodeType.equals(Constant.CODE_TYPE_COMMERCIAL) || payerCodeType.equals(Constant.CODE_TYPE_MEDICAID)) && patientAge>11)
-                                    || (payerCodeType.equals(Constant.CODE_TYPE_MEDICARE) && patientAge>17)){
-                                sheetObj = new ArrayList<>();
-                                sheetObj.add(document.getString("id"));
-                                sheetObj.add("DMS"); //Measure
-                                addObjectInSheet(sheetObj, document, payerInfo.payerCode, measureDate, csvPrinter);
-                            }
-                        }
-                    }
-                    else {
-//                        Main.failedPatients.add(document.getString("id"));//patients missed due to payerlist size=0
-                    }
-                }
-                else{
-                    Main.failedPatients.add(document.getString("id"));
-                }
-                csvPrinter.flush();
-            }
-            documents.clear();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
     public void updatePayerCodesDMS(List<PayerInfo> payerCodes, DbFunctions dbFunctions, DBConnection db) {
         int flag1 = 0;
         int flag2 = 0;
