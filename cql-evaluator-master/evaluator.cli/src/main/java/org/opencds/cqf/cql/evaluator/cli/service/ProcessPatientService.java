@@ -427,19 +427,31 @@ public class ProcessPatientService implements Runnable {
     }
 
 
-    public List<HashMap<String,String>> getPayerInfoMap(List<PayerInfo> list) {
+    public List<Document> getPayerInfoMap(List<PayerInfo> list) {
         List<HashMap<String,String>> mapList = new ArrayList<>();
+        List<Document> documents = new LinkedList<>();
+//        for(PayerInfo payerInfo: list) {
+//            HashMap<String, String> patientMap = new HashMap<>();
+//            patientMap.put("payerCode", payerInfo.getPayerCode());
+//            patientMap.put("coverageStartDate", payerInfo.getCoverageStartDate());
+//            patientMap.put("coverageEndDate", payerInfo.getCoverageEndDate());
+//            patientMap.put("coverageStartDateString", payerInfo.getCoverageStartDateString());
+//            patientMap.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
+//            mapList.add(patientMap);
+//        }
+
 
         for(PayerInfo payerInfo: list) {
-            HashMap<String,String> patientMap = new HashMap<>();
-            patientMap.put("payerCode", payerInfo.getPayerCode());
-            //patientMap.put("coverageStartDate", payerInfo.getCoverageStartDate().toString());
-            //patientMap.put("coverageEndDate", payerInfo.getCoverageEndDate().toString());
-            patientMap.put("coverageStartDateString", payerInfo.getCoverageStartDateString());
-            patientMap.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
-            mapList.add(patientMap);
+            Document document = new Document();
+            document.put("payerCode", payerInfo.getPayerCode());
+            document.put("coverageStartDate", payerInfo.getCoverageStartDate());
+            document.put("coverageEndDate", payerInfo.getCoverageEndDate());
+            document.put("coverageStartDateString", payerInfo.getCoverageStartDateString());
+            document.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
+            documents.add(document);
         }
-        return mapList;
+
+        return documents;
     }
 
     public Document createDocumentForResult(Map<String, Object> expressionResults, PatientData patientData) {
@@ -464,7 +476,6 @@ public class ProcessPatientService implements Runnable {
         expressionResults.remove("August 31 of Measurement Period");
         expressionResults.remove("Assessment Period Three");
         expressionResults.remove("September 1 of Measurement Period");
-        expressionResults.remove("May 1 of Measurement Period");
 
 
         document.putAll(expressionResults); /* Mapping into Document*/
