@@ -44,21 +44,33 @@ public class DmseScoreSheet {
     void addObjectInSheet(List<String> sheetObj, Document document, String payerCode, Date measureDate, CSVPrinter csvPrinter) throws IOException {
         sheetObj.add(payerCode);
         sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
-
+        List<String> codeList = new LinkedList<>();
+        codeList.add ("MEP");
+        codeList.add ("MMO");
+        codeList.add ("MPO");
+        codeList.add ("MOS");
 
         sheetObj.add(getFieldCount("Event", document));   //event
 
-        sheetObj.add(getFieldCount("Denominator", document)); //epop
+        if(document.getBoolean("Exclusions 1") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode))){
+            sheetObj.add("0"); //epop
+        }
+        else {
+            sheetObj.add(getFieldCount("Denominator", document)); //epop
 
+        }
+        
         sheetObj.add("0"); //excl
 
 
         sheetObj.add(getFieldCount("Numerator", document)); //Num
 
-        if(document.getBoolean("Exclusions 1")){
+
+
+        else if(document.getBoolean("Exclusions 1")){
             sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
         }
-        else if(document.getString("hospiceFlag").equals("Y")){
+        else if(document.getString("hospiceFlag").equals("Y")) {
             sheetObj.add("1");
         }
         else{
@@ -257,7 +269,7 @@ public class DmseScoreSheet {
                         for (String payerCode:payersList) {
                             String payerCodeType = getPayerCodeType(payerCode,db);
                             if (((payerCodeType.equals(Constant.CODE_TYPE_COMMERCIAL) || payerCodeType.equals(Constant.CODE_TYPE_MEDICAID)) && patientAge>11)
-                                    || (payerCodeType.equals(Constant.CODE_TYPE_MEDICARE) && patientAge>17)){
+                                    || (payerCodeType.equals(Constant.CODE_TYPE_MEDICARE) && patientAge > 17)){
                                 sheetObj = new ArrayList<>();
                                 sheetObj.add(document.getString("id"));
                                 sheetObj.add("DMS"); //Measure

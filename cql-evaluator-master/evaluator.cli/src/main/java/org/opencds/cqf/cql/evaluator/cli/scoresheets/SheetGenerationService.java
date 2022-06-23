@@ -38,7 +38,6 @@ public class SheetGenerationService {
 
                     if (payerCodes.size() != 0) {
 
-
                         for (int i = 0; i < payerCodes.size(); i++) {
                             sheetObj = new ArrayList<>();
                             sheetObj.add(document.getString("id"));
