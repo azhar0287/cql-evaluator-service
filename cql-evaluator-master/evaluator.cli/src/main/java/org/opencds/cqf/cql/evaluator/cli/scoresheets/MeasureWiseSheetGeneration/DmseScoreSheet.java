@@ -59,15 +59,14 @@ public class DmseScoreSheet {
             sheetObj.add(getFieldCount("Denominator", document)); //epop
 
         }
-        
+
         sheetObj.add("0"); //excl
 
 
         sheetObj.add(getFieldCount("Numerator", document)); //Num
 
-
-
-        else if(document.getBoolean("Exclusions 1")){
+        
+        if(document.getBoolean("Exclusions 1")){
             sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
         }
         else if(document.getString("hospiceFlag").equals("Y")) {
