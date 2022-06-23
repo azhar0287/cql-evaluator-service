@@ -15,11 +15,13 @@ import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
+import org.opencds.cqf.cql.evaluator.engine.retrieve.PayerInfo;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -46,10 +48,10 @@ public class UtilityFunction {
         return csvPrinter;
     }
 
-
-    public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
+    public List<RetrieveProvider> mapToRetrieveProviderForSingle(String patientId, int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
         DBConnection db = new DBConnection();
-        PatientData patientData ;
+        PatientData patientData;
+        PayerInfo payerInfo = new PayerInfo();
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
 
         FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
@@ -57,23 +59,56 @@ public class UtilityFunction {
         FhirContext fhirContext = fhirVersionEnum.newContext();
         IParser selectedParser = fhirContext.newJsonParser();
 
-       // List<Document> documents = dbFunctions.getRemainingData("151701", CollectionName, skip, limit, connection);
+        List<Document> documents = dbFunctions.getSinglePatient(patientId, CollectionName, skip, limit, connection);
+        for (Document document : documents) {
+            patientData = new PatientData();
+            patientData.setId(document.get("id").toString());
+            patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
+            patientData.setGender(document.get("gender").toString());
+            patientData.setHospiceFlag(document.getString("hospiceFlag"));
+            Object o = document.get("payerInfo");
+
+            List<PayerInfo> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<PayerInfo>>() {
+            });
+
+            patientData.setPayerInfo(payerCodes);
+
+            bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
+            RetrieveProvider retrieveProvider;
+            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData, payerInfo);
+            retrieveProviders.add(retrieveProvider);
+        }
+        return retrieveProviders;
+    }
+
+    public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
+        DBConnection db = new DBConnection();
+        PatientData patientData;
+        PayerInfo payerInfo = new PayerInfo();
+        List<RetrieveProvider> retrieveProviders = new ArrayList<>();
+
+        FhirVersionEnum fhirVersionEnum = FhirVersionEnum.valueOf(fhirVersion);
+        IBaseBundle bundle;
+        FhirContext fhirContext = fhirVersionEnum.newContext();
+        IParser selectedParser = fhirContext.newJsonParser();
 
         List<Document> documents = dbFunctions.getRemainingData(libraries.get(0).context.contextValue, CollectionName, skip, limit, connection);
         for(int i=0; i<documents.size(); i++) {
+
             patientData = new PatientData();
             patientData.setId(documents.get(i).get("id").toString());
             patientData.setBirthDate(getConvertedDate(documents.get(i).get("birthDate").toString()));
             patientData.setGender(documents.get(i).get("gender").toString());
-            Object o = documents.get(i).get("payerCodes");
+            patientData.setHospiceFlag(documents.get(i).getString("hospiceFlag"));
+            Object o = documents.get(i).get("payerInfo");
 
-            List<String> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<String>>() {});
+            List<PayerInfo> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<PayerInfo>>() {});
 
-            patientData.setPayerCodes(payerCodes);
+            patientData.setPayerInfo(payerCodes);
 
             bundle = (IBaseBundle) selectedParser.parseResource(documents.get(i).toJson());
             RetrieveProvider retrieveProvider;
-            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData);
+            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData, payerInfo);
             retrieveProviders.add(retrieveProvider);
         }
         return retrieveProviders;
@@ -87,6 +122,13 @@ public class UtilityFunction {
             e.printStackTrace();
         }
         return date;
+    }
+
+    public String getConvertedDateString(Date birthDate) {
+        DateFormat dateFormat = null;
+        dateFormat = new SimpleDateFormat("yyyyMMdd");
+        dateFormat.format(birthDate);
+        return  dateFormat.format(birthDate);
     }
 
     public Map<String,String> assignCodeToType(List<String> payerCodes, DbFunctions db, DBConnection connection) {
@@ -120,7 +162,7 @@ public class UtilityFunction {
         return codeTypes;
     }
 
-    public void updatePayerCodes(List<String> payerCodes, DbFunctions dbFunctions, DBConnection db) {
+    public void updatePayerCodesCCS(List<String> payerCodes, DbFunctions dbFunctions, DBConnection db) {
         int flag1 = 0;
         int flag2 = 0;
         int flag3  = 0;
@@ -182,6 +224,7 @@ public class UtilityFunction {
         }
     }
 
+
     public List<String> checkCodeForCCS() {
 
         List<String> codeCheckList = new ArrayList<>();
@@ -197,7 +240,7 @@ public class UtilityFunction {
             List<String> data;
             PatientData patientData;
             Map<String, Object> exp;
-            List<String> payerCodes;
+            List<String> payerCodes = null;
             List<String> codeCheckList = new ArrayList<>();
             codeCheckList.add("MCS");
             codeCheckList.add("MCR");
@@ -208,34 +251,34 @@ public class UtilityFunction {
 
                 patientData = infoMap.get(map.getKey());
                 exp = map.getValue();
-                payerCodes = patientData.getPayerCodes();
+                //payerCodes = patientData.getPayerCodes();
 
                 //this.updatePayerCodes(payerCodes);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
 
-                    for(int i=0; i< payerCodes.size(); i++) {
-                        data = new ArrayList<>();
-                        data.add(map.getKey());
-                        data.add("CCS");
-                        String payerCode = payerCodes.get(i);
-                        data.add(String.valueOf(payerCode));
-                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period For CE").toString())));
-                        data.add("0"); //event
-                        Boolean bol = Boolean.parseBoolean(exp.get("Exclusions").toString());
-                        if(Boolean.parseBoolean(exp.get("Exclusions").toString()) || codeCheckList.stream().anyMatch(str -> str.trim().equals(payerCode))) {
-                            data.add("0"); //Epop
-                        }
-                        else {
-                            data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //Epop
-                        }
-                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator Exceptions").toString()))); //exc
-                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Numerator").toString())));
-                        data.add("0"); //Rexl
-                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Exclusions").toString()))); //RexclId
-                        data.add(getAge(patientData.getBirthDate(), measureDate));
-                        data.add(getGenderSymbol(patientData.getGender()));
-                        csvPrinter.printRecord(data);
+                for(int i=0; i< payerCodes.size(); i++) {
+                    data = new ArrayList<>();
+                    data.add(map.getKey());
+                    data.add("CCS");
+                    String payerCode = payerCodes.get(i);
+                    data.add(String.valueOf(payerCode));
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Enrolled During Participation Period For CE").toString())));
+                    data.add("0"); //event
+                    Boolean bol = Boolean.parseBoolean(exp.get("Exclusions").toString());
+                    if(Boolean.parseBoolean(exp.get("Exclusions").toString()) || codeCheckList.stream().anyMatch(str -> str.trim().equals(payerCode))) {
+                        data.add("0"); //Epop
                     }
+                    else {
+                        data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator").toString()))); //Epop
+                    }
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Denominator Exceptions").toString()))); //exc
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Numerator").toString())));
+                    data.add("0"); //Rexl
+                    data.add(getIntegerString(Boolean.parseBoolean(exp.get("Exclusions").toString()))); //RexclId
+                    data.add(getAge(patientData.getBirthDate(), measureDate));
+                    data.add(getGenderSymbol(patientData.getGender()));
+                    csvPrinter.printRecord(data);
                 }
+            }
             csvPrinter.flush();
 
         } catch (Exception e) {
@@ -274,5 +317,31 @@ public class UtilityFunction {
         LocalDate curDate = convertToLocalDateViaInstant(date);
         Period period = Period.between(dob, curDate);
         return String.valueOf(period.getYears());
+    }
+    public String getAgeV2(String birthday) {
+        Calendar measurementDate = new GregorianCalendar(2022, 01, 01);
+        Calendar dob = new GregorianCalendar(Integer.parseInt(birthday.substring(0,4)), Integer.parseInt(birthday.substring(4,6)), Integer.parseInt(birthday.substring(6,8)));
+//
+//determines the year of DOB and current date
+        int age = measurementDate.get(Calendar.YEAR) - dob.get(Calendar.YEAR);
+        if ((dob.get(Calendar.MONTH) > measurementDate.get(Calendar.MONTH)) || (dob.get(Calendar.MONTH) == measurementDate.get(Calendar.MONTH) && dob.get(Calendar.DAY_OF_MONTH) > measurementDate.get(Calendar.DAY_OF_MONTH)))
+        {
+//decrements age by 1
+            age--;
+        }
+//prints the age
+        return String.valueOf(age);
+    }
+
+
+
+    public static Date getParsedDateInRequiredFormat(String date, String format){
+        SimpleDateFormat sdformat = new SimpleDateFormat(format);
+        try{
+            return sdformat.parse(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

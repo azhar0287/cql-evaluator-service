@@ -49,6 +49,7 @@ import org.opencds.cqf.cql.evaluator.dagger.DaggerCqlEvaluatorComponent;
 import ca.uhn.fhir.context.FhirVersionEnum;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
+import org.opencds.cqf.cql.evaluator.engine.retrieve.PayerInfo;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -130,7 +131,7 @@ public class CqlCommand implements Callable<Integer>  {
         FhirContext fhirContext = fhirVersionEnum.newContext();
         IParser selectedParser = fhirContext.newJsonParser();
 
-        List<Document> documents = dbFunctions.getConditionalData(libraries.get(0).context.contextValue, "ep_encounter_fhir", skip, limit, connection);
+        List<Document> documents = dbFunctions.getConditionalData( "ep_encounter_fhir", skip, limit, connection);
         for(Document document : documents) {
             patientData = new PatientData();
             patientData.setId(document.get("id").toString());
@@ -140,11 +141,11 @@ public class CqlCommand implements Callable<Integer>  {
 
             List<String> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<String>>() {});
 
-            patientData.setPayerCodes(payerCodes);
+            //patientData.setPayerCodes(payerCodes);
 
             bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
             RetrieveProvider retrieveProvider;
-            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData);
+            retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData, new PayerInfo());
             retrieveProviders.add(retrieveProvider);
         }
         return retrieveProviders;

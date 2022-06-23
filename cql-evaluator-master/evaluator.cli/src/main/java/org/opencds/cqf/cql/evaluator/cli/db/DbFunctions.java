@@ -15,10 +15,20 @@ import static com.mongodb.client.model.Projections.excludeId;
 public class DbFunctions {
     public static Logger LOGGER  = LogManager.getLogger(DbFunctions.class);
 
-    public List<Document> getConditionalData(String patientId, String collectionName, int skip, int limit, DBConnection connection) {
+    public List<Document> getConditionalData( String collectionName, int skip, int limit, DBConnection connection) {
         connection.collection = connection.database.getCollection(collectionName);
-        //FindIterable<Document> documents = this.collection.find(new Document("id", patientId)).projection(excludeId());
         FindIterable<Document> documents = connection.collection.find().skip(skip).limit(limit).batchSize(20000).projection(excludeId());
+        MongoCursor<Document> cursor = documents.iterator();
+        List<Document> list = new LinkedList<>();
+        while(cursor.hasNext()) {
+            list.add(cursor.next());
+        }
+        return list;
+    }
+
+    public List<Document> getSinglePatient(String patientId, String collectionName, int skip, int limit, DBConnection connection) {
+        connection.collection = connection.database.getCollection(collectionName);
+        FindIterable<Document> documents = connection.collection.find(new Document("id", patientId)).projection(excludeId());
         MongoCursor<Document> cursor = documents.iterator();
         List<Document> list = new LinkedList<>();
         while(cursor.hasNext()) {
@@ -29,7 +39,6 @@ public class DbFunctions {
 
     public List<Document> getRemainingData(String patientId, String collectionName, int skip, int limit, DBConnection connection) {
         connection.collection = connection.database.getCollection(collectionName);
-        //FindIterable<Document> documents = connection.collection.find(new Document("id", patientId)).projection(excludeId());
         FindIterable<Document> documents = connection.collection.find().skip(skip).limit(limit).batchSize(20000).projection(excludeId());
         MongoCursor<Document> cursor = documents.iterator();
         List<Document> list = new LinkedList<>();
@@ -66,9 +75,12 @@ public class DbFunctions {
 
     public void insertFailedPatients(String collectionName, List<Document> documents, DBConnection dbConnection) {
         dbConnection.collection = dbConnection.database.getCollection(collectionName);
-        dbConnection.collection.insertMany(documents);
-        LOGGER.info("Data batch has pushed: "+documents.size());
-        documents.clear();
+        if(documents.size()>0){
+            dbConnection.collection.insertMany(documents);
+            documents.clear();
+            LOGGER.info("Data batch has pushed: "+documents.size());
+        }
+        LOGGER.info("No failed patients!! ");
     }
 
 

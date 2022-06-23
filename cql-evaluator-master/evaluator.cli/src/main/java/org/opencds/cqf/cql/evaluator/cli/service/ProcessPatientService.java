@@ -24,10 +24,7 @@ import org.opencds.cqf.cql.evaluator.cli.Main;
 import org.opencds.cqf.cql.evaluator.cli.command.CqlCommand;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
-import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ContextParameter;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
-import org.opencds.cqf.cql.evaluator.cli.libraryparameter.ModelParameter;
-import org.opencds.cqf.cql.evaluator.cli.mappers.SheetInputMapper;
 import org.opencds.cqf.cql.evaluator.cli.util.Constant;
 import org.opencds.cqf.cql.evaluator.cli.util.ThreadTaskCompleted;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
@@ -36,8 +33,8 @@ import org.opencds.cqf.cql.evaluator.dagger.CqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.dagger.DaggerCqlEvaluatorComponent;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
-import java.io.FileWriter;
-import java.text.ParseException;
+import org.opencds.cqf.cql.evaluator.engine.retrieve.PayerInfo;
+
 import java.util.*;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
@@ -71,7 +68,6 @@ public class ProcessPatientService implements Runnable {
     }
     public ProcessPatientService( List<LibraryOptions> libraries, DBConnection connection, int totalCount) {
         this.libraries = libraries;
-
         this.dbConnection = connection;
         this.totalCount = totalCount;
         this.batchSize=totalCount;
@@ -83,9 +79,9 @@ public class ProcessPatientService implements Runnable {
     }
 
 
-    public void singleDataProcessing() {
+    public void singleDataProcessing(String patientId) {
         List<RetrieveProvider> retrieveProviders;
-        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, 1, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection, Constant.MAIN_FHIR_COLLECTION_NAME);
+        retrieveProviders = utilityFunction.mapToRetrieveProviderForSingle(patientId, skip, 1, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection, Constant.MAIN_FHIR_COLLECTION_NAME);
         processAndSavePatients(retrieveProviders, dbFunctions);
         threadTaskCompleted.isTaskCompleted = true;
 
@@ -431,20 +427,57 @@ public class ProcessPatientService implements Runnable {
     }
 
 
+    public List<Document> getPayerInfoMap(List<PayerInfo> list) {
+        List<HashMap<String,String>> mapList = new ArrayList<>();
+        List<Document> documents = new LinkedList<>();
+//        for(PayerInfo payerInfo: list) {
+//            HashMap<String, String> patientMap = new HashMap<>();
+//            patientMap.put("payerCode", payerInfo.getPayerCode());
+//            patientMap.put("coverageStartDate", payerInfo.getCoverageStartDate());
+//            patientMap.put("coverageEndDate", payerInfo.getCoverageEndDate());
+//            patientMap.put("coverageStartDateString", payerInfo.getCoverageStartDateString());
+//            patientMap.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
+//            mapList.add(patientMap);
+//        }
+
+
+        for(PayerInfo payerInfo: list) {
+            Document document = new Document();
+            document.put("payerCode", payerInfo.getPayerCode());
+            document.put("coverageStartDate", payerInfo.getCoverageStartDate());
+            document.put("coverageEndDate", payerInfo.getCoverageEndDate());
+            document.put("coverageStartDateString", payerInfo.getCoverageStartDateString());
+            document.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
+            documents.add(document);
+        }
+
+        return documents;
+    }
+
     public Document createDocumentForResult(Map<String, Object> expressionResults, PatientData patientData) {
         Document document = new Document();
         document.put("id", patientData.getId());
         document.put("birthDate", patientData.getBirthDate());
         document.put("gender", patientData.getGender());
-        document.put("payerCodes", patientData.getPayerCodes());
+        document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
+        document.put("hospiceFlag",patientData.getHospiceFlag());
+
 
         /* Removing extra fields also giving codex error*/
         expressionResults.remove("Patient");
-        expressionResults.remove("Product Line as of December 31 of Measurement Period");
         expressionResults.remove("Member Coverage");
-        expressionResults.remove("Cervical Cytology Within 3 Years");
-        expressionResults.remove("hrHPV Testing Within 5 Years");
-        expressionResults.remove("Absence of Cervix");
+        expressionResults.remove("PHQ-9 Modified for Teens");
+        expressionResults.remove("PHQ-9 Assessment With A Score Documented");
+        expressionResults.remove("PHQ-9 Assessment With A Score Documented aa");
+        expressionResults.remove("Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia");
+        expressionResults.remove("Assessment Period One");
+        expressionResults.remove("April 30 of Measurement Period");
+        expressionResults.remove("Assessment Period Two");
+        expressionResults.remove("May 1 of Measurement Period");
+        expressionResults.remove("August 31 of Measurement Period");
+        expressionResults.remove("Assessment Period Three");
+        expressionResults.remove("September 1 of Measurement Period");
+
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
