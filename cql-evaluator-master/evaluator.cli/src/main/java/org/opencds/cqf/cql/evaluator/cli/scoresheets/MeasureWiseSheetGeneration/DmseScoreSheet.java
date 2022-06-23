@@ -57,7 +57,6 @@ public class DmseScoreSheet {
         sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
 
         sheetObj.add("0"); //RexlD
-//        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions"))); //RexclId
         sheetObj.add(utilityFunction.getAge(document.getDate("birthDate"), measureDate));
         sheetObj.add(utilityFunction.getGenderSymbol(document.getString("gender")));
         csvPrinter.printRecord(sheetObj);

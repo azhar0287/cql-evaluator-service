@@ -25,6 +25,7 @@ code "Patient Health Questionnaire-9: Modified for Teens total score [Reported.P
 parameter "Measurement Period" default Interval [@2022-01-01T00:00:00.0, @2022-12-31T23:59:59.0)
 
 context Patient
+
 define "Event 1":
   ( AgeInYearsAt(date from start of "Measurement Period")>= 12
       and exists ( "Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia" ) DepressionEncounter

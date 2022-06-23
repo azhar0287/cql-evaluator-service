@@ -6,7 +6,7 @@ public class PatientData {
     private String gender;
     private Date birthDate;
     private String id;
-
+    private String hospiceFlag;
     public PatientData() {
     }
 
@@ -34,4 +34,11 @@ public class PatientData {
         this.id = id;
     }
 
+    public String getHospiceFlag() {
+        return hospiceFlag;
+    }
+
+    public void setHospiceFlag(String hospiceFlag) {
+        this.hospiceFlag = hospiceFlag;
+    }
 }

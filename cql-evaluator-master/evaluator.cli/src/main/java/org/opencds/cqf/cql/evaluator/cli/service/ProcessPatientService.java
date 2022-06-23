@@ -460,6 +460,7 @@ public class ProcessPatientService implements Runnable {
         document.put("birthDate", patientData.getBirthDate());
         document.put("gender", patientData.getGender());
         document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
+        document.put("hospiceFlag",patientData.getHospiceFlag());
 
 
         /* Removing extra fields also giving codex error*/

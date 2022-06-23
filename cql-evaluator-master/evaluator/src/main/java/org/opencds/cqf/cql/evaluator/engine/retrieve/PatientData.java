@@ -8,6 +8,7 @@ public class PatientData {
     private Date birthDate;
     private String id;
     List<PayerInfo> payerInfo;
+    private String hospiceFlag;
 
     public PatientData() {
     }
@@ -42,5 +43,13 @@ public class PatientData {
 
     public void setPayerInfo(List<PayerInfo> payerInfo) {
         this.payerInfo = payerInfo;
+    }
+
+    public String getHospiceFlag() {
+        return hospiceFlag;
+    }
+
+    public void setHospiceFlag(String hospiceFlag) {
+        this.hospiceFlag = hospiceFlag;
     }
 }
