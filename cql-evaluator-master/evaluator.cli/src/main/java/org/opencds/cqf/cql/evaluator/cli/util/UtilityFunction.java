@@ -65,6 +65,7 @@ public class UtilityFunction {
             patientData.setId(document.get("id").toString());
             patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
             patientData.setGender(document.get("gender").toString());
+            patientData.setHospiceFlag(document.getString("hospiceFlag"));
             Object o = document.get("payerInfo");
 
             List<PayerInfo> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<PayerInfo>>() {
@@ -98,6 +99,7 @@ public class UtilityFunction {
             patientData.setId(documents.get(i).get("id").toString());
             patientData.setBirthDate(getConvertedDate(documents.get(i).get("birthDate").toString()));
             patientData.setGender(documents.get(i).get("gender").toString());
+            patientData.setHospiceFlag(documents.get(i).getString("hospiceFlag"));
             Object o = documents.get(i).get("payerInfo");
 
             List<PayerInfo> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<PayerInfo>>() {});

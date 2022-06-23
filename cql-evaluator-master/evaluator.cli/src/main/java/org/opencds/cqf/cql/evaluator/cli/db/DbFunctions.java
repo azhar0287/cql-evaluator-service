@@ -75,9 +75,12 @@ public class DbFunctions {
 
     public void insertFailedPatients(String collectionName, List<Document> documents, DBConnection dbConnection) {
         dbConnection.collection = dbConnection.database.getCollection(collectionName);
-        dbConnection.collection.insertMany(documents);
-        LOGGER.info("Data batch has pushed: "+documents.size());
-        documents.clear();
+        if(documents.size()>0){
+            dbConnection.collection.insertMany(documents);
+            documents.clear();
+            LOGGER.info("Data batch has pushed: "+documents.size());
+        }
+        LOGGER.info("No failed patients!! ");
     }
 
 

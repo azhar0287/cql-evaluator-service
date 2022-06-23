@@ -72,13 +72,13 @@ public class Main {
 
 
         //Process Single Patient
-        String patientId = "95002";
-        processSinglePatient(patientId, dbFunctions, connection);
+//        String patientId = "95067";
+//        processSinglePatient(patientId, dbFunctions, connection);
         ////////////////////
 
         //To generate Sheet and failed patients
-      //  generateSheet(dbFunctions, connection, new UtilityFunction());
-        //insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Sample_Sheet_failed_patients");
+        generateSheet(dbFunctions, connection, new UtilityFunction());
+        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Sample_Sheet_failed_patients");
 
 
 
