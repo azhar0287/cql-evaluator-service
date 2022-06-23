@@ -52,7 +52,7 @@ public class DmseScoreSheet {
 
         sheetObj.add(getFieldCount("Event", document));   //event
 
-        if(document.getBoolean("Exclusions 1") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode))){
+        if(document.getBoolean("Exclusions 1") && document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
             sheetObj.add("0"); //epop
         }
         else {
@@ -65,7 +65,7 @@ public class DmseScoreSheet {
 
         sheetObj.add(getFieldCount("Numerator", document)); //Num
 
-        
+
         if(document.getBoolean("Exclusions 1")){
             sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
         }
