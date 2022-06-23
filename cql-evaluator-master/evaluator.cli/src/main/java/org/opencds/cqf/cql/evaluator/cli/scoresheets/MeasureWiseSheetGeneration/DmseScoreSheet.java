@@ -27,13 +27,14 @@ public class DmseScoreSheet {
 
     public String getFieldCount(String fieldName, Document document) {
         int eventSum = 0;
-        if(document.getBoolean(fieldName + " 1")) {
+        String feildname=fieldName.concat(" 1");
+        if(document.getBoolean(fieldName.concat(" 1") )) {
             eventSum+=1;
         }
-        if(document.getBoolean(fieldName + " 2")) {
+        if(document.getBoolean(fieldName.concat(" 2") )) {
             eventSum+=1;
         }
-        if(document.getBoolean(fieldName + " 3")) {
+        if(document.getBoolean(fieldName.concat(" 3") )) {
             eventSum+=1;
         }
         return String.valueOf(eventSum);
@@ -54,7 +55,16 @@ public class DmseScoreSheet {
 
         sheetObj.add(getFieldCount("Numerator", document)); //Num
 
-        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
+        if(document.getBoolean("Exclusions 1")){
+            sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
+        }
+        else if(document.getString("hospiceFlag").equals("Y")){
+            sheetObj.add("1");
+        }
+        else{
+            sheetObj.add("0");
+        }
+
 
         sheetObj.add("0"); //RexlD
         sheetObj.add(utilityFunction.getAge(document.getDate("birthDate"), measureDate));
@@ -131,10 +141,11 @@ public class DmseScoreSheet {
         List<String> payersList=new LinkedList<>();
         if(payerInfoList != null && payerInfoList.size() != 0) {
             Date measurementPeriodEndingDate = UtilityFunction.getParsedDateInRequiredFormat("2022-12-31", "yyyy-MM-dd");
-            Date insuranceDate = null;
+            Date insuranceEndDate = null,insuranceStartDate=null;
             for (int i = 0; i < payerInfoList.size(); i++) {
-                insuranceDate = payerInfoList.get(i).getCoverageEndDate();
-                if (null!=insuranceDate && insuranceDate.compareTo(measurementPeriodEndingDate) >= 0 && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101")) {
+                insuranceEndDate = payerInfoList.get(i).getCoverageEndDate();
+                insuranceStartDate=payerInfoList.get(i).getCoverageStartDate();
+                if (null!=insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0 && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101") && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
 //                    payersList.add(insuranceList.get(i).getPayerCode());
                     mapSpecialPayerCodes(payersList,payerInfoList.get(i).getPayerCode());
                 }
@@ -232,6 +243,9 @@ public class DmseScoreSheet {
             List<String> codeCheckList = utilityFunction.checkCodeForCCS();
             for(Document document : documents) {
                 System.out.println("Processing patient: "+document.getString("id"));
+                if(document.getString("id").equals("95083")){
+                    int a=0;
+                }
                 int patientAge = Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
                 if(patientAge>11 ) {
                     Object object = document.get("payerCodes");
