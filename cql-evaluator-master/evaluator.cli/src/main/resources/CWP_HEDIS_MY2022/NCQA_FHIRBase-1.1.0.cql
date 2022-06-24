@@ -47,13 +47,7 @@ define function "GetId"(uri String):
     else uri
 
 define function "VS Cast Function"(VSet List<System.Code>):
-  ( ( cast { "VSet", 1 }[0]as Tuple {
-      codes List<System.Code>,
-      oid System.String,
-      version System.String
-    }
-  ).codes ) VSetCodes
-    return System.Code { code: VSetCodes.code, system: VSetCodes.system }
+  VSet
 
 define function "First Dates per 31 Day Periods"(DateList List<Date>):
   ( Tuple {

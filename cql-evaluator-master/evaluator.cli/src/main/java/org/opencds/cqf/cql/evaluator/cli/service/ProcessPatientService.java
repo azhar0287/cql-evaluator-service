@@ -464,20 +464,31 @@ public class ProcessPatientService implements Runnable {
 
 
         /* Removing extra fields also giving codex error*/
-        expressionResults.remove("Patient");
-        expressionResults.remove("Member Coverage");
-        expressionResults.remove("PHQ-9 Modified for Teens");
-        expressionResults.remove("PHQ-9 Assessment With A Score Documented");
-        expressionResults.remove("PHQ-9 Assessment With A Score Documented aa");
-        expressionResults.remove("Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia");
-        expressionResults.remove("Assessment Period One");
-        expressionResults.remove("April 30 of Measurement Period");
-        expressionResults.remove("Assessment Period Two");
-        expressionResults.remove("May 1 of Measurement Period");
-        expressionResults.remove("August 31 of Measurement Period");
-        expressionResults.remove("Assessment Period Three");
-        expressionResults.remove("September 1 of Measurement Period");
-
+          expressionResults.remove("Patient");
+          expressionResults.remove("July 1 of Year Prior to Measurement Period");
+          expressionResults.remove("June 30 of Measurement Period");
+          expressionResults.remove("Intake Period");
+          expressionResults.remove("Member Claims");
+          expressionResults.remove("Pharyngitis Diagnosis");
+          expressionResults.remove("Outpatient Encounters");
+          expressionResults.remove("Encounter with Pharyngitis");
+          expressionResults.remove("Antibiotic Medication");
+          expressionResults.remove("Claim with Antibiotic Medication");
+          expressionResults.remove("Member Coverage");
+          expressionResults.remove("Comorbid Conditions Diagnosis");
+          expressionResults.remove("Competing Condition Diagnosis");
+//        expressionResults.remove("PHQ-9 Modified for Teens");
+//        expressionResults.remove("PHQ-9 Assessment With A Score Documented");
+//        expressionResults.remove("PHQ-9 Assessment With A Score Documented aa");
+//        expressionResults.remove("Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia");
+//        expressionResults.remove("Assessment Period One");
+//        expressionResults.remove("April 30 of Measurement Period");
+//        expressionResults.remove("Assessment Period Two");
+//        expressionResults.remove("May 1 of Measurement Period");
+//        expressionResults.remove("August 31 of Measurement Period");
+//        expressionResults.remove("Assessment Period Three");
+//        expressionResults.remove("September 1 of Measurement Period");
+          expressionResults.remove("Intake Period");
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
