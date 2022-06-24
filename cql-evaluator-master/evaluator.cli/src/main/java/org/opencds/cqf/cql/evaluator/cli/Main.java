@@ -68,7 +68,7 @@ public class Main {
         connection.collection.createIndex(Indexes.ascending("id"));
 
         // To Process Patients
-       // processPatients(dbFunctions, connection);
+        processPatients(dbFunctions, connection);
 
 
         //Process Single Patient
@@ -77,8 +77,8 @@ public class Main {
         ////////////////////
 
         //To generate Sheet and failed patients
-        generateSheet(dbFunctions, connection, new UtilityFunction());
-        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Sample_Sheet_failed_patients");
+//        generateSheet(dbFunctions, connection, new UtilityFunction());
+//        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Sample_Sheet_failed_patients");
 
 
 
