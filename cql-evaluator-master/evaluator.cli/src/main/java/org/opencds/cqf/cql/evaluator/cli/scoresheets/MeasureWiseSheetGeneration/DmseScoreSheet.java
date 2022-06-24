@@ -52,7 +52,7 @@ public class DmseScoreSheet {
 
         sheetObj.add(getFieldCount("Event", document));   //event
 
-        if(document.getBoolean("Exclusions 1") && document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+        if(document.getBoolean("Exclusions 1") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
             sheetObj.add("0"); //epop
         }
         else {
@@ -78,14 +78,14 @@ public class DmseScoreSheet {
 
 
         sheetObj.add("0"); //RexlD
-        sheetObj.add(utilityFunction.getAge(document.getDate("birthDate"), measureDate));
+        sheetObj.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
         sheetObj.add(utilityFunction.getGenderSymbol(document.getString("gender")));
         csvPrinter.printRecord(sheetObj);
     }
 
     String getPayerCodeType(String payerCode ,DBConnection dbConnection){
         if(dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,dbConnection).size()>0){
-           return  dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,new DBConnection()).get(0).getString("oid");
+            return  dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,new DBConnection()).get(0).getString("oid");
         }
         return "";
     }
@@ -158,7 +158,8 @@ public class DmseScoreSheet {
                 insuranceStartDate=payerInfoList.get(i).getCoverageStartDate();
                 if (null!=insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0 && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101") && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
 //                    payersList.add(insuranceList.get(i).getPayerCode());
-                    mapSpecialPayerCodes(payersList,payerInfoList.get(i).getPayerCode());
+//                    mapSpecialPayerCodes(payersList,payerInfoList.get(i).getPayerCode());
+                    payersList.add(payerInfoList.get(i).getPayerCode());
                 }
             }
 
@@ -173,7 +174,8 @@ public class DmseScoreSheet {
                     if ((null != lastCoverageObjectStartDate) && (null != lastCoverageObjectEndDate)) {
 
                         if (!lastCoverageObjectStartDate.equals("20240101") && (lastCoverageObjectEndDate.substring(0, 4).equals("2022"))) {
-                            mapSpecialPayerCodes(payersList, payerInfoList.get(i).getPayerCode());
+//                            mapSpecialPayerCodes(payersList, payerInfoList.get(i).getPayerCode());
+                            payersList.add(payerInfoList.get(i).getPayerCode());
                             break;
                         }
 
@@ -189,6 +191,7 @@ public class DmseScoreSheet {
         int flag1 = 0;
         int flag2 = 0;
         int flag3  = 0;
+        List<String> updatedPayersList=new LinkedList<>();
         Map<String,String> codeTypes;
         if(payerCodes.size() == 2) {
             codeTypes = utilityFunction.assignCodeToType(payerCodes,dbFunctions, db);
@@ -222,7 +225,8 @@ public class DmseScoreSheet {
                 payerCodes.clear();
                 for (Map.Entry<String, String> entry : codeTypes.entrySet()) {
                     if (entry.getValue().equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
-                        payerCodes.add(entry.getKey());
+//                        payerCodes.add(entry.getKey());
+                        mapSpecialPayerCodes(updatedPayersList,entry.getKey());
                     }
                 }
             }
@@ -231,7 +235,9 @@ public class DmseScoreSheet {
                 payerCodes.clear();
                 for (Map.Entry<String, String> entry : codeTypes.entrySet()) {
                     if (entry.getValue().equalsIgnoreCase(CODE_TYPE_COMMERCIAL)) {
-                        payerCodes.add(entry.getKey());
+//                        payerCodes.add(entry.getKey());
+                        mapSpecialPayerCodes(updatedPayersList,entry.getKey());
+
                     }
                 }
             }
@@ -239,11 +245,22 @@ public class DmseScoreSheet {
             if(flag3 == 2) {
                 payerCodes.clear();
                 for (Map.Entry<String, String> entry : codeTypes.entrySet()) {
-                    if (entry.getValue().equalsIgnoreCase(CODE_TYPE_MEDICAID)) {
-                        payerCodes.add(entry.getKey());
-                    }
+
+//                        payerCodes.add(entry.getKey());
+                    mapSpecialPayerCodes(updatedPayersList,entry.getKey());
+
+
                 }
             }
+            payerCodes.clear();
+            payerCodes.addAll(updatedPayersList);
+        }
+        else{
+            for(String payerCode:payerCodes){
+                mapSpecialPayerCodes(updatedPayersList,payerCode);
+            }
+            payerCodes.clear();
+            payerCodes.addAll(updatedPayersList);
         }
     }
     public void generateSheet(List<Document> documents, Date measureDate, CSVPrinter csvPrinter, DBConnection db) throws IOException {
@@ -254,14 +271,15 @@ public class DmseScoreSheet {
             List<String> codeCheckList = utilityFunction.checkCodeForCCS();
             for(Document document : documents) {
                 System.out.println("Processing patient: "+document.getString("id"));
-                if(document.getString("id").equals("95083")){
-                    int a=0;
+                if(document.getString("id").equals("95013")){
+                    int a = 0;
                 }
                 int patientAge = Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
                 if(patientAge>11 ) {
                     Object object = document.get("payerCodes");
                     payerInfoList = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {});
                     List<String> payersList=mapPayersCodeInList(payerInfoList);
+
                     updatePayerCodes(payersList, dbFunctions, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
 
                     if (payersList.size() != 0) {
