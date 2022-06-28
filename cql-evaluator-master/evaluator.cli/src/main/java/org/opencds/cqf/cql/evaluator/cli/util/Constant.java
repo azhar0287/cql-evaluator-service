@@ -20,8 +20,8 @@ public class Constant {
    public static final String EP_DICTIONARY = "dictionary_ep_2022_code";
 
 
-   public static final String MAIN_FHIR_COLLECTION_NAME = "ep_encounter_fhir_DMS_test_Deck";
-   public static final String FHIR_UNPROCESSED_COLLECTION_NAME = "DMSE_Sample_Deck_Fhir_Unprocessed_Patients";
+   public static final String MAIN_FHIR_COLLECTION_NAME = "ep_encounter_fhir_DMS_Test_Deck";
+   public static final String FHIR_UNPROCESSED_COLLECTION_NAME = "DMSE_Test_Deck_Fhir_Unprocessed_Patients";
 
 
 

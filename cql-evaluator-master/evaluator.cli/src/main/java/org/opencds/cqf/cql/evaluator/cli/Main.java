@@ -67,18 +67,18 @@ public class Main {
         connection.collection = connection.database.getCollection("ep_cql_processed_data");
         connection.collection.createIndex(Indexes.ascending("id"));
 
-        // To Process Patients
-       // processPatients(dbFunctions, connection);
-
+//         To Process Patients
+        processPatients(dbFunctions, connection);
+//        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Sample_Processing_failed_patients");
 
         //Process Single Patient
-//        String patientId = "95067";
+//        String patientId = "95543";
 //        processSinglePatient(patientId, dbFunctions, connection);
         ////////////////////
 
         //To generate Sheet and failed patients
-        generateSheet(dbFunctions, connection, new UtilityFunction());
-        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Sample_Sheet_failed_patients");
+//        generateSheet(dbFunctions, connection, new UtilityFunction());
+//        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Test_Sheet_failed_patients");
 
 
 

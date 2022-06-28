@@ -39,13 +39,15 @@ define "Initial Population 1":
   )
     and "Enrolled During Participation Period"
 
+
+
 define "Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia":
   ( Status."Finished Encounter" ( [Encounter: "Interactive Outpatient Encounter"] ) ) Encounter
     where Encounters."Encounter Has Diagnosis" ( Encounter, [Condition: "Major Depression or Dysthymia"] )
       and start of FHIRBase."Normalize Interval" ( Encounter.period ) during "Measurement Period"
 
 define "Assessment Period One":
-  Interval[start of "Measurement Period", "April 30 of Measurement Period"]
+  Interval [@2022-01-01T00:00:00.0, @2022-04-30T23:59:59.0)
 
 define "April 30 of Measurement Period":
   DateTime((year from start of "Measurement Period"), 04, 30, 23, 59, 59, 0, 0)
@@ -65,6 +67,7 @@ define "Event 2":
         where start of FHIRBase."Normalize Interval" ( DepressionEncounter.period ) during "Assessment Period Two"
   )
 
+
 define "Initial Population 2":
   ( AgeInYearsAt(date from start of "Measurement Period")>= 12
       and exists ( "Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia" ) DepressionEncounter
@@ -73,7 +76,7 @@ define "Initial Population 2":
     and "Enrolled During Participation Period"
 
 define "Assessment Period Two":
-  Interval["May 1 of Measurement Period", "August 31 of Measurement Period"]
+  Interval [@2022-05-01T00:00:00.0, @2022-08-31T23:59:59.0)
 
 define "May 1 of Measurement Period":
   DateTime((year from start of "Measurement Period"), 05, 01, 0, 0, 0, 0, 0)
@@ -95,8 +98,7 @@ define "Initial Population 3":
     and "Enrolled During Participation Period"
 
 define "Assessment Period Three":
-  Interval["September 1 of Measurement Period", 
-  end of "Measurement Period"]
+  Interval [@2022-09-01T00:00:00.0, @2022-12-31T23:59:59.0)
 
 define "September 1 of Measurement Period":
   DateTime((year from start of "Measurement Period"), 09, 01, 0, 0, 0, 0, 0)
@@ -137,6 +139,7 @@ define "PHQ-9 Assessment With A Score Documented":
         where PHQ9.value is not null
     )
   )
+
 
 
 define "PHQ-9 Modified for Teens":
