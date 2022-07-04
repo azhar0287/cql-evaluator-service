@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.AiseScoreSheet;
 import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.DmseScoreSheet;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import java.io.IOException;
@@ -38,6 +39,15 @@ public class SheetGenerationTask {
         documents = dbFunctions.getConditionalData("ep_cql_processed_data", skip, batchSize, db);
         DmseScoreSheet dmseScoreSheet=new DmseScoreSheet();
         dmseScoreSheet.generateSheet(documents, measureDate, csvPrinter, db);
+//        sheetGenerationService.generateSheetForDMSE(documents, measureDate, csvPrinter, db);
+        documents.clear();
+    }
+    public void generateSheetForAISE() throws IOException, ParseException {
+        Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
+        List<Document> documents;
+        documents = dbFunctions.getConditionalData("ep_cql_processed_data", skip, batchSize, db);
+        AiseScoreSheet aiseScoreSheet=new AiseScoreSheet();
+        aiseScoreSheet.generateSheet(documents, measureDate, csvPrinter, db);
 //        sheetGenerationService.generateSheetForDMSE(documents, measureDate, csvPrinter, db);
         documents.clear();
     }

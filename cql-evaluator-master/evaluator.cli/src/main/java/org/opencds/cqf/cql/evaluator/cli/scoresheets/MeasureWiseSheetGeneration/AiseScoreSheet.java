@@ -12,36 +12,89 @@ import org.opencds.cqf.cql.evaluator.cli.util.Constant;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
-import static org.opencds.cqf.cql.evaluator.cli.util.Constant.CODE_TYPE_MEDICAID;
 
-public class DmseScoreSheet {
+public class AiseScoreSheet {
 
     UtilityFunction utilityFunction = new UtilityFunction();
     DbFunctions dbFunctions = new DbFunctions();
 
 
 
-    public String getFieldCount(String fieldName, Document document) {
-        int eventSum = 0;
-        String feildname=fieldName.concat(" 1");
-        if(document.getBoolean(fieldName.concat(" 1") )) {
-            eventSum+=1;
-        }
-        if(document.getBoolean(fieldName.concat(" 2") )) {
-            eventSum+=1;
-        }
-        if(document.getBoolean(fieldName.concat(" 3") )) {
-            eventSum+=1;
-        }
-        return String.valueOf(eventSum);
 
+
+    void mapZosterImmunization(Document document, String payerCode, Date measureDate, CSVPrinter csvPrinter) throws IOException {
+        List<String> sheetObj  = new ArrayList<>();
+        sheetObj.add(document.getString("id"));
+        sheetObj.add("AISZOS"); //Measure
+        sheetObj.add(payerCode);
+        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
+
+
+        sheetObj.add("0");   //event
+
+//        if(document.getBoolean("Exclusions 1") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+//            sheetObj.add("0"); //epop
+//        }
+//        else {
+//            sheetObj.add(utilityFunction.getFieldCount("Denominator", document)); //epop
+//
+//        }
+
+        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 3"))); //epop
+
+        sheetObj.add("0"); //excl
+
+
+        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 3"))); //Num
+
+        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 3"))); //rexcl
+
+        sheetObj.add("0"); //RexlD
+        sheetObj.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
+        sheetObj.add(utilityFunction.getGenderSymbol(document.getString("gender")));
+        csvPrinter.printRecord(sheetObj);
     }
 
-    void addObjectInSheet(List<String> sheetObj, Document document, String payerCode, Date measureDate, CSVPrinter csvPrinter) throws IOException {
+    void mapPneumococcalImmunization(Document document, String payerCode, Date measureDate, CSVPrinter csvPrinter) throws IOException {
+        List<String> sheetObj  = new ArrayList<>();
+        sheetObj.add(document.getString("id"));
+        sheetObj.add("AISPNEU"); //Measure
+        sheetObj.add(payerCode);
+        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
+
+
+        sheetObj.add("0");   //event
+
+//        if(document.getBoolean("Exclusions 1") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+//            sheetObj.add("0"); //epop
+//        }
+//        else {
+//            sheetObj.add(utilityFunction.getFieldCount("Denominator", document)); //epop
+//
+//        }
+
+        sheetObj.add((utilityFunction.getIntegerString(document.getBoolean("Denominator 4")))); //epop
+
+        sheetObj.add("0"); //excl
+
+
+        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 4"))); //Num
+
+        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 4"))); //rexcl
+
+        sheetObj.add("0"); //RexlD
+        sheetObj.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
+        sheetObj.add(utilityFunction.getGenderSymbol(document.getString("gender")));
+        csvPrinter.printRecord(sheetObj);
+    }
+    void addObjectInSheet(String payerCodeType, int patientAge,Document document, String payerCode, Date measureDate, CSVPrinter csvPrinter) throws IOException {
+
+        List<String> sheetObj  = new ArrayList<>();
+        sheetObj.add(document.getString("id"));
+        sheetObj.add("AISINFL"); //Measure
         sheetObj.add(payerCode);
         sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
         List<String> codeList = new LinkedList<>();
@@ -50,37 +103,73 @@ public class DmseScoreSheet {
         codeList.add ("MPO");
         codeList.add ("MOS");
 
-        sheetObj.add(getFieldCount("Event", document));   //event
+        sheetObj.add("0");   //event
 
-        if(document.getBoolean("Exclusions 1") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
-            sheetObj.add("0"); //epop
-        }
-        else {
-            sheetObj.add(getFieldCount("Denominator", document)); //epop
+//        if(document.getBoolean("Exclusions 1") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+//            sheetObj.add("0"); //epop
+//        }
+//        else {
+//            sheetObj.add(utilityFunction.getFieldCount("Denominator", document)); //epop
+//
+//        }
 
-        }
+        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 1"))); //epop
 
         sheetObj.add("0"); //excl
 
 
-        sheetObj.add(getFieldCount("Numerator", document)); //Num
+        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 1"))); //Num
 
-
-        if(document.getBoolean("Exclusions 1")){
-            sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
-        }
-        else if(document.getString("hospiceFlag").equals("Y")) {
-            sheetObj.add("1");
-        }
-        else{
-            sheetObj.add("0");
-        }
-
+        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
 
         sheetObj.add("0"); //RexlD
         sheetObj.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
         sheetObj.add(utilityFunction.getGenderSymbol(document.getString("gender")));
         csvPrinter.printRecord(sheetObj);
+
+        ////////////////////////////AISTD
+        List<String> sheetObj2  = new ArrayList<>();
+        sheetObj2.add(document.getString("id"));
+        sheetObj2.add("AISTD"); //Measure
+        sheetObj2.add(payerCode);
+        sheetObj2.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
+
+
+        sheetObj2.add("0");   //event
+
+//        if(document.getBoolean("Exclusions 1") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+//            sheetObj.add("0"); //epop
+//        }
+//        else {
+//            sheetObj.add(utilityFunction.getFieldCount("Denominator", document)); //epop
+//
+//        }
+
+        sheetObj2.add((utilityFunction.getIntegerString(document.getBoolean("Denominator 2")))); //epop
+
+        sheetObj2.add("0"); //excl
+
+
+        sheetObj2.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 2"))); //Num
+
+        sheetObj2.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 2"))); //rexcl
+
+        sheetObj2.add("0"); //RexlD
+        sheetObj2.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
+        sheetObj2.add(utilityFunction.getGenderSymbol(document.getString("gender")));
+        csvPrinter.printRecord(sheetObj2);
+
+        if(patientAge>=50 && patientAge<=65 && !payerCodeType.equals(Constant.CODE_TYPE_MEDICARE)){
+            mapZosterImmunization(document,payerCode,measureDate,csvPrinter);
+        }
+        else if(patientAge>=66){
+            mapZosterImmunization(document,payerCode,measureDate,csvPrinter);
+        }
+
+        if(patientAge>=66 && payerCodeType.equals(CODE_TYPE_MEDICARE)){
+            mapPneumococcalImmunization(document,payerCode,measureDate,csvPrinter);
+        }
+
     }
 
     String getPayerCodeType(String payerCode ,DBConnection dbConnection){
@@ -271,7 +360,7 @@ public class DmseScoreSheet {
             List<String> codeCheckList = utilityFunction.checkCodeForCCS();
             for(Document document : documents) {
                 System.out.println("Processing patient: "+document.getString("id"));
-                if(document.getString("id").equals("95013")){
+                if(document.getString("id").equals("95005")){
                     int a = 0;
                 }
                 int patientAge = Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
@@ -283,15 +372,19 @@ public class DmseScoreSheet {
                     updatePayerCodes(payersList, dbFunctions, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
 
                     if (payersList.size() != 0) {
+                        Boolean flag=false;
                         for (String payerCode:payersList) {
+                            flag=false;
                             String payerCodeType = getPayerCodeType(payerCode,db);
-                            if (((payerCodeType.equals(Constant.CODE_TYPE_COMMERCIAL) || payerCodeType.equals(Constant.CODE_TYPE_MEDICAID)) && patientAge>11)
-                                    || (payerCodeType.equals(Constant.CODE_TYPE_MEDICARE) && patientAge > 17)){
-                                sheetObj = new ArrayList<>();
-                                sheetObj.add(document.getString("id"));
-                                sheetObj.add("DMS"); //Measure
-                                addObjectInSheet(sheetObj,document,payerCode,measureDate,csvPrinter);
+                            if (((payerCodeType.equals(Constant.CODE_TYPE_COMMERCIAL) || payerCodeType.equals(Constant.CODE_TYPE_MEDICAID)) && patientAge>18 && patientAge<66)
+                                    || (payerCodeType.equals(Constant.CODE_TYPE_MEDICARE) && patientAge > 65)){
+
+                                addObjectInSheet(payerCodeType,patientAge,document,payerCode,measureDate,csvPrinter);
+                                flag=true;
                             }
+                        }
+                        if(flag==false){
+                            Main.failedPatients.add(document.getString("id"));
                         }
                     }
                     else {
@@ -299,7 +392,7 @@ public class DmseScoreSheet {
                     }
                 }
                 else{
-                    Main.failedPatients.add(document.getString("id"));
+//                    Main.failedPatients.add(document.getString("id"));
                 }
                 csvPrinter.flush();
             }

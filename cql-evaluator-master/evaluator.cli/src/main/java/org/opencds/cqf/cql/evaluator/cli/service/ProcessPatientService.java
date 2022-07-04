@@ -231,7 +231,7 @@ public class ProcessPatientService implements Runnable {
                             EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                            documents.add(this.createDocumentForResult(result.expressionResults, patientData));
+                            documents.add(this.createDocumentForAiseResult(result.expressionResults, patientData));
                             if(documents.size() > 15) {
                                 dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
                                 System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
@@ -477,6 +477,41 @@ public class ProcessPatientService implements Runnable {
         expressionResults.remove("August 31 of Measurement Period");
         expressionResults.remove("Assessment Period Three");
         expressionResults.remove("September 1 of Measurement Period");
+
+
+        document.putAll(expressionResults); /* Mapping into Document*/
+        return document;
+    }
+
+    public Document createDocumentForAiseResult(Map<String, Object> expressionResults, PatientData patientData) {
+        Document document = new Document();
+        document.put("id", patientData.getId());
+        document.put("birthDate", patientData.getBirthDate());
+        document.put("gender", patientData.getGender());
+        document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
+        document.put("hospiceFlag",patientData.getHospiceFlag());
+
+
+        /* Removing extra fields also giving codex error*/
+        expressionResults.remove("Member Coverage");
+        expressionResults.remove("Patient");
+        expressionResults.remove("Influenza Vaccine");
+        expressionResults.remove("Td or Tdap Vaccine");
+        expressionResults.remove("Herpes Zoster Live Vaccine");
+        expressionResults.remove("Between Age 50 and the End of the Measurement Period");
+        expressionResults.remove("Herpes Zoster Recombinant Vaccine");
+        expressionResults.remove("Pneumococcal Polysaccharide Vaccine 23");
+        expressionResults.remove("Between Age 60 and the End of the Measurement Period");
+        expressionResults.remove("July 1 of the Year Prior to the Measurement Period");
+        expressionResults.remove("June 30 of the Measurement Period");
+        expressionResults.remove("Between July 1 of the Year Prior to the Measurement Period and June 30 of the Measurement Period");
+        expressionResults.remove("Between Nine Years Prior to the Start of the Measurement Period and the End of the Measurement Period");
+        expressionResults.remove("Pneumococcal Polysaccharide Vaccine 23");
+//        expressionResults.remove("Assessment Period Two");
+//        expressionResults.remove("May 1 of Measurement Period");
+//        expressionResults.remove("August 31 of Measurement Period");
+//        expressionResults.remove("Assessment Period Three");
+//        expressionResults.remove("September 1 of Measurement Period");
 
 
         document.putAll(expressionResults); /* Mapping into Document*/

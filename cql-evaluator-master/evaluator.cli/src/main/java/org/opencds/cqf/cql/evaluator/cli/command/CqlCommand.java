@@ -120,7 +120,7 @@ public class CqlCommand implements Callable<Integer>  {
 
     private Map<String, LibraryContentProvider> libraryContentProviderIndex = new HashMap<>();
     private Map<String, TerminologyProvider> terminologyProviderIndex = new HashMap<>();
-    DBConnection dbConnection = new DBConnection();
+    DBConnection dbConnection = DBConnection.getConnection();
 
     List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, DbFunctions dbFunctions, DBConnection connection) {
         PatientData patientData ;
@@ -170,7 +170,7 @@ public class CqlCommand implements Callable<Integer>  {
     public Integer call() throws Exception {
        long startTime = System.currentTimeMillis();
 
-       DBConnection db = new DBConnection();
+       DBConnection db = DBConnection.getConnection();
        DbFunctions dbFunctions = new DbFunctions();
        //int totalCount = db.getDataCount("ep_encounter_fhir");
         int totalCount = 75419;

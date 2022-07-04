@@ -61,24 +61,24 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         LOGGER.info("Processing start");
-        DBConnection connection = new DBConnection(); //setting up connection
+        DBConnection connection = DBConnection.getConnection(); //setting up connection
         DbFunctions dbFunctions = new DbFunctions();
 
         connection.collection = connection.database.getCollection("ep_cql_processed_data");
         connection.collection.createIndex(Indexes.ascending("id"));
 
 //         To Process Patients
-        processPatients(dbFunctions, connection);
+//        processPatients(dbFunctions, connection);
 //        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Sample_Processing_failed_patients");
 
-        //Process Single Patient
-//        String patientId = "95543";
+//        //Process Single Patient
+//        String patientId = "99685";
 //        processSinglePatient(patientId, dbFunctions, connection);
         ////////////////////
 
         //To generate Sheet and failed patients
-//        generateSheet(dbFunctions, connection, new UtilityFunction());
-//        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Test_Sheet_failed_patients");
+        generateSheet(dbFunctions, connection, new UtilityFunction());
+        insertFailedPatient(dbFunctions, connection,"ep_cql_AISE_Test_Sheet_failed_patients");
 
 
 
@@ -171,7 +171,7 @@ public class Main {
 
         for(int i=0; i<totalSkipsForSheet; i++) {
             SheetGenerationTask sheetGenerationTask = new SheetGenerationTask(utilityFunction, connection, dbFunctions, totalSkipped, csvPrinter);
-            sheetGenerationTask.generateSheetForDMSE();
+            sheetGenerationTask.generateSheetForAISE();
             System.out.println("Iteration: "+i);
             totalSkipped+=500;
         }

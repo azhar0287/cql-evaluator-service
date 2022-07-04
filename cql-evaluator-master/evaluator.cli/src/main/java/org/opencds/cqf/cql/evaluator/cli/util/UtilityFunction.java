@@ -49,7 +49,7 @@ public class UtilityFunction {
     }
 
     public List<RetrieveProvider> mapToRetrieveProviderForSingle(String patientId, int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
-        DBConnection db = new DBConnection();
+        DBConnection db = DBConnection.getConnection();
         PatientData patientData;
         PayerInfo payerInfo = new PayerInfo();
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
@@ -82,7 +82,7 @@ public class UtilityFunction {
     }
 
     public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
-        DBConnection db = new DBConnection();
+        DBConnection db = DBConnection.getConnection();
         PatientData patientData;
         PayerInfo payerInfo = new PayerInfo();
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
@@ -310,6 +310,22 @@ public class UtilityFunction {
         return dateToConvert.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate();
+    }
+
+    public String getFieldCount(String fieldName, Document document) {
+        int eventSum = 0;
+        String feildname=fieldName.concat(" 1");
+        if(document.getBoolean(fieldName.concat(" 1") )) {
+            eventSum+=1;
+        }
+        if(document.getBoolean(fieldName.concat(" 2") )) {
+            eventSum+=1;
+        }
+        if(document.getBoolean(fieldName.concat(" 3") )) {
+            eventSum+=1;
+        }
+        return String.valueOf(eventSum);
+
     }
 
     public String getAge(Date birthday, Date date) {
