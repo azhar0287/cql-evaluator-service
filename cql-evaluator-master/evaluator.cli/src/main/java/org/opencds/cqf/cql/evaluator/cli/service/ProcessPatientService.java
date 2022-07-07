@@ -231,7 +231,7 @@ public class ProcessPatientService implements Runnable {
                             EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                            documents.add(this.createDocumentForResult(result.expressionResults, patientData));
+                            documents.add(this.createDocumentForDSFEResult(result.expressionResults, patientData));
                             if(documents.size() > 15) {
                                 dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
                                 System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
@@ -391,7 +391,7 @@ public class ProcessPatientService implements Runnable {
                                 EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
                                 patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                                documents.add(this.createDocumentForResult(result.expressionResults, patientData));
+                                documents.add(this.createDocumentForDSFEResult(result.expressionResults, patientData));
                                 count++;
                                 if (documents.size() > 15) {
                                     dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
@@ -454,7 +454,7 @@ public class ProcessPatientService implements Runnable {
         return documents;
     }
 
-    public Document createDocumentForResult(Map<String, Object> expressionResults, PatientData patientData) {
+    public Document createDocumentForDSFEResult(Map<String, Object> expressionResults, PatientData patientData) {
         Document document = new Document();
         document.put("id", patientData.getId());
         document.put("birthDate", patientData.getBirthDate());
