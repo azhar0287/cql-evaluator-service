@@ -233,7 +233,7 @@ public class ProcessPatientService implements Runnable {
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
                             documents.add(this.createDocumentForResult(result.expressionResults, patientData));
                             if(documents.size() > 15) {
-                                dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
+                                dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
                                 System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
                                 Thread.sleep(100);
                                 documents.clear();
@@ -244,7 +244,7 @@ public class ProcessPatientService implements Runnable {
                 retrieveProviders.clear();
                 retrieveProviders = null;
                 if(documents.size() > 0 ) {
-                    dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
+                    dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
                     documents.clear();
                 }
                 documents = null;
@@ -394,7 +394,7 @@ public class ProcessPatientService implements Runnable {
                                 documents.add(this.createDocumentForResult(result.expressionResults, patientData));
                                 count++;
                                 if (documents.size() > 15) {
-                                    dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
+                                    dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
                                     System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
                                     Thread.sleep(100);
                                     documents.clear();
@@ -410,7 +410,7 @@ public class ProcessPatientService implements Runnable {
                 retrieveProviders.clear();
                 retrieveProviders = null;
                 if (documents.size() > 0) {
-                    dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
+                    dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
                     documents.clear();
                 }
                 documents = null;
@@ -466,18 +466,28 @@ public class ProcessPatientService implements Runnable {
         /* Removing extra fields also giving codex error*/
         expressionResults.remove("Patient");
         expressionResults.remove("Member Coverage");
-        expressionResults.remove("PHQ-9 Modified for Teens");
-        expressionResults.remove("PHQ-9 Assessment With A Score Documented");
-        expressionResults.remove("PHQ-9 Assessment With A Score Documented aa");
-        expressionResults.remove("Interactive Outpatient Encounter With A Diagnosis Of Major Depression Or Dysthymia");
-        expressionResults.remove("Assessment Period One");
-        expressionResults.remove("April 30 of Measurement Period");
-        expressionResults.remove("Assessment Period Two");
-        expressionResults.remove("May 1 of Measurement Period");
-        expressionResults.remove("August 31 of Measurement Period");
-        expressionResults.remove("Assessment Period Three");
-        expressionResults.remove("September 1 of Measurement Period");
-
+        expressionResults.remove("December 1 of Measurement Period");
+        expressionResults.remove("Adolescent Full Length Depression Screen with Positive Result");
+        expressionResults.remove("Adolescent Brief Screen with Positive Result");
+        expressionResults.remove("Adult Full Length Depression Screen with Positive Result");
+        expressionResults.remove("Adult Brief Screen with Positive Result");
+        expressionResults.remove("January 1 of Year Prior to Measurement Period");
+        expressionResults.remove("Bipolar Disorder Starting during Year Prior to Measurement Period");
+        expressionResults.remove("Depression Starting during Year Prior to Measurement Period");
+        expressionResults.remove("Adolescent Full Length Depression Screen with Documented Result");
+        expressionResults.remove("Adolescent Brief Screen with Documented Result");
+        expressionResults.remove("Adult Full Length Depression Screen with Documented Result");
+        expressionResults.remove("Adult Brief Screen with Documented Result");
+        expressionResults.remove("Follow Up Care on or 30 Days after First Positive Screen");
+        expressionResults.remove("First Positive Adult Screen is Brief Screen");
+        expressionResults.remove("First Positive Adolescent Screen is Brief Screen");
+        expressionResults.remove("First Positive Adolescent Depression Screen between January 1 and December 1");
+        expressionResults.remove("First Positive Adult Depression Screen between January 1 and December 1");
+        expressionResults.remove("Adolescent Depression Screening with Positive Result between January 1 and December 1");
+        expressionResults.remove("Adult Depression Screening with Positive Result between January 1 and December 1");
+        expressionResults.remove("Adolescent Depression Screening with Documented Result between January 1 and December 1");
+        expressionResults.remove("Adult Depression Screening with Documented Result between January 1 and December 1");
+        expressionResults.remove("Has Positive Brief Screen Same Day as Negative Full Length Screen");
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;

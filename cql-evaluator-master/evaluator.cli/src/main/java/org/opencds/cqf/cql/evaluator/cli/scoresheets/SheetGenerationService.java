@@ -113,7 +113,7 @@ public class SheetGenerationService {
     }
 
     String getPayerCodeType(String payerCode){
-        return dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,new DBConnection()).get(0).getString("oid");
+        return dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,DBConnection.getConnection()).get(0).getString("oid");
     }
 
 

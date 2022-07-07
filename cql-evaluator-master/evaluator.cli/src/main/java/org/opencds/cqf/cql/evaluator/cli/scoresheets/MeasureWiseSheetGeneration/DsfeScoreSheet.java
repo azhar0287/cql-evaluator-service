@@ -21,114 +21,90 @@ public class DsfeScoreSheet {
     UtilityFunction utilityFunction = new UtilityFunction();
     DbFunctions dbFunctions = new DbFunctions();
 
-
-
-    public String getFieldCount(String fieldName, Document document) {
-        int eventSum = 0;
-        String feildname=fieldName.concat(" 1");
-        if(document.getBoolean(fieldName.concat(" 1") )) {
-            eventSum+=1;
-        }
-        if(document.getBoolean(fieldName.concat(" 2") )) {
-            eventSum+=1;
-        }
-        if(document.getBoolean(fieldName.concat(" 3") )) {
-            eventSum+=1;
-        }
-        return String.valueOf(eventSum);
-
-    }
-
-    void addObjectInSheet(List<String> sheetObj, Document document, String payerCode, Date measureDate, CSVPrinter csvPrinter) throws IOException {
-        sheetObj.add(payerCode);
-        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
+    void addDsfObjectInSheet(Document document, String payerCode, CSVPrinter csvPrinter) throws IOException {
         List<String> codeList = new LinkedList<>();
         codeList.add ("MEP");
         codeList.add ("MMO");
         codeList.add ("MPO");
         codeList.add ("MOS");
-
-        sheetObj.add(getFieldCount("Event", document));   //event
-
+        ////////////////////////////// Mapping Started ////////////////////////////////////////////////
+        /////////////////////////////  Sheet A Mapping ////////////////////////////////////////////////
+        List<String> sheetObjA = new LinkedList<>();
+        sheetObjA.add(document.getString("id"));
+        sheetObjA.add("DSFA");
+        sheetObjA.add(payerCode);
+        sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
+        sheetObjA.add("0"); // Added Event Here
         if(document.getBoolean("Exclusions 1") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
-            sheetObj.add("0"); //epop
+            sheetObjA.add("0"); //epop (Also known as denominator)
         }
         else {
-            sheetObj.add(getFieldCount("Denominator", document)); //epop
-
+            sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 1"))); //epop
         }
-
-        sheetObj.add("0"); //excl
-
-
-        sheetObj.add(getFieldCount("Numerator", document)); //Num
-
-
+        //sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 1"))); //epop
+        sheetObjA.add("0"); //excl
+        sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 1"))); //Numerator
         if(document.getBoolean("Exclusions 1")){
-            sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
+            sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
         }
         else if(document.getString("hospiceFlag").equals("Y")) {
-            sheetObj.add("1");
+            sheetObjA.add("1");
         }
         else{
-            sheetObj.add("0");
+            sheetObjA.add("0");
         }
-
-
-        sheetObj.add("0"); //RexlD
-        sheetObj.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
-        sheetObj.add(utilityFunction.getGenderSymbol(document.getString("gender")));
-        csvPrinter.printRecord(sheetObj);
+        sheetObjA.add("0"); //RexlD
+        sheetObjA.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
+        sheetObjA.add(utilityFunction.getGenderSymbol(document.getString("gender")));
+        csvPrinter.printRecord(sheetObjA);
+        ///////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////  Sheet B Mapping ////////////////////////////////////////////////
+        List<String> sheetObjB = new LinkedList<>();
+        sheetObjB.add(document.getString("id"));
+        sheetObjB.add("DSFB");
+        sheetObjB.add(payerCode);
+        sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
+        //sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 1"))); //Event will be same of first numerator 1
+        sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 2")));
+        //denominator 2 false
+        if(!document.getBoolean("Denominator 2") || document.getBoolean("Exclusions 2") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+            sheetObjB.add("0"); //epop (Also known as denominator)
+        }
+        else {
+            sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 2"))); //epop
+        }
+        //sheetObjB.add("Initial Population 2");
+        sheetObjB.add("0"); //excl
+        sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 2"))); //Numerator
+        if(document.getBoolean("Exclusions 2")){
+            sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 2"))); //rexcl
+        }
+        else if(document.getString("hospiceFlag").equals("Y")) {
+            sheetObjB.add("1");
+        }
+        else{
+            sheetObjB.add("0");
+        }
+        sheetObjB.add("0"); //RexlD
+        sheetObjB.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
+        sheetObjB.add(utilityFunction.getGenderSymbol(document.getString("gender")));
+        csvPrinter.printRecord(sheetObjB);
     }
 
-    String getPayerCodeType(String payerCode ,DBConnection dbConnection){
-        if(dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,dbConnection).size()>0){
-            return  dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,new DBConnection()).get(0).getString("oid");
+    String getPayerCodeType(String payerCode ,DBConnection dbConnection,Map<String,String> dictionaryStringMap){
+        if(!dictionaryStringMap.isEmpty()){
+            String payerCodeOid=dictionaryStringMap.get(payerCode);
+            if(payerCodeOid !=null && payerCodeOid!=""){
+                return payerCodeOid;
+            }
+        }
+        List<Document> documentList=dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,dbConnection);
+        if(documentList.size()>0){
+            dictionaryStringMap.put(payerCode,documentList.get(0).getString("oid"));
+            return documentList.get(0).getString("oid");
         }
         return "";
     }
-
-    public Map<String,String> assignCodeToTypeDMS(List<PayerInfo> payerCodes, DbFunctions db, DBConnection connection) {
-        //DBConnection db = new DBConnection();
-        Map<String,String> updateCodeMap = new HashMap<>();
-        String oid;
-        for (PayerInfo payerInfo : payerCodes) {
-            //Document document = db.getOidInfo(pCode, "dictionary_ep_2022_code");
-            List<Document> documents = db.getOidInfo(payerInfo.getPayerCode(), "dictionary_ep_2022_code", connection);
-            String pCode = payerInfo.getPayerCode();
-            Document document;
-            if(documents.size() > 0) {
-                document = documents.get(0);
-                if(document != null) {
-                    oid = (String) document.get("oid");
-                    if(oid.equalsIgnoreCase(CODE_TYPE_COMMERCIAL)) {
-                        updateCodeMap.put(pCode, CODE_TYPE_COMMERCIAL);
-                        updateCodeMap.put("coverageStartDateString",payerInfo.getCoverageStartDateString());
-                        updateCodeMap.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
-                    }
-                    if(oid.equalsIgnoreCase(CODE_TYPE_MEDICAID)) {
-                        updateCodeMap.put(pCode, CODE_TYPE_MEDICAID);
-                        updateCodeMap.put("coverageStartDateString",payerInfo.getCoverageStartDateString());
-                        updateCodeMap.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
-                    }
-                    if(oid.equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
-                        updateCodeMap.put(pCode, CODE_TYPE_MEDICARE);
-                        updateCodeMap.put("coverageStartDateString",payerInfo.getCoverageStartDateString());
-                        updateCodeMap.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
-                    }
-                }
-            }
-
-            if(pCode.equalsIgnoreCase("MCD")) {
-                updateCodeMap.put(pCode, CODE_TYPE_MEDICAID);
-                updateCodeMap.put("coverageStartDateString",payerInfo.getCoverageStartDateString());
-                updateCodeMap.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
-            }
-        }
-        return updateCodeMap;
-    }
-
-
 
     void mapSpecialPayerCodes(List<String> payersList,String payerCode){
         if(payerCode.equals("MD") || payerCode.equals("MDE") || payerCode.equals("MLI")|| payerCode.equals("MRB")){
@@ -261,34 +237,29 @@ public class DsfeScoreSheet {
             payerCodes.addAll(updatedPayersList);
         }
     }
-    public void generateSheet(List<Document> documents, Date measureDate, CSVPrinter csvPrinter, DBConnection db) throws IOException {
+    public void generateSheet(List<Document> documents, Date measureDate, CSVPrinter csvPrinter, DBConnection db,Map<String,String> dictionaryStringMap) throws IOException {
         try {
-            String globalPatientId;
             List<String> sheetObj;
             List<PayerInfo> payerInfoList;
             List<String> codeCheckList = utilityFunction.checkCodeForCCS();
             for(Document document : documents) {
                 System.out.println("Processing patient: "+document.getString("id"));
-                if(document.getString("id").equals("95013")){
-                    int a = 0;
+                if(document.getString("id").equals("95446")){
+                    int a=0;
                 }
                 int patientAge = Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
                 if(patientAge>11 ) {
                     Object object = document.get("payerCodes");
                     payerInfoList = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {});
                     List<String> payersList=mapPayersCodeInList(payerInfoList);
-
                     updatePayerCodes(payersList, dbFunctions, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
-
                     if (payersList.size() != 0) {
                         for (String payerCode:payersList) {
-                            String payerCodeType = getPayerCodeType(payerCode,db);
+                            String payerCodeType = getPayerCodeType(payerCode,db,dictionaryStringMap);
                             if (((payerCodeType.equals(Constant.CODE_TYPE_COMMERCIAL) || payerCodeType.equals(Constant.CODE_TYPE_MEDICAID)) && patientAge>11)
-                                    || (payerCodeType.equals(Constant.CODE_TYPE_MEDICARE) && patientAge > 17)){
-                                sheetObj = new ArrayList<>();
-                                sheetObj.add(document.getString("id"));
-                                sheetObj.add("DMS"); //Measure
-                                addObjectInSheet(sheetObj,document,payerCode,measureDate,csvPrinter);
+                                    || (payerCodeType.equals(Constant.CODE_TYPE_MEDICARE) && patientAge > 17))
+                            {
+                                addDsfObjectInSheet(document,payerCode,csvPrinter);
                             }
                         }
                     }

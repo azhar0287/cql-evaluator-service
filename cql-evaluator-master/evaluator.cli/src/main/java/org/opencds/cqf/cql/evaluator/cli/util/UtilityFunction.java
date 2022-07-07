@@ -34,7 +34,8 @@ import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 public class UtilityFunction {
 
     public CSVPrinter setupSheetHeaders() throws IOException {
-        String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
+        //String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
+        String SAMPLE_CSV_FILE = "D:\\CQLEvaluator\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
         String[] header = { "MemID", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender"};
         FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
         CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
@@ -49,7 +50,7 @@ public class UtilityFunction {
     }
 
     public List<RetrieveProvider> mapToRetrieveProviderForSingle(String patientId, int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
-        DBConnection db = new DBConnection();
+        DBConnection db = DBConnection.getConnection();
         PatientData patientData;
         PayerInfo payerInfo = new PayerInfo();
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();
@@ -82,7 +83,7 @@ public class UtilityFunction {
     }
 
     public List<RetrieveProvider> mapToRetrieveProvider(int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
-        DBConnection db = new DBConnection();
+        DBConnection db = DBConnection.getConnection();
         PatientData patientData;
         PayerInfo payerInfo = new PayerInfo();
         List<RetrieveProvider> retrieveProviders = new ArrayList<>();

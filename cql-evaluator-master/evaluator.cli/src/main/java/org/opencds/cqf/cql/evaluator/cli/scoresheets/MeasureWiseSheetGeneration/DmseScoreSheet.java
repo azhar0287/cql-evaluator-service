@@ -85,7 +85,7 @@ public class DmseScoreSheet {
 
     String getPayerCodeType(String payerCode ,DBConnection dbConnection){
         if(dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,dbConnection).size()>0){
-            return  dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,new DBConnection()).get(0).getString("oid");
+            return  dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,DBConnection.getConnection()).get(0).getString("oid");
         }
         return "";
     }
