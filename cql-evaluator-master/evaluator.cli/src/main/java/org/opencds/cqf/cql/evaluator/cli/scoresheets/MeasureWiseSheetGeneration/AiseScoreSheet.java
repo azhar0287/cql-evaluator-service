@@ -43,14 +43,37 @@ public class AiseScoreSheet {
 //
 //        }
 
-        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 3"))); //epop
+        if(!isExchangeCode(payerCode)) {
+
+            if(document.getBoolean("Exclusions 3") || document.getString("hospiceFlag").equals("Y")  ){
+                sheetObj.add("0"); //epop
+            }
+            else {
+                sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 3"))); //epop.
+            }
+        }
+        else {
+            sheetObj.add("0");
+        }
+
+
 
         sheetObj.add("0"); //excl
 
 
         sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 3"))); //Num
 
-        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 3"))); //rexcl
+        if(document.getBoolean("Exclusions 3")){
+            sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 3"))); //rexcl
+        }
+        else if(document.getString("hospiceFlag").equals("Y")) {
+            sheetObj.add("1");
+        }
+        else{
+            sheetObj.add("0");
+        }
+
+
 
         sheetObj.add("0"); //RexlD
         sheetObj.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
@@ -58,6 +81,12 @@ public class AiseScoreSheet {
         csvPrinter.printRecord(sheetObj);
     }
 
+    boolean isExchangeCode(String payerCode){
+        if(payerCode.equals("MEP") || payerCode.equals("MMO")|| payerCode.equals("MOS")|| payerCode.equals("MPO")){
+            return true;
+        }
+        return false;
+    }
     void mapPneumococcalImmunization(Document document, String payerCode, Date measureDate, CSVPrinter csvPrinter) throws IOException {
         List<String> sheetObj  = new ArrayList<>();
         sheetObj.add(document.getString("id"));
@@ -76,14 +105,33 @@ public class AiseScoreSheet {
 //
 //        }
 
-        sheetObj.add((utilityFunction.getIntegerString(document.getBoolean("Denominator 4")))); //epop
+        if(!isExchangeCode(payerCode)) {
 
+            if(document.getBoolean("Exclusions 4") || document.getString("hospiceFlag").equals("Y")  ){
+                sheetObj.add("0"); //epop
+            }
+            else {
+                sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 4"))); //epop.
+            }
+        }
+        else {
+            sheetObj.add("0");
+        }
         sheetObj.add("0"); //excl
 
 
         sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 4"))); //Num
 
-        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 4"))); //rexcl
+        if(document.getBoolean("Exclusions 4")){
+            sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 4"))); //rexcl
+        }
+        else if(document.getString("hospiceFlag").equals("Y")) {
+            sheetObj.add("1");
+        }
+        else{
+            sheetObj.add("0");
+        }
+
 
         sheetObj.add("0"); //RexlD
         sheetObj.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
@@ -113,14 +161,32 @@ public class AiseScoreSheet {
 //
 //        }
 
-        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 1"))); //epop
+        if(!isExchangeCode(payerCode)) {
 
+            if(document.getBoolean("Exclusions 1") || document.getString("hospiceFlag").equals("Y")  ){
+                sheetObj.add("0"); //epop
+            }
+            else {
+                sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 1"))); //epop.
+            }
+        }
+        else {
+            sheetObj.add("0");
+        }
         sheetObj.add("0"); //excl
 
 
         sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 1"))); //Num
 
-        sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
+        if(document.getBoolean("Exclusions 1")){
+            sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
+        }
+        else if(document.getString("hospiceFlag").equals("Y")) {
+            sheetObj.add("1");
+        }
+        else{
+            sheetObj.add("0");
+        }
 
         sheetObj.add("0"); //RexlD
         sheetObj.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
@@ -145,14 +211,35 @@ public class AiseScoreSheet {
 //
 //        }
 
-        sheetObj2.add((utilityFunction.getIntegerString(document.getBoolean("Denominator 2")))); //epop
+        if(!isExchangeCode(payerCode)) {
+            if(document.getBoolean("Exclusions 2") || document.getString("hospiceFlag").equals("Y")  ){
+                sheetObj2.add("0"); //epop
+            }
+            else {
+                sheetObj2.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 2"))); //epop.
+            }
+        }
+        else {
+            sheetObj2.add("0");
+        }
+
 
         sheetObj2.add("0"); //excl
 
 
         sheetObj2.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 2"))); //Num
 
-        sheetObj2.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 2"))); //rexcl
+
+        if(document.getBoolean("Exclusions 2")){
+            sheetObj2.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 2"))); //rexcl
+        }
+        else if(document.getString("hospiceFlag").equals("Y")) {
+            sheetObj2.add("1");
+        }
+        else{
+            sheetObj2.add("0");
+        }
+
 
         sheetObj2.add("0"); //RexlD
         sheetObj2.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
@@ -166,10 +253,9 @@ public class AiseScoreSheet {
             mapZosterImmunization(document,payerCode,measureDate,csvPrinter);
         }
 
-        if(patientAge>=66 && payerCodeType.equals(CODE_TYPE_MEDICARE)){
+        if(patientAge>=66 && (payerCodeType.equals(CODE_TYPE_MEDICARE) || payerCodeType.equals("Exchange Codes"))){
             mapPneumococcalImmunization(document,payerCode,measureDate,csvPrinter);
         }
-
     }
 
     String getPayerCodeType(String payerCode ,DBConnection dbConnection){
@@ -360,11 +446,11 @@ public class AiseScoreSheet {
             List<String> codeCheckList = utilityFunction.checkCodeForCCS();
             for(Document document : documents) {
                 System.out.println("Processing patient: "+document.getString("id"));
-                if(document.getString("id").equals("95005")){
+                if(document.getString("id").equals("95054")){
                     int a = 0;
                 }
                 int patientAge = Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
-                if(patientAge>11 ) {
+                if(patientAge>18 ) {
                     Object object = document.get("payerCodes");
                     payerInfoList = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {});
                     List<String> payersList=mapPayersCodeInList(payerInfoList);
@@ -379,6 +465,10 @@ public class AiseScoreSheet {
                             if (((payerCodeType.equals(Constant.CODE_TYPE_COMMERCIAL) || payerCodeType.equals(Constant.CODE_TYPE_MEDICAID)) && patientAge>18 && patientAge<66)
                                     || (payerCodeType.equals(Constant.CODE_TYPE_MEDICARE) && patientAge > 65)){
 
+                                addObjectInSheet(payerCodeType,patientAge,document,payerCode,measureDate,csvPrinter);
+                                flag=true;
+                            }
+                            else if(payerCodeType.equals("Exchange Codes") && patientAge>18){
                                 addObjectInSheet(payerCodeType,patientAge,document,payerCode,measureDate,csvPrinter);
                                 flag=true;
                             }

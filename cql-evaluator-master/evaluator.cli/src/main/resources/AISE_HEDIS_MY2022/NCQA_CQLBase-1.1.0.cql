@@ -3,7 +3,7 @@ library NCQA_CQLBase version '1.1.0'
 using FHIR version '4.0.1'
 
  /*
-    Sort interval lists
+    Sort interval listsDate Interval Gaps Relative to Base Interval Stats
 
     This is a technique to sort intervals (or any other quantity) according to a criteria.
     CQL natively supports sorting resources (e.g. [Condition: <valuesets>]), or tuples

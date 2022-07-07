@@ -14,8 +14,8 @@ define function "Diagnosis on or Before Latest Possible Vaccination Date"(Diagno
 define function "Administered Datetime"(Vaccination Choice<Immunization, Procedure>):
   case
     when Vaccination is Immunization then ToDate(Vaccination.occurrence as dateTime)
-    else date from 
-  end of ( FHIRBase."Normalize Interval" ( Vaccination.performed ) ) 
+    else date from
+  end of ( FHIRBase."Normalize Interval" ( Vaccination.performed ) )
   end
 
 // Use if the vaccinations follow the 14 day rule.

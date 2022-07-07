@@ -15,8 +15,8 @@ context Patient
 
 define "Hospice Intervention or Encounter":
 exists ((Status."Completed or Ongoing Procedure"([Procedure:"Hospice Intervention"])) HospiceInt
-        where NCQAFHIRBase."Normalize Interval"(HospiceInt.performed) overlaps "Measurement Period"
+        where NCQAFHIRBase."Normalize Interval"(HospiceInt.performed) during "Measurement Period"
 )
 or exists ((Status."Finished Encounter"(["Encounter": "Hospice Encounter"])) HospiceEnc
-         where NCQAFHIRBase."Normalize Interval" (HospiceEnc.period) overlaps "Measurement Period"
+         where NCQAFHIRBase."Normalize Interval" (HospiceEnc.period) during "Measurement Period"
 )

@@ -42,33 +42,52 @@ code "Encounter for antineoplastic radiation therapy": 'Z51.0' from "ICD-10" dis
 code "Encounter for antineoplastic chemotherapy": 'Z51.11' from "ICD-10" display 'Encounter for antineoplastic chemotherapy'
 code "Encounter for antineoplastic immunotherapy": 'Z51.12' from "ICD-10" display 'Encounter for antineoplastic immunotherapy'
 
-parameter "Measurement Period" Interval<DateTime>
+parameter "Measurement Period" default Interval [@2022-01-01T00:00:00.0, @2022-12-31T23:59:59.0)
 
 context Patient
 
-define "Initial Population 1":
-  AgeInYearsAt(date from start of "Measurement Period")>= 19
-    and "Enrolled During Participation Period"
-
 define "Enrolled During Participation Period":
-  Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from 
-  end of "Measurement Period", Interval[date from start of "Measurement Period", date from 
+  Enrollment."Health Plan Enrollment Criteria" ( "Member Coverage", date from
+  end of "Measurement Period", Interval[date from start of "Measurement Period", date from
   end of "Measurement Period"], 45 )
+
+define "Exclusions 1":
+  Hospice."Hospice Intervention or Encounter"
+    or "Has Active Chemotherapy"
+    or "Has Bone Marrow Transplant"
+    or "Has Immunocompromising Conditions"
+
+
+
+define "Initial Population 1":
+if ( "Exclusions 1" is true)
+then ( false )
+else  ( AgeInYearsAt(date from start of "Measurement Period")>= 19
+    and "Enrolled During Participation Period"  )
+
+
+
 
 define "Member Coverage":
   [Coverage] C
     where FHIRBase."Normalize Interval" ( C.period ) overlaps "Measurement Period"
 
 define "Initial Population 2":
-  "Initial Population 1"
+if ( "Exclusions 2"  is true)
+then(  false )
+else( "Initial Population 1" )
 
 define "Initial Population 3":
-  AgeInYearsAt(date from start of "Measurement Period")>= 50
-    and "Enrolled During Participation Period"
+if("Exclusions 3" is true )
+then( false )
+else(  AgeInYearsAt(date from start of "Measurement Period")>= 50
+    and "Enrolled During Participation Period")
 
 define "Initial Population 4":
-  AgeInYearsAt(date from start of "Measurement Period")>= 66
-    and "Enrolled During Participation Period"
+if("Exclusions 4" is true )
+then( false )
+else(  AgeInYearsAt(date from start of "Measurement Period")>= 66
+    and "Enrolled During Participation Period")
 
 define "Denominator 1":
   "Initial Population 1"
@@ -82,14 +101,10 @@ define "Denominator 3":
 define "Denominator 4":
   "Initial Population 4"
 
-define "Exclusions 1":
-  Hospice."Hospice Intervention or Encounter"
-    or "Has Active Chemotherapy"
-    or "Has Bone Marrow Transplant"
-    or "Has Immunocompromising Conditions"
+
 
 define "Has Active Chemotherapy":
-  exists ( ( Status."Completed Procedure" ( [Procedure: "Chemotherapy Procedure"] ) ) ChemotherapyProcedure
+  exists ( ( Status."Completed or Ongoing Procedure" ( [Procedure: "Chemotherapy Procedure"] ) ) ChemotherapyProcedure
       where FHIRBase."Normalize Interval" ( ChemotherapyProcedure.performed ) overlaps "Measurement Period"
   )
     or exists ( ( Status."Finished Encounter" ( [Encounter: "Chemotherapy Encounter"] ) ) ChemotherapyEncounter
@@ -102,21 +117,22 @@ define "Has Active Chemotherapy":
     )
 
 define "Has Bone Marrow Transplant":
-  exists ( ( Status."Completed Procedure" ( [Procedure: "Bone Marrow Transplant"] ) ) BoneMarrowTransplant
+  exists ( ( Status."Completed or Ongoing Procedure" ( [Procedure: "Bone Marrow Transplant"] ) ) BoneMarrowTransplant
       where FHIRBase."Normalize Interval" ( BoneMarrowTransplant.performed ) overlaps "Measurement Period"
   )
 
 define "Has Immunocompromising Conditions":
   exists ( ( Status."Active Condition" ( [Condition: "Immunocompromising Conditions"] )
       union Status."Active Condition" ( [Condition: "Cochlear Implant Diagnosis"] )
+      union Status."Active Condition" ( [Condition: "Cochlear Implant Device"] )
       union Status."Active Condition" ( [Condition: "Anatomic or Functional Asplenia"] )
       union Status."Active Condition" ( [Condition: "Cerebrospinal Fluid Leak"] )
       union Status."Active Condition" ( [Condition: "Sickle Cell Anemia and HB S Disease"] ) ) ExclusionDiagnoses
       where FHIRBase."Prevalence Period" ( ExclusionDiagnoses ) starts on or before 
       end of "Measurement Period"
   )
-    or exists ( ( Status."Completed Procedure" ( [Procedure: "Cochlear Implant"] )
-        union Status."Completed Procedure" ( [Procedure: "Cochlear Implant Device"] ) ) CochlearImplantProcedure
+    or exists ( ( Status."Completed or Ongoing Procedure" ( [Procedure: "Cochlear Implant"] )
+        union Status."Completed or Ongoing Procedure" ( [Procedure: "Cochlear Implant Device"] ) ) CochlearImplantProcedure
         where FHIRBase."Normalize Interval" ( CochlearImplantProcedure.performed ) starts on or before 
         end of "Measurement Period"
     )
@@ -151,6 +167,11 @@ define "Between July 1 of the Year Prior to the Measurement Period and June 30 o
 define "Meets Influenza Vaccination Criteria":
   Immunization."Meets Required Vaccination Threshold" ( "Influenza Vaccine", "Between July 1 of the Year Prior to the Measurement Period and June 30 of the Measurement Period", 1 )
 
+
+
+
+
+
 define "Numerator 2":
   "Meets Td or Tdap Vaccination Criteria"
     or "Has Anaphylaxis Due to Td or Tdap Vaccine"
@@ -179,8 +200,12 @@ define "Has Encephalitis Due to Td or Tdap Vaccine":
   end of "Measurement Period" )
 
 define "Numerator 3":
-  "Meets Herpes Zoster Live Vaccination Criteria"
-    or "Meets Herpes Zoster Recombinant Vaccination Criteria"
+if (Patient.birthDate <= date from
+  start of "Measurement Period" - 50 years)then
+  ("Meets Herpes Zoster Live Vaccination Criteria"
+    or "Meets Herpes Zoster Recombinant Vaccination Criteria")
+else false
+
 
 define "Meets Herpes Zoster Live Vaccination Criteria":
   Immunization."Meets Required Vaccination Threshold" ( "Herpes Zoster Live Vaccine", "Between Age 50 and the End of the Measurement Period", 1 )
@@ -190,8 +215,19 @@ define "Herpes Zoster Live Vaccine":
     union Status."Completed Procedure" ( [Procedure: "Herpes Zoster Live Vaccine Procedure"] )
 
 define "Between Age 50 and the End of the Measurement Period":
-  Interval[Patient.birthDate + 50 years, date from 
-  end of "Measurement Period"]
+if (Patient.birthDate <= date from
+  start of "Measurement Period" - 50 years)then
+  (Interval[(Patient.birthDate + 50 years), date from
+  end of "Measurement Period"])
+else Interval[date from start of "Measurement Period", date from
+end of "Measurement Period"]
+
+
+define "Testing check":
+if (Patient.birthDate <= date from
+  start of "Measurement Period" - 50 years)then
+(true)
+else false
 
 define "Meets Herpes Zoster Recombinant Vaccination Criteria":
   Immunization."Meets Required Threshold With Variable Days Apart" ( "Herpes Zoster Recombinant Vaccine", "Between Age 50 and the End of the Measurement Period", 2, 28 )
@@ -211,5 +247,16 @@ define "Pneumococcal Polysaccharide Vaccine 23":
     union Status."Completed Procedure" ( [Procedure: "Pneumococcal Polysaccharide 23 Vaccine Procedure"] )
 
 define "Between Age 60 and the End of the Measurement Period":
-  Interval[Patient.birthDate + 60 years, date from 
-  end of "Measurement Period"]
+  if (Patient.birthDate <= date from
+  start of "Measurement Period" - 60 years)then
+  (Interval[(Patient.birthDate + 60 years), date from
+  end of "Measurement Period"])
+else Interval[date from start of "Measurement Period", date from
+end of "Measurement Period"]
+
+
+define "Testing 60 check":
+if (Patient.birthDate <= date from
+  start of "Measurement Period" - 60 years)then
+  (true)
+else false
