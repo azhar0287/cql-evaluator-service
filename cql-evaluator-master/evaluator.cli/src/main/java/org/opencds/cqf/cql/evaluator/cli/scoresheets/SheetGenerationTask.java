@@ -64,6 +64,15 @@ public class SheetGenerationTask {
         documents.clear();
     }
 
+    public void generateSheetForIMAE() throws IOException, ParseException {
+        Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
+        List<Document> documents;
+        documents = dbFunctions.getConditionalData(EP_CQL_PROCESSED_DATA, skip, batchSize, db);
+        DsfeScoreSheet dsfeScoreSheet=new DsfeScoreSheet();
+        dsfeScoreSheet.generateSheet(documents, measureDate, csvPrinter, db,stringDictionaryMap);
+        documents.clear();
+    }
+
 
     public void generateSheetForCCS() throws IOException, ParseException {
         Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");

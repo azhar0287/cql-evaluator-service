@@ -231,7 +231,8 @@ public class ProcessPatientService implements Runnable {
                             EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                            documents.add(this.createDocumentForDSFEResult(result.expressionResults, patientData));
+                            //documents.add(this.createDocumentForDSFEResult(result.expressionResults, patientData));
+                            documents.add(this.createDocumentForIMAEResult(result.expressionResults, patientData));
                             if(documents.size() > 15) {
                                 dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
                                 System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
@@ -391,7 +392,8 @@ public class ProcessPatientService implements Runnable {
                                 EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
                                 patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                                documents.add(this.createDocumentForDSFEResult(result.expressionResults, patientData));
+                                //documents.add(this.createDocumentForDSFEResult(result.expressionResults, patientData));
+                                documents.add(this.createDocumentForIMAEResult(result.expressionResults, patientData));
                                 count++;
                                 if (documents.size() > 15) {
                                     dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
@@ -454,6 +456,9 @@ public class ProcessPatientService implements Runnable {
         return documents;
     }
 
+
+    ///////////////////////////////////   Creating Document for Measure for DB after evaluation /////////////////////////////////
+
     public Document createDocumentForDSFEResult(Map<String, Object> expressionResults, PatientData patientData) {
         Document document = new Document();
         document.put("id", patientData.getId());
@@ -488,6 +493,25 @@ public class ProcessPatientService implements Runnable {
         expressionResults.remove("Adolescent Depression Screening with Documented Result between January 1 and December 1");
         expressionResults.remove("Adult Depression Screening with Documented Result between January 1 and December 1");
         expressionResults.remove("Has Positive Brief Screen Same Day as Negative Full Length Screen");
+
+        document.putAll(expressionResults); /* Mapping into Document*/
+        return document;
+    }
+
+    public Document createDocumentForIMAEResult(Map<String, Object> expressionResults, PatientData patientData){
+
+        Document document = new Document();
+        document.put("id", patientData.getId());
+        document.put("birthDate", patientData.getBirthDate());
+        document.put("gender", patientData.getGender());
+        document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
+        document.put("hospiceFlag",patientData.getHospiceFlag());
+
+
+        /* Removing extra fields also giving codex error*/
+        expressionResults.remove("Patient");
+        expressionResults.remove("Member Coverage");
+
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
