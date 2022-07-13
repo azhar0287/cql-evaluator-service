@@ -66,6 +66,14 @@ public class ProcessPatientService implements Runnable {
         this.totalCount = totalCount;
         this.threadTaskCompleted = threadTaskCompleted;
     }
+
+    public ProcessPatientService(int skip, List<LibraryOptions> libraries, DBConnection connection, int totalCount) {
+        this.libraries = libraries;
+        this.skip = skip;
+        this.dbConnection = connection;
+        this.totalCount = totalCount;
+    }
+
     public ProcessPatientService( List<LibraryOptions> libraries, DBConnection connection, int totalCount) {
         this.libraries = libraries;
         this.dbConnection = connection;
@@ -83,7 +91,7 @@ public class ProcessPatientService implements Runnable {
         List<RetrieveProvider> retrieveProviders;
         retrieveProviders = utilityFunction.mapToRetrieveProviderForSingle(patientId, skip, 1, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection, Constant.MAIN_FHIR_COLLECTION_NAME);
         processAndSavePatients(retrieveProviders, dbFunctions);
-        threadTaskCompleted.isTaskCompleted = true;
+        //threadTaskCompleted.isTaskCompleted = true;
 
     }
 
@@ -99,7 +107,7 @@ public class ProcessPatientService implements Runnable {
         List<RetrieveProvider> retrieveProviders;
         retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection,Constant.MAIN_FHIR_COLLECTION_NAME);
         processAndSavePatients(retrieveProviders, dbFunctions);
-        threadTaskCompleted.isTaskCompleted = true;
+        //threadTaskCompleted.isTaskCompleted = true;
     }
 
     List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders, DbFunctions dbFunctions) {
@@ -231,7 +239,8 @@ public class ProcessPatientService implements Runnable {
                             EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                            documents.add(this.createDocumentForDSFEResult(result.expressionResults, patientData));
+                            //documents.add(this.createDocumentForDSFEResult(result.expressionResults, patientData));
+                            documents.add(this.createDocumentForCISEResult(result.expressionResults, patientData));
                             if(documents.size() > 15) {
                                 dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
                                 System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
@@ -391,7 +400,7 @@ public class ProcessPatientService implements Runnable {
                                 EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
                                 patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                                documents.add(this.createDocumentForDSFEResult(result.expressionResults, patientData));
+                                documents.add(this.createDocumentForCISEResult(result.expressionResults, patientData));
                                 count++;
                                 if (documents.size() > 15) {
                                     dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
@@ -489,6 +498,65 @@ public class ProcessPatientService implements Runnable {
         expressionResults.remove("Adult Depression Screening with Documented Result between January 1 and December 1");
         expressionResults.remove("Has Positive Brief Screen Same Day as Negative Full Length Screen");
 
+        document.putAll(expressionResults); /* Mapping into Document*/
+        return document;
+    }
+
+    public Document createDocumentForCISEResult(Map<String, Object> expressionResults, PatientData patientData) {
+        Document document = new Document();
+        document.put("id", patientData.getId());
+        document.put("birthDate", patientData.getBirthDate());
+        document.put("gender", patientData.getGender());
+        document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
+        document.put("hospiceFlag",patientData.getHospiceFlag());
+
+
+        /* Removing extra fields also giving codex error*/
+        expressionResults.remove("Patient");
+        expressionResults.remove("Member Coverage");
+        expressionResults.remove("Date of First Birthday");
+        expressionResults.remove("Date of Second Birthday");
+        expressionResults.remove("Vaccine Administration Interval - On or Between 42 Days and Second Birthday");
+        expressionResults.remove("Vaccine Administration Interval - On or Between 6 Months and Second Birthday");
+        expressionResults.remove("Date of First Birthday to Date of Second Birthday");
+        expressionResults.remove("Vaccine Administration Interval - On or Between First Birthday and Second Birthday");
+        expressionResults.remove("Participation Period");
+        expressionResults.remove("Has Severe Combined Immunodeficiency");
+        expressionResults.remove("Has Immunodeficiency");
+        expressionResults.remove("Has HIV");
+        expressionResults.remove("Has Lymphoreticular Cancer, Multiple Myeloma or Leukemia");
+        expressionResults.remove("Has Intussusception");
+        expressionResults.remove("DTaP Vaccinations");
+        expressionResults.remove("Meets DTaP Vaccination Requirement");
+        expressionResults.remove("Has Anaphylaxis Due to DTap Vaccine");
+        expressionResults.remove("Has Encephalitis Due to DTap Vaccine");
+        expressionResults.remove("IPV Vaccinations");
+        expressionResults.remove("Meets IPV Vaccination Requirement");
+        expressionResults.remove("MMR Vaccinations");
+        expressionResults.remove("Meets MMR Vaccination Requirement");
+        expressionResults.remove("Has History of Measles, Mumps and Rubella Illness");
+        expressionResults.remove("HiB Vaccinations");
+        expressionResults.remove("Meets HiB Vaccination Requirement");
+        expressionResults.remove("Has Anaphylaxis Due to HiB Vaccine");
+        expressionResults.remove("HepB Vaccinations");
+        expressionResults.remove("Newborn HepB Vaccinations");
+        expressionResults.remove("Meets HepB Vaccination Requirement");
+        expressionResults.remove("Has Anaphylaxis Due to Hep B Vaccine or History of Hep B");
+        expressionResults.remove("VZV Vaccinations");
+        expressionResults.remove("Meets VZV Vaccination Requirement");
+        expressionResults.remove("Has History of VZV");
+        expressionResults.remove("PCV Vaccinations");
+        expressionResults.remove("Meets PCV Vaccination Requirement");
+        expressionResults.remove("HepA Vaccinations");
+        expressionResults.remove("Meets HepA Vaccination Requirement");
+        expressionResults.remove("Has History of Hepatitis A");
+        expressionResults.remove("RV 2 Dose Vaccinations");
+        expressionResults.remove("RV 3 Dose Vaccinations");
+        expressionResults.remove("Meets Rotavirus Vaccination Requirement");
+        expressionResults.remove("Has Anaphylaxis Due to Rotavirus Vaccine");
+        expressionResults.remove("Influenza Vaccinations");
+        expressionResults.remove("LAIV Vaccinations");
+        expressionResults.remove("Meets Influenza Vaccination Requirement");
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
     }
