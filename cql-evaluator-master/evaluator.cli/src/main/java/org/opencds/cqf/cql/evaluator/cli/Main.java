@@ -143,7 +143,8 @@ public class Main {
         for(int i=0; i<totalSkipsForSheet; i++) {
             SheetGenerationTask sheetGenerationTask = new SheetGenerationTask(utilityFunction, connection, dbFunctions, totalSkipped, csvPrinter,mapDictionaryData);
             //sheetGenerationTask.generateSheetForDSFE();
-            sheetGenerationTask.generateSheetForCISE();
+            //sheetGenerationTask.generateSheetForCISE();
+            sheetGenerationTask.generateSheetForASFE();
             System.out.println("Iteration: "+i);
             totalSkipped+=500;
         }

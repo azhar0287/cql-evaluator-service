@@ -240,7 +240,8 @@ public class ProcessPatientService implements Runnable {
 
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
                             //documents.add(this.createDocumentForDSFEResult(result.expressionResults, patientData));
-                            documents.add(this.createDocumentForCISEResult(result.expressionResults, patientData));
+                            //documents.add(this.createDocumentForCISEResult(result.expressionResults, patientData));
+                            documents.add(this.createDocumentForASFEResult(result.expressionResults, patientData));
                             if(documents.size() > 15) {
                                 dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
                                 System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
@@ -400,7 +401,7 @@ public class ProcessPatientService implements Runnable {
                                 EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
                                 patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                                documents.add(this.createDocumentForCISEResult(result.expressionResults, patientData));
+                                documents.add(this.createDocumentForASFEResult(result.expressionResults, patientData));
                                 count++;
                                 if (documents.size() > 15) {
                                     dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
@@ -557,6 +558,22 @@ public class ProcessPatientService implements Runnable {
         expressionResults.remove("Influenza Vaccinations");
         expressionResults.remove("LAIV Vaccinations");
         expressionResults.remove("Meets Influenza Vaccination Requirement");
+        document.putAll(expressionResults); /* Mapping into Document*/
+        return document;
+    }
+
+    public Document createDocumentForASFEResult(Map<String, Object> expressionResults, PatientData patientData){
+        Document document = new Document();
+        document.put("id", patientData.getId());
+        document.put("birthDate", patientData.getBirthDate());
+        document.put("gender", patientData.getGender());
+        document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
+        document.put("hospiceFlag",patientData.getHospiceFlag());
+
+        /* Removing extra fields also giving codex error*/
+        expressionResults.remove("Patient");
+        expressionResults.remove("Member Coverage");
+
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
     }
