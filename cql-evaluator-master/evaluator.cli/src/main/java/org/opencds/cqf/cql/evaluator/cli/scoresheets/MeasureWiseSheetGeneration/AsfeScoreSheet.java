@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
 import org.bson.Document;
-import org.opencds.cqf.cql.evaluator.cli.Main;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.mappers.PayerInfo;
@@ -24,7 +23,7 @@ public class AsfeScoreSheet {
     UtilityFunction utilityFunction = new UtilityFunction();
     DbFunctions dbFunctions = new DbFunctions();
 
-    void addDsfObjectInSheet(Document document, String payerCode, CSVPrinter csvPrinter) throws IOException {
+    void addAsfObjectInSheet(Document document, String payerCode, CSVPrinter csvPrinter) throws IOException {
         List<String> codeList = new LinkedList<>();
         codeList.add ("MEP");
         codeList.add ("MMO");
@@ -34,7 +33,7 @@ public class AsfeScoreSheet {
         /////////////////////////////  Sheet A Mapping ////////////////////////////////////////////////
         List<String> sheetObjA = new LinkedList<>();
         sheetObjA.add(document.getString("id"));
-        sheetObjA.add("DSFA");
+        sheetObjA.add("ASFA");
         sheetObjA.add(payerCode);
         sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
         sheetObjA.add("0"); // Added Event Here
@@ -44,7 +43,6 @@ public class AsfeScoreSheet {
         else {
             sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 1"))); //epop
         }
-        //sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 1"))); //epop
         sheetObjA.add("0"); //excl
         sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 1"))); //Numerator
         if(document.getBoolean("Exclusions 1")){
@@ -64,10 +62,9 @@ public class AsfeScoreSheet {
         /////////////////////////////  Sheet B Mapping ////////////////////////////////////////////////
         List<String> sheetObjB = new LinkedList<>();
         sheetObjB.add(document.getString("id"));
-        sheetObjB.add("DSFB");
+        sheetObjB.add("ASFB");
         sheetObjB.add(payerCode);
         sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
-        //sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 1"))); //Event will be same of first numerator 1
         sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 2")));
         //denominator 2 false
         if(!document.getBoolean("Denominator 2") || document.getBoolean("Exclusions 2") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
@@ -92,21 +89,6 @@ public class AsfeScoreSheet {
         sheetObjB.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
         sheetObjB.add(utilityFunction.getGenderSymbol(document.getString("gender")));
         csvPrinter.printRecord(sheetObjB);
-    }
-
-    String getPayerCodeType(String payerCode , DBConnection dbConnection, Map<String,String> dictionaryStringMap){
-        if(!dictionaryStringMap.isEmpty()){
-            String payerCodeOid=dictionaryStringMap.get(payerCode);
-            if(payerCodeOid !=null && payerCodeOid!=""){
-                return payerCodeOid;
-            }
-        }
-        List<Document> documentList=dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,dbConnection);
-        if(documentList.size()>0){
-            dictionaryStringMap.put(payerCode,documentList.get(0).getString("oid"));
-            return documentList.get(0).getString("oid");
-        }
-        return "";
     }
 
     void mapSpecialPayerCodes(List<String> payersList,String payerCode){
@@ -240,38 +222,25 @@ public class AsfeScoreSheet {
             payerCodes.addAll(updatedPayersList);
         }
     }
-    public void generateSheet(List<Document> documents, Date measureDate, CSVPrinter csvPrinter, DBConnection db,Map<String,String> dictionaryStringMap) throws IOException {
+    public void generateSheet(List<Document> documents, CSVPrinter csvPrinter, DBConnection db) {
         try {
-            List<String> sheetObj;
             List<PayerInfo> payerInfoList;
-            List<String> codeCheckList = utilityFunction.checkCodeForCCS();
             for(Document document : documents) {
                 System.out.println("Processing patient: "+document.getString("id"));
-                if(document.getString("id").equals("95446")){
-                    int a=0;
-                }
+//                if(document.getString("id").equals("95446")){
+//                    int a=0;
+//                }
                 int patientAge = Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
-                if(patientAge>11 ) {
+                if(patientAge > 17 ) {
                     Object object = document.get("payerCodes");
                     payerInfoList = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {});
                     List<String> payersList=mapPayersCodeInList(payerInfoList);
                     updatePayerCodes(payersList, dbFunctions, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
                     if (payersList.size() != 0) {
                         for (String payerCode:payersList) {
-                            String payerCodeType = getPayerCodeType(payerCode,db,dictionaryStringMap);
-                            if (((payerCodeType.equals(Constant.CODE_TYPE_COMMERCIAL) || payerCodeType.equals(Constant.CODE_TYPE_MEDICAID)) && patientAge>11)
-                                    || (payerCodeType.equals(Constant.CODE_TYPE_MEDICARE) && patientAge > 17))
-                            {
-                                addDsfObjectInSheet(document,payerCode,csvPrinter);
-                            }
+                            addAsfObjectInSheet(document,payerCode,csvPrinter);
                         }
                     }
-                    else {
-//                        Main.failedPatients.add(document.getString("id"));//patients missed due to payerlist size=0
-                    }
-                }
-                else{
-                    Main.failedPatients.add(document.getString("id"));
                 }
                 csvPrinter.flush();
             }

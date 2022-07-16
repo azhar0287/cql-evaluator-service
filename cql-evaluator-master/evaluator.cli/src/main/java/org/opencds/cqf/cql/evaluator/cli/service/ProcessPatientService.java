@@ -572,7 +572,21 @@ public class ProcessPatientService implements Runnable {
 
         /* Removing extra fields also giving codex error*/
         expressionResults.remove("Patient");
+        expressionResults.remove("January 1 of Year Prior to Measurement Period");
+        expressionResults.remove("November 1 of the Measurement Period");
+        expressionResults.remove("Patient is 65 or Over");
         expressionResults.remove("Member Coverage");
+        expressionResults.remove("AUDIT Screen with Positive Result");
+        expressionResults.remove("AUDIT-C Screen with Positive Result");
+        expressionResults.remove("Single-Question Screen with Positive Result");
+        expressionResults.remove("Unhealthy Alcohol Use Screen with Positive Result Between January 1 and November 1");
+        expressionResults.remove("Alcohol Use Disorder starting during Year Prior to Measurement Period");
+        expressionResults.remove("Dementia starting on or before end of Measurement Period");
+        expressionResults.remove("AUDIT Screen with Documented Result");
+        expressionResults.remove("AUDIT-C Screen with Documented Result");
+        expressionResults.remove("Single-Question Screen with Documented Result");
+        expressionResults.remove("First Positive Screen");
+        expressionResults.remove("Counseling or Other Follow-up Care on or 60 Days after First Positive Screen");
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;

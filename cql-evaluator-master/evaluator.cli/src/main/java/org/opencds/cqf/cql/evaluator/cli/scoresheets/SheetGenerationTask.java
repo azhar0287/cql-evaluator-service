@@ -75,12 +75,10 @@ public class SheetGenerationTask {
         documents.clear();
     }
 
-    public void generateSheetForASFE() throws IOException, ParseException {
-        Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
-        List<Document> documents;
-        documents = dbFunctions.getConditionalData(EP_CQL_PROCESSED_DATA, skip, batchSize, db);
+    public void generateSheetForASFE() throws IOException {
+        List<Document> documents = dbFunctions.getConditionalData(EP_CQL_PROCESSED_DATA, skip, batchSize, db);
         AsfeScoreSheet asfeScoreSheet=new AsfeScoreSheet();
-        asfeScoreSheet.generateSheet(documents, measureDate, csvPrinter, db,stringDictionaryMap);
+        asfeScoreSheet.generateSheet(documents, csvPrinter, db);
         documents.clear();
     }
 

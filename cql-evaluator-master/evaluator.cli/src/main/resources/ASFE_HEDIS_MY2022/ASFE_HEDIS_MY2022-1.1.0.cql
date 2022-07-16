@@ -56,6 +56,7 @@ define "Denominator 1":
 
 define "Denominator 2":
   exists "Unhealthy Alcohol Use Screen with Positive Result Between January 1 and November 1"
+  and "Numerator 1"
 
 define "Exclusions 1":
   "Alcohol Use Disorder starting during Year Prior to Measurement Period"
