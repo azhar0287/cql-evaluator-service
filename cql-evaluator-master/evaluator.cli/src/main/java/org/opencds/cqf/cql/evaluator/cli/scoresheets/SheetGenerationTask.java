@@ -6,10 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
-import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.AsfeScoreSheet;
-import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.CisScoreSheet;
-import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.DmseScoreSheet;
-import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.DsfeScoreSheet;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.*;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import java.io.IOException;
 import java.text.ParseException;
@@ -79,6 +76,15 @@ public class SheetGenerationTask {
         List<Document> documents = dbFunctions.getConditionalData(EP_CQL_PROCESSED_DATA, skip, batchSize, db);
         AsfeScoreSheet asfeScoreSheet=new AsfeScoreSheet();
         asfeScoreSheet.generateSheet(documents, csvPrinter, db);
+        documents.clear();
+    }
+
+    public void generateSheetForDRRE() throws IOException, ParseException {
+        Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
+        List<Document> documents;
+        documents = dbFunctions.getConditionalData(EP_CQL_PROCESSED_DATA, skip, batchSize, db);
+        DrreScoreSheet drreScoreSheet=new DrreScoreSheet();
+        drreScoreSheet.generateSheet(documents, measureDate, csvPrinter, db,stringDictionaryMap);
         documents.clear();
     }
 
