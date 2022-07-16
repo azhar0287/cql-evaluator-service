@@ -98,49 +98,22 @@ public class Main {
     }
 
     public static void processPatients(DbFunctions dbFunctions, DBConnection connection) {
-
         System.out.println("Patient processing has started");
-
-        List<ThreadTaskCompleted> isAllTasksCompleted = new LinkedList<>();
         int totalCount = dbFunctions.getDataCount(Constant.MAIN_FHIR_COLLECTION_NAME, connection);
-
         int totalSkips = (int) Math.ceil(totalCount/10);
         int totalSkipped = 0;
         if(totalCount % 10 > 0) { //remaining missing records issue fix
             totalSkips+=1;
         }
-
         List<LibraryOptions> libraryOptions = new ArrayList<>();
         libraryOptions.add(setupLibrary());
-
         //Patient processing
-        //ExecutorService executorService = Executors.newFixedThreadPool(10);
         for(int i=0; i < totalSkips; i++) {
-            //connection = new DBConnection();
-//            ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
-//            isAllTasksCompleted.add(isTaskCompleted);
-//            executorService.submit(new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount, isTaskCompleted));
             ProcessPatientService processPatientService = new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount);
             processPatientService.dataBatchingAndProcessing();
             totalSkipped += 10;
-            //connection.closeConnection();
-
         }
-
-        /*Shutting Down service*/
-//        while(true) {
-//            if(dbFunctions.isAllTasksCompletedByThreads(isAllTasksCompleted)){
-//                LOGGER.info("****** Patients are processed");
-//                break;
-//            }
-//            try {
-//                Thread.sleep(10000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
         System.out.println("Patients Processing has completed");
-        //executorService.shutdown();
     }
 
     public static void processRemainingPatients(DbFunctions dbFunctions, DBConnection connection) {

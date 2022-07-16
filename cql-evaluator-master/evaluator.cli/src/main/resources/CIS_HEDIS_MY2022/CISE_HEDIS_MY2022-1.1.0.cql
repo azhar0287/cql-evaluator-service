@@ -57,7 +57,6 @@ code "Anaphylaxis due to rotavirus vaccine (disorder)": '428331000124103' from "
 
 parameter "Measurement Period" default Interval [@2022-01-01T00:00:00.0, @2022-12-31T23:59:59.0)
 
-
 context Patient
 
 define "Date of First Birthday":
@@ -70,7 +69,7 @@ define "Vaccine Administration Interval - On or Between 42 Days and Second Birth
   Interval[Patient.birthDate + 42 days, "Date of Second Birthday"]
 
 define "Vaccine Administration Interval - On or Between 6 Months and Second Birthday":
-  Interval[Patient.birthDate + 6 months, "Date of Second Birthday"]
+  Interval[Patient.birthDate + 180 days, "Date of Second Birthday"]
 
 define "Vaccine Administration Interval - On or Between First Birthday and Second Birthday":
   "Date of First Birthday to Date of Second Birthday"
@@ -126,8 +125,8 @@ define "Enrolled During Participation Period":
 
 define "Member Coverage":
   [Coverage] C
-    where Interval[date from start of FHIRBase."Normalize Interval" ( C.period ), date from 
-    end of FHIRBase."Normalize Interval" ( C.period )]overlaps "Participation Period"
+    where Interval[date from start of FHIRBase."Normalize Interval" ( C.period ), date from
+end of FHIRBase."Normalize Interval" ( C.period )]overlaps "Participation Period"
 
 define "Denominator 1":
   "Initial Population 1"
