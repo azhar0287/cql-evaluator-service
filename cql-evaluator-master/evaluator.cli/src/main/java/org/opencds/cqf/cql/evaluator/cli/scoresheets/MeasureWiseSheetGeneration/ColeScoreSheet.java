@@ -280,12 +280,25 @@ public class ColeScoreSheet {
         csvPrinter.printRecord(sheetObj);
     }
 
+    public boolean getRexclFlagBySN2(List<PayerInfo> payerInfoList, int patientAge) {
+        Date anchorDate = utilityFunction.getConvertedDate("2022-12-31");
+        Date endDate = utilityFunction.getConvertedDate("2022-01-01");
+        boolean rexcleFlag = false;
+        if (payerInfoList.size() > 0) {
+            for (PayerInfo payerInfo : payerInfoList) {
+                if (payerInfo.getPayerCode().equalsIgnoreCase("SN2") && patientAge >= 66) {
+                    boolean dateOverLapFlag = anchorDate.compareTo(payerInfo.getCoverageStartDate()) >= 0
+                            && payerInfo.getCoverageEndDate().compareTo(endDate) >= 0;
+                    rexcleFlag = dateOverLapFlag;
+                }
+            }
+        }
+        return rexcleFlag;
+    }
+
     public void generateSheet(List<Document> documents, Date measureDate, CSVPrinter csvPrinter, DBConnection db) throws IOException {
         try {
-
-            Date anchorDate = utilityFunction.getConvertedDate("2022-12-31");
-            Date endDate = utilityFunction.getConvertedDate("2022-01-01");
-            boolean rexcleFlag = false;
+            boolean rexcleFlag;
             boolean ltiFlag;
             List<Premium> premiums;
             List<String> sheetObj;
@@ -294,92 +307,79 @@ public class ColeScoreSheet {
                 System.out.println("Processing patient: " + document.getString("id"));
                 int patientAge = Integer.parseInt(utilityFunction.getAgeFromMeasureEndDate(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
                 premiums = getPremiumFromDoc(document);
-
-                if(document.getString("id").equalsIgnoreCase("95119")){
-                    int a=0;
-                }
                 Object object = document.get("payerCodes");
-                payerInfoList = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {
-                });
+                payerInfoList = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {});
                 List<String> payersList = mapPayersCodeInList(payerInfoList);
 
                 if ((patientAge >= 46 && patientAge <= 75)) {
+                    rexcleFlag = getRexclFlagBySN2(payerInfoList, patientAge); //SN2 Check
+                    updatePayerCodes(payersList, dbFunctions, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
+                    if (payersList.size() != 0) {
+                        for (String payerCode : payersList) {
+                            sheetObj = new ArrayList<>();
+                            sheetObj.add(document.getString("id"));
+                            String measure = getMeasurePartType(document, payerCode, db, dbFunctions);
+                            sheetObj.add(measure); //Measure
 
-                    //here SN2 check
-
-                    if (payerInfoList.size() > 0) {
-                        for (PayerInfo payerInfo : payerInfoList) {
-                            if (payerInfo.getPayerCode().equalsIgnoreCase("SN2") && patientAge >= 66) {
-                                boolean dateOverLapFlag = anchorDate.compareTo(payerInfo.getCoverageStartDate()) >= 0
-                                        && payerInfo.getCoverageEndDate().compareTo(endDate) >= 0;
-                                rexcleFlag = dateOverLapFlag;
-
+                            if (this.getLtiFlagAndMedicareFlag(premiums, payerCode, db, dbFunctions, patientAge)) {
+                                ltiFlag = true;
+                            } else {
+                                ltiFlag = false;
                             }
-                        }
-                    }
-
-                updatePayerCodes(payersList, dbFunctions, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
-
-                if (payersList.size() != 0) {
-                    for (String payerCode : payersList) {
-                        sheetObj = new ArrayList<>();
-                        sheetObj.add(document.getString("id"));
-                        String measure = getMeasurePartType(document, payerCode, db, dbFunctions);
-                        sheetObj.add(measure); //Measure
-
-                        if (this.getLtiFlagAndMedicareFlag(premiums, payerCode, db, dbFunctions, patientAge)) {
-                            ltiFlag = true;
-                        } else {
+                            addObjectInSheet(sheetObj, document, payerCode, measureDate, csvPrinter, ltiFlag, rexcleFlag);
+                            rexcleFlag = false;
                             ltiFlag = false;
                         }
-                        addObjectInSheet(sheetObj, document, payerCode, measureDate, csvPrinter, ltiFlag, rexcleFlag);
-
-                        rexcleFlag = false;
-                        ltiFlag = false;
                     }
                 }
             }
-        }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public String getMeasurePartType(Document document, String code, DBConnection connection, DbFunctions db) {
+    public boolean getListHistFlag(List<Premium> premiums) {
         boolean listHistFlag = false;
         int flag2 = 0;
-        String measureName = "";
         String listHist;
+        int dateFlag2 = 0;
+        for (Premium premium : premiums) {
+            if (null != premium.getLisHist()) {
+                listHist = premium.getLisHist();
+                if (listHist != null) {
+                    int dateFlag = premium.getStartDate().compareTo(utilityFunction.getConvertedDate("2022-12-31"));
+                    if (premium.getEndDate() != null) {
+                        dateFlag2 = premium.getEndDate().compareTo(utilityFunction.getConvertedDate("2020-12-31"));
+                        if ((dateFlag < 0 && dateFlag2 > 0) && (listHist.equalsIgnoreCase("D"))) {
+                            flag2++;
+                        }
+                    }
+                    else {
+                        if ((dateFlag < 0) && (listHist.equalsIgnoreCase("D"))) {
+                            flag2++;
+                        }
+                    }
+                }
+            }
+            if (flag2 > 0) {
+                listHistFlag = true;
+            }
+        }
+        return listHistFlag;
+    }
+
+    public String getMeasurePartType(Document document, String code, DBConnection connection, DbFunctions db) {
+        boolean listHistFlag;
+        String measureName = "";
         String orec;
         String year;
-        int dateFlag2 = 0;
         boolean measurePickedFlag = false;
         List<Premium> premiums = getPremiumFromDoc(document);
         boolean medicareFlag = getOidDetails(connection, code, db).equalsIgnoreCase(CODE_TYPE_MEDICARE);
         Premium finalPremium = new Premium();
         if(premiums.size()>0 && medicareFlag) {
 
-            for (Premium premium : premiums) {
-                if (null != premium.getLisHist()) {
-                    listHist = premium.getLisHist();
-                    if (listHist != null) {
-                        int dateFlag = premium.getStartDate().compareTo(utilityFunction.getConvertedDate("2022-12-31"));
-                        if (premium.getEndDate() != null) {
-                            dateFlag2 = premium.getEndDate().compareTo(utilityFunction.getConvertedDate("2020-12-31"));
-                            if ((dateFlag < 0 && dateFlag2 > 0) && (listHist.equalsIgnoreCase("D"))) {
-                                flag2++;
-                            }
-                        } else {
-                            if ((dateFlag < 0) && (listHist.equalsIgnoreCase("D"))) {
-                                flag2++;
-                            }
-                        }
-                    }
-                }
-                if (flag2 > 0) {
-                    listHistFlag = true;
-                }
-            }
+           listHistFlag = getListHistFlag(premiums);
 
             for(Premium premium: premiums) {
                 orec = premium.getOrec();
@@ -388,7 +388,8 @@ public class ColeScoreSheet {
                 }
             }
 
-            orec = finalPremium.getOrec();
+            orec = finalPremium.getOrec();  //Final not null orec within 2022
+
             if (null != orec) {
                 if (!orec.equalsIgnoreCase("")) {
                     year = finalPremium.getHospiceDateString().substring(0, 4);
@@ -401,57 +402,54 @@ public class ColeScoreSheet {
                 }
             }
 
-            orec = finalPremium.getOrec();
-                if (null != orec) {
-                    if (!orec.equalsIgnoreCase("")) {
-                        year = finalPremium.getHospiceDateString().substring(0, 4);
-                        if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
-                            if (orec.equalsIgnoreCase("0") && !listHistFlag && medicareFlag) {
-                                measureName = "COLNON";
-                                measurePickedFlag = true;
-                            }
-                        }
-                    }
-                }
-
-                orec = finalPremium.getOrec();
-                if (null != orec) {
-                    if (!orec.equalsIgnoreCase("")) {
-                        year = finalPremium.getHospiceDateString().substring(0, 4);
-                        if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
-                            if ((orec.equalsIgnoreCase("1") || orec.equalsIgnoreCase("3")) && listHistFlag && medicareFlag) {
-                                measureName = "COLCMB";
-                                measurePickedFlag = true;
-                            }
-                        }
-                    }
-                }
-
-                orec = finalPremium.getOrec();
-                if (null != orec) {
-                    if (!orec.equalsIgnoreCase("")) {
-                        year = finalPremium.getHospiceDateString().substring(0, 4);
-                        if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
-                            if ((orec.equalsIgnoreCase("1") || orec.equalsIgnoreCase("3")) && !listHistFlag && medicareFlag) {
-                                measureName = "COLDIS";
-                                measurePickedFlag = true;
-                            }
-                        }
-                    }
-                }
-
-                orec = finalPremium.getOrec();
-                if (null != orec) {
+            if (null != orec) {
+                if (!orec.equalsIgnoreCase("")) {
                     year = finalPremium.getHospiceDateString().substring(0, 4);
                     if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
-                        if (orec.equalsIgnoreCase("0") && listHistFlag && medicareFlag) {
-                            measureName = "COLLISDE";
+                        if (orec.equalsIgnoreCase("0") && !listHistFlag && medicareFlag) {
+                            measureName = "COLNON";
+                            measurePickedFlag = true;
                         }
                     }
                 }
-                if(measureName.equalsIgnoreCase("") && medicareFlag && !listHistFlag) {
-                    measureName = "COLNON";
+            }
+
+            if (null != orec) {
+                if (!orec.equalsIgnoreCase("")) {
+                    year = finalPremium.getHospiceDateString().substring(0, 4);
+                    if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
+                        if ((orec.equalsIgnoreCase("1") || orec.equalsIgnoreCase("3")) && listHistFlag && medicareFlag) {
+                            measureName = "COLCMB";
+                            measurePickedFlag = true;
+                        }
+                    }
                 }
+            }
+
+            if (null != orec) {
+                if (!orec.equalsIgnoreCase("")) {
+                    year = finalPremium.getHospiceDateString().substring(0, 4);
+                    if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
+                        if ((orec.equalsIgnoreCase("1") || orec.equalsIgnoreCase("3")) && !listHistFlag && medicareFlag) {
+                            measureName = "COLDIS";
+                            measurePickedFlag = true;
+                        }
+                    }
+                }
+            }
+
+            if (null != orec) {
+                year = finalPremium.getHospiceDateString().substring(0, 4);
+                if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
+                    if (orec.equalsIgnoreCase("0") && listHistFlag && medicareFlag) {
+                        measureName = "COLLISDE";
+                    }
+                }
+            }
+
+            if(measureName.equalsIgnoreCase("") && medicareFlag && !listHistFlag) {
+                measureName = "COLNON";
+            }
         }
         else {
             measureName = "COL";
