@@ -108,9 +108,8 @@ public class ColeScoreSheet {
             for (int i = 0; i < payerInfoList.size(); i++) {
                 insuranceEndDate = payerInfoList.get(i).getCoverageEndDate();
                 insuranceStartDate=payerInfoList.get(i).getCoverageStartDate();
-                if (null!=insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0 && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101") && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
-//                    payersList.add(insuranceList.get(i).getPayerCode());
-//                    mapSpecialPayerCodes(payersList,payerInfoList.get(i).getPayerCode());
+                if (null!=insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0
+                        && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101") && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
                     payersList.add(payerInfoList.get(i).getPayerCode());
                 }
             }
@@ -127,7 +126,6 @@ public class ColeScoreSheet {
 
                         if (!lastCoverageObjectStartDate.equals("20240101") &&
                                 (lastCoverageObjectEndDate.substring(0, 4).equals("2022") || (lastCoverageObjectEndDate.substring(0, 4).equals("2021")))) {
-//                            mapSpecialPayerCodes(payersList, payerInfoList.get(i).getPayerCode());
                             payersList.add(payerInfoList.get(i).getPayerCode());
                             break;
                         }
@@ -199,7 +197,6 @@ public class ColeScoreSheet {
                 payerCodes.clear();
                 for (Map.Entry<String, String> entry : codeTypes.entrySet()) {
                     if (entry.getValue().equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
-//                        payerCodes.add(entry.getKey());
                         mapSpecialPayerCodes(updatedPayersList,entry.getKey());
                     }
                 }
@@ -209,7 +206,6 @@ public class ColeScoreSheet {
                 payerCodes.clear();
                 for (Map.Entry<String, String> entry : codeTypes.entrySet()) {
                     if (entry.getValue().equalsIgnoreCase(CODE_TYPE_COMMERCIAL)) {
-//                        payerCodes.add(entry.getKey());
                         mapSpecialPayerCodes(updatedPayersList,entry.getKey());
 
                     }
@@ -219,11 +215,7 @@ public class ColeScoreSheet {
             if(flag3 == 2) {
                 payerCodes.clear();
                 for (Map.Entry<String, String> entry : codeTypes.entrySet()) {
-
-//                        payerCodes.add(entry.getKey());
                     mapSpecialPayerCodes(updatedPayersList,entry.getKey());
-
-
                 }
             }
             payerCodes.clear();
@@ -286,7 +278,6 @@ public class ColeScoreSheet {
         sheetObj.add(document.getString("raceDS"));
         sheetObj.add(document.getString("ethnicityDS"));
         csvPrinter.printRecord(sheetObj);
-
     }
 
     public void generateSheet(List<Document> documents, Date measureDate, CSVPrinter csvPrinter, DBConnection db) throws IOException {
@@ -354,19 +345,15 @@ public class ColeScoreSheet {
         }
     }
 
-
     public String getMeasurePartType(Document document, String code, DBConnection connection, DbFunctions db) {
         boolean listHistFlag = false;
         int flag2 = 0;
         String measureName = "";
         String listHist;
         String orec;
-        String year = null;
-        boolean coltFlag = false;
+        String year;
         int dateFlag2 = 0;
         boolean measurePickedFlag = false;
-        int sizeFlag = 0;
-        int counter = 0;
         List<Premium> premiums = getPremiumFromDoc(document);
         boolean medicareFlag = getOidDetails(connection, code, db).equalsIgnoreCase(CODE_TYPE_MEDICARE);
         Premium finalPremium = new Premium();
@@ -401,25 +388,19 @@ public class ColeScoreSheet {
                 }
             }
 
-
-//            for(Premium premium: premiums) {
-//                Premium premium = premiums.get(premiums.size()-1);
-                orec = finalPremium.getOrec();
-                if (null != orec) {
-                    if (!orec.equalsIgnoreCase("")) {
-                        year = finalPremium.getHospiceDateString().substring(0, 4);
-                        if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
-                            if (orec.equalsIgnoreCase("2") || orec.equalsIgnoreCase("9")) {
-                                measureName = "COLOT";
-                                measurePickedFlag = true;
-                            }
+            orec = finalPremium.getOrec();
+            if (null != orec) {
+                if (!orec.equalsIgnoreCase("")) {
+                    year = finalPremium.getHospiceDateString().substring(0, 4);
+                    if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
+                        if (orec.equalsIgnoreCase("2") || orec.equalsIgnoreCase("9")) {
+                            measureName = "COLOT";
+                            measurePickedFlag = true;
                         }
                     }
                 }
-        //    }
+            }
 
-            //for(Premium premium: premiums) {
-//            premium = premiums.get(premiums.size()-1);
             orec = finalPremium.getOrec();
                 if (null != orec) {
                     if (!orec.equalsIgnoreCase("")) {
@@ -432,10 +413,7 @@ public class ColeScoreSheet {
                         }
                     }
                 }
-            //}
 
-            //for(Premium premium: premiums) {
-//            premium = premiums.get(premiums.size()-1);
                 orec = finalPremium.getOrec();
                 if (null != orec) {
                     if (!orec.equalsIgnoreCase("")) {
@@ -448,10 +426,7 @@ public class ColeScoreSheet {
                         }
                     }
                 }
-           // }
 
-            //for(Premium premium: premiums) {
-//            premium = premiums.get(premiums.size()-1);
                 orec = finalPremium.getOrec();
                 if (null != orec) {
                     if (!orec.equalsIgnoreCase("")) {
@@ -464,10 +439,7 @@ public class ColeScoreSheet {
                         }
                     }
                 }
-          //  }
 
-           // for(Premium premium: premiums) {
-//            premium = premiums.get(premiums.size()-1);
                 orec = finalPremium.getOrec();
                 if (null != orec) {
                     year = finalPremium.getHospiceDateString().substring(0, 4);
@@ -477,18 +449,13 @@ public class ColeScoreSheet {
                         }
                     }
                 }
-                else {
-
+                if(measureName.equalsIgnoreCase("") && medicareFlag && !listHistFlag) {
+                    measureName = "COLNON";
                 }
-           // }
-            if(measureName.equalsIgnoreCase("") && medicareFlag && !listHistFlag) {
-                measureName = "COLNON";
-            }
         }
         else {
             measureName = "COL";
         }
-
         return measureName;
     }
 
@@ -500,6 +467,7 @@ public class ColeScoreSheet {
         }
         return premiums;
     }
+
     public String getOidDetails(DBConnection connection, String code, DbFunctions db) {
         List<Document> documents = db.getOidInfo(code, "dictionary_ep_2022_code", connection);
         Document document = documents.get(0);
@@ -509,8 +477,6 @@ public class ColeScoreSheet {
     public boolean getLtiFlagAndMedicareFlag(List<Premium> premiums, String code, DBConnection connection, DbFunctions db, int age) {
         int flag1 = 0;
         int flag2 = 0;
-
-
         if(getOidDetails(connection, code, db).equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
             flag1++;
         }
