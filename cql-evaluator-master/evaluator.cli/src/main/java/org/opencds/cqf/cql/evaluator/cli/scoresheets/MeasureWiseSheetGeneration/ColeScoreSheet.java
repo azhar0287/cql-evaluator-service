@@ -391,59 +391,37 @@ public class ColeScoreSheet {
             orec = finalPremium.getOrec();  //Final not null orec within 2022
 
             if (null != orec) {
-                if (!orec.equalsIgnoreCase("")) {
-                    year = finalPremium.getHospiceDateString().substring(0, 4);
-                    if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
-                        if (orec.equalsIgnoreCase("2") || orec.equalsIgnoreCase("9")) {
-                            measureName = "COLOT";
-                            measurePickedFlag = true;
-                        }
-                    }
+                if (orec.equalsIgnoreCase("2") || orec.equalsIgnoreCase("9") && !measurePickedFlag) {
+                    measureName = "COLOT";
+                    measurePickedFlag = true;
                 }
             }
 
             if (null != orec) {
-                if (!orec.equalsIgnoreCase("")) {
-                    year = finalPremium.getHospiceDateString().substring(0, 4);
-                    if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
-                        if (orec.equalsIgnoreCase("0") && !listHistFlag && medicareFlag) {
-                            measureName = "COLNON";
-                            measurePickedFlag = true;
-                        }
-                    }
+                if (orec.equalsIgnoreCase("0") && !listHistFlag  && !measurePickedFlag) {
+                    measureName = "COLNON";
+                    measurePickedFlag = true;
                 }
             }
 
             if (null != orec) {
-                if (!orec.equalsIgnoreCase("")) {
-                    year = finalPremium.getHospiceDateString().substring(0, 4);
-                    if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
-                        if ((orec.equalsIgnoreCase("1") || orec.equalsIgnoreCase("3")) && listHistFlag && medicareFlag) {
-                            measureName = "COLCMB";
-                            measurePickedFlag = true;
-                        }
-                    }
+                if ((orec.equalsIgnoreCase("1") || orec.equalsIgnoreCase("3")) && listHistFlag && !measurePickedFlag) {
+                    measureName = "COLCMB";
+                    measurePickedFlag = true;
                 }
             }
 
             if (null != orec) {
-                if (!orec.equalsIgnoreCase("")) {
-                    year = finalPremium.getHospiceDateString().substring(0, 4);
-                    if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
-                        if ((orec.equalsIgnoreCase("1") || orec.equalsIgnoreCase("3")) && !listHistFlag && medicareFlag) {
-                            measureName = "COLDIS";
-                            measurePickedFlag = true;
-                        }
-                    }
+                if ((orec.equalsIgnoreCase("1") || orec.equalsIgnoreCase("3")) && !listHistFlag && !measurePickedFlag) {
+                    measureName = "COLDIS";
+                    measurePickedFlag = true;
                 }
+
             }
 
             if (null != orec) {
-                year = finalPremium.getHospiceDateString().substring(0, 4);
-                if (year.equalsIgnoreCase("2022") && medicareFlag && !measurePickedFlag) {
-                    if (orec.equalsIgnoreCase("0") && listHistFlag && medicareFlag) {
-                        measureName = "COLLISDE";
-                    }
+                if (orec.equalsIgnoreCase("0") && listHistFlag && !measurePickedFlag) {
+                    measureName = "COLLISDE";
                 }
             }
 
