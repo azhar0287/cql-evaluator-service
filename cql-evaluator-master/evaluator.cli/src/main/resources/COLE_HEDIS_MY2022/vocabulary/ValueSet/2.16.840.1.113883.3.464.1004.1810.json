@@ -638,6 +638,12 @@
         "display": "Hospital admission from non-health care facility"
       },
       {
+        "system": "https://www.nubc.org/CodeSystem/RevenueCodes",
+        "version": "2012.05",
+        "code": "0179",
+        "display": "Other Nursery"
+      },
+      {
         "system": "http://snomed.info/sct",
         "version": "2021.09.21AA",
         "code": "448851000124103",

@@ -9,6 +9,7 @@ include NCQA_AdvancedIllnessandFrailty version '1.1.0' called AdvancedIllnessFra
 include NCQA_PalliativeCare version '1.1.0' called PalliativeCare
 include NCQA_Status version '1.1.0' called Status
 include NCQA_FHIRBase version '1.1.0' called FHIRBase
+include NCQA_Claims version '1.1.0' called Claims
 
 valueset "Colonoscopy": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1064'
 valueset "Colorectal Cancer": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1065'
@@ -23,9 +24,23 @@ valueset "sDNA FIT Lab Test": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113
 valueset "sDNA FIT Test Result or Finding": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1750'
 valueset "Total Colectomy": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1250'
 
-parameter "Measurement Period" Interval<DateTime>
+parameter "Measurement Period" default Interval [@2022-01-01T00:00:00.0, @2022-12-31T23:59:59.0)
 
 context Patient
+
+define "Acute Inpatient Discharge with Advanced Illness":
+  exists ( ( Claims."Medical Claims With Diagnosis" ( Claims."Medical Claims With Nonacute or Acute Inpatient Discharge" ( [Claim] ).AcuteInpatientDischarge, AdvancedIllnessFrailty."Advanced Illness ValueSet" ).ServicePeriod ) InpatientDischarge
+      where date from
+      end of InpatientDischarge during Interval[date from start of "Measurement Period" - 1 year, date from
+      end of "Measurement Period"]
+  )
+
+define "claimType func":
+   Claims."Professional or Institutional Claims"([Claim])
+
+
+define "test func":
+    Claims."Medical Claims With Nonacute or Acute Inpatient Discharge" ( [Claim] )
 
 define "Initial Population":
   AgeInYearsAt(date from 
@@ -107,9 +122,17 @@ define "Colonoscopy Performed":
     )
 
 define "CT Colonography Performed":
-  [Observation: "CT Colonography"] Colonography
-    where FHIRBase."Normalize Interval" ( Colonography.effective ) ends during Interval[start of "Measurement Period" - 4 years, 
-    end of "Measurement Period"]
+    (  [Observation: "CT Colonography"] Colonography
+        where FHIRBase."Normalize Interval" ( Colonography.effective ) ends during Interval[start of "Measurement Period" - 4 years,
+        end of "Measurement Period"])
+
+    union
+
+    ([Procedure: "CT Colonography"] ColonographyProcedure
+          where FHIRBase."Normalize Interval"  ( ColonographyProcedure.performed ) ends during Interval[start of "Measurement Period" - 4 years,
+        end of "Measurement Period"]
+    )
+
 
 define "Fecal Immunochemical Test DNA Performed":
   ( [Observation: "sDNA FIT Lab Test"]

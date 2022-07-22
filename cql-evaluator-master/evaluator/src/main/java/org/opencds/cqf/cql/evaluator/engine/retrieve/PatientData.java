@@ -7,8 +7,15 @@ public class PatientData {
     private String gender;
     private Date birthDate;
     private String id;
-    List<PayerInfo> payerInfo;
+    private List<PayerInfo> payerInfo;
+    private List<Premium> premium;
     private String hospiceFlag;
+    private String ethnicity;
+    private String ethnicityCode;
+    private String ethnicityDS;
+    private String race;
+    private String raceCode;
+    private String raceDS;
 
     public PatientData() {
     }
@@ -52,4 +59,61 @@ public class PatientData {
     public void setHospiceFlag(String hospiceFlag) {
         this.hospiceFlag = hospiceFlag;
     }
+
+    public List<Premium> getPremium() {
+        return premium;
+    }
+
+    public void setPremium(List<Premium> premium) {
+        this.premium = premium;
+    }
+
+    public String getEthnicity() {
+        return ethnicity;
+    }
+
+    public void setEthnicity(String ethnicity) {
+        this.ethnicity = ethnicity;
+    }
+
+    public String getEthnicityCode() {
+        return ethnicityCode;
+    }
+
+    public void setEthnicityCode(String ethnicityCode) {
+        this.ethnicityCode = ethnicityCode;
+    }
+
+    public String getEthnicityDS() {
+        return ethnicityDS;
+    }
+
+    public void setEthnicityDS(String ethnicityDS) {
+        this.ethnicityDS = ethnicityDS;
+    }
+
+    public String getRace() {
+        return race;
+    }
+
+    public void setRace(String race) {
+        this.race = race;
+    }
+
+    public String getRaceCode() {
+        return raceCode;
+    }
+
+    public void setRaceCode(String raceCode) {
+        this.raceCode = raceCode;
+    }
+
+    public String getRaceDS() {
+        return raceDS;
+    }
+
+    public void setRaceDS(String raceDS) {
+        this.raceDS = raceDS;
+    }
+
 }

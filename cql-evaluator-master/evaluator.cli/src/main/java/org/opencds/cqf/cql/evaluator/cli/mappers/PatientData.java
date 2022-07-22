@@ -1,12 +1,16 @@
 package org.opencds.cqf.cql.evaluator.cli.mappers;
 
+import org.opencds.cqf.cql.evaluator.engine.retrieve.Premium;
+
 import java.util.Date;
+import java.util.List;
 
 public class PatientData {
     private String gender;
     private Date birthDate;
     private String id;
     private String hospiceFlag;
+    private List<Premium> premium;
     public PatientData() {
     }
 
@@ -40,5 +44,13 @@ public class PatientData {
 
     public void setHospiceFlag(String hospiceFlag) {
         this.hospiceFlag = hospiceFlag;
+    }
+
+    public List<Premium> getPremium() {
+        return premium;
+    }
+
+    public void setPremium(List<Premium> premium) {
+        this.premium = premium;
     }
 }

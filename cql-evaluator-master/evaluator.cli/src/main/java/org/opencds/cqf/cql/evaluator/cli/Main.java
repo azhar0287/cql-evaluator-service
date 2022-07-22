@@ -68,23 +68,24 @@ public class Main {
         connection.collection.createIndex(Indexes.ascending("id"));
 
 //         To Process Patients
-        processPatients(dbFunctions, connection);
+     //   processPatients(dbFunctions, connection);
 //        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Sample_Processing_failed_patients");
 
-        //Process Single Patient
-//        String patientId = "95543";
-//        processSinglePatient(patientId, dbFunctions, connection);
-        ////////////////////
+       // Process Single Patient
+//       String patientId = "105005";
+//      processSinglePatient(patientId, dbFunctions, connection);
+//        ////////////////////
 
         //To generate Sheet and failed patients
-//        generateSheet(dbFunctions, connection, new UtilityFunction());
-//        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Test_Sheet_failed_patients");
+        generateSheet(dbFunctions, connection, new UtilityFunction());
 
 
+        //Generating sheet for single patient
 
-        //This function is not in our use now, can be refactored later
-        //To Process Patients
-        //processRemainingPatients(dbFunctions, connection);
+//        UtilityFunction utilityFunction = new UtilityFunction();
+//        CSVPrinter csvPrinter = utilityFunction.setupSheetHeadersForCol(); //More headers for COLE
+//        SheetGenerationTask sheetGenerationTask = new SheetGenerationTask(utilityFunction, connection, dbFunctions, csvPrinter);
+//        sheetGenerationTask.generateSheetSingleForCOLE("96591");
 
     }
 
@@ -118,13 +119,12 @@ public class Main {
         //Patient processing
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         for(int i=0; i < totalSkips; i++) {
-            //connection = new DBConnection();
-            ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
-            isAllTasksCompleted.add(isTaskCompleted);
-            executorService.submit(new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount, isTaskCompleted));
+            //ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
+            //isAllTasksCompleted.add(isTaskCompleted);
+            //executorService.submit(new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount, isTaskCompleted));
+            ProcessPatientService processPatientService = new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount);
+            processPatientService.dataBatchingAndProcessing();
             totalSkipped += 10;
-            //connection.closeConnection();
-
         }
 
         /*Shutting Down service*/
@@ -143,20 +143,6 @@ public class Main {
         executorService.shutdown();
     }
 
-    public static void processRemainingPatients(DbFunctions dbFunctions, DBConnection connection) {
-
-        System.out.println("Patient processing has started");
-
-        int totalCount = dbFunctions.getDataCount(FHIR_UNPROCESSED_COLLECTION_NAME, connection);
-        if(totalCount>0) {
-            List<LibraryOptions> libraryOptions = new ArrayList<>();
-            libraryOptions.add(setupLibrary());
-
-            ProcessPatientService processPatientService = new ProcessPatientService(libraryOptions, connection, totalCount);
-            processPatientService.processRemainingPatients();
-        }
-    }
-
     public static void generateSheet(DbFunctions dbFunctions, DBConnection connection, UtilityFunction utilityFunction) throws IOException, ParseException {
         System.out.println("Sheet generation has started");
         List<ThreadTaskCompleted> isAllTasksCompleted=new LinkedList<>();
@@ -166,32 +152,24 @@ public class Main {
         if(totalDataCountForSheet % 500 > 0) { //remaining missing records issue fix
             totalSkipsForSheet+=1; //for remaining records
         }
-        CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
-        ExecutorService executorServiceForSheet = Executors.newFixedThreadPool(10);
+
+        CSVPrinter csvPrinter = utilityFunction.setupSheetHeadersForCol(); //More headers for COLE
+
+      //  ExecutorService executorServiceForSheet = Executors.newFixedThreadPool(10);
 
         for(int i=0; i<totalSkipsForSheet; i++) {
             SheetGenerationTask sheetGenerationTask = new SheetGenerationTask(utilityFunction, connection, dbFunctions, totalSkipped, csvPrinter);
-            sheetGenerationTask.generateSheetForDMSE();
+            sheetGenerationTask.generateSheetForCOLE();
             System.out.println("Iteration: "+i);
             totalSkipped+=500;
         }
 
-        /*Shutting Down service*/
-        while(true) {
-            if(dbFunctions.isAllTasksCompletedByThreads(isAllTasksCompleted)){
-                LOGGER.info("****** Patients are processed");
-                break;
-            }
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        executorServiceForSheet.shutdown();
+        csvPrinter.close();
         System.out.println("Sheet generation has completed");
     }
+
+
+
 
     public static void insertFailedPatient(DbFunctions dbFunctions, DBConnection dbConnection,String collectionName) {
         List<Document>documents = new ArrayList<>();

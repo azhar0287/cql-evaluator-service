@@ -103,7 +103,7 @@ define function "Medical Claims With Diagnosis"(claim List<FHIR.Claim>, Diagnosi
       return d.code
   } ) ClaimWithDiagnosis
     return ( Tuple {
-      "DiagnosisItems": if ClaimWithDiagnosis."MedicalClaim" is null then null 
+      "DiagnosisItems": if ClaimWithDiagnosis."MedicalClaim" is null then null
         else ClaimWithDiagnosis."MedicalClaim" DiagnosisLine
         where exists ( ( ( DiagnosisLine.diagnosis.diagnosis ).coding ) HeaderCode
             where HeaderCode.code.value in ClaimWithDiagnosis."DiagnosesAsStrings"
@@ -114,7 +114,7 @@ define function "Medical Claims With Diagnosis"(claim List<FHIR.Claim>, Diagnosi
           ServicePeriod: HeaderDefinition.DiagnosisItems.item NormalDate
             return FHIRBase."Normalize Interval" ( NormalDate.serviced )
         }
-      ) 
+      )
         else null ) FinalList
         where FinalList is not null
 
@@ -529,14 +529,14 @@ define function "Medical Claims With Nonacute or Acute Inpatient Discharge"(clai
     "MedicalClaim": "Professional or Institutional Claims"(claim)
   } ) ClaimWithInpatientStay
     return ( Tuple {
-      "InpatientStayLineItems": if ClaimWithInpatientStay."MedicalClaim" is null then null 
+      "InpatientStayLineItems": if ClaimWithInpatientStay."MedicalClaim" is null then null
         else ( ClaimWithInpatientStay."MedicalClaim" c
           where exists ( ( c.item ) i
               where exists ( i.revenue.coding ) rev
                 where rev in "Inpatient Stay"
           )
       ),
-      "NonacuteInpatientLineItems": if ClaimWithInpatientStay."MedicalClaim" is null then null 
+      "NonacuteInpatientLineItems": if ClaimWithInpatientStay."MedicalClaim" is null then null
         else ( ClaimWithInpatientStay."MedicalClaim" c
           where exists ( c.item i
               where exists ( i.revenue.coding ) rev
@@ -552,6 +552,7 @@ define function "Medical Claims With Nonacute or Acute Inpatient Discharge"(clai
         "NonacuteInpatientDischarge": LineItemDefinition."NonacuteInpatientLineItems" nonAcuteInpatientStay
           with LineItemDefinition."InpatientStayLineItems" inpatientStay
             such that nonAcuteInpatientStay.id = inpatientStay.id,
+
         "AcuteInpatientDischarge": LineItemDefinition."InpatientStayLineItems" inpatientStay
           without LineItemDefinition."NonacuteInpatientLineItems" nonAcuteInpatientStay
             such that inpatientStay.id = nonAcuteInpatientStay.id

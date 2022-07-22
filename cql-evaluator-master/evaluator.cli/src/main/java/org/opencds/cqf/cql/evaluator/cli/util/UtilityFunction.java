@@ -16,6 +16,7 @@ import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PayerInfo;
+import org.opencds.cqf.cql.evaluator.engine.retrieve.Premium;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -41,6 +42,14 @@ public class UtilityFunction {
         return csvPrinter;
     }
 
+    public CSVPrinter setupSheetHeadersForCol() throws IOException {
+        String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
+        String[] header = { "MemID", "Meas", "Payer","CE","Event","Epop","Excl","Num","RExcl","RExclD","Age","Gender","Race","Ethnicity","RaceDS", "EthnicityDS"};
+        FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
+        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
+        return csvPrinter;
+    }
+
     public CSVPrinter setupSheetHeadersAppend() throws IOException {
         String SAMPLE_CSV_FILE = "C:\\Projects\\cql-evaluator-service\\cql-evaluator-master\\evaluator.cli\\src\\main\\resources\\sample.csv";
         FileWriter writer = new FileWriter(SAMPLE_CSV_FILE, true);
@@ -59,19 +68,37 @@ public class UtilityFunction {
         FhirContext fhirContext = fhirVersionEnum.newContext();
         IParser selectedParser = fhirContext.newJsonParser();
 
-        List<Document> documents = dbFunctions.getSinglePatient(patientId, CollectionName, skip, limit, connection);
+        List<Document> documents = dbFunctions.getSinglePatient(patientId, CollectionName, connection);
         for (Document document : documents) {
+
             patientData = new PatientData();
             patientData.setId(document.get("id").toString());
             patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
             patientData.setGender(document.get("gender").toString());
             patientData.setHospiceFlag(document.getString("hospiceFlag"));
-            Object o = document.get("payerInfo");
-
-            List<PayerInfo> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<PayerInfo>>() {
+            Object object = document.get("payerInfo");
+            List<PayerInfo> payerCodes = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {
             });
-
             patientData.setPayerInfo(payerCodes);
+
+            if (null != document.get("premium")) {
+                object = document.get("premium");
+                List<Premium> premium = new ObjectMapper().convertValue(object, new TypeReference<List<Premium>>() {
+                });
+                patientData.setPremium(premium);
+            }
+
+            if (null != document.get("hospiceFlag")) {
+                patientData.setHospiceFlag(document.getString("hospiceFlag"));
+            }
+
+            patientData.setRace(document.getString("race"));
+            patientData.setRaceDS(document.getString("raceDS"));
+            patientData.setRaceCode(document.getString("raceCode"));
+
+            patientData.setEthnicity(document.getString("ethnicity"));
+            patientData.setEthnicityDS(document.getString("ethnicityDS"));
+            patientData.setEthnicityCode(document.getString("ethnicityCode"));
 
             bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
             RetrieveProvider retrieveProvider;
@@ -93,20 +120,40 @@ public class UtilityFunction {
         IParser selectedParser = fhirContext.newJsonParser();
 
         List<Document> documents = dbFunctions.getRemainingData(libraries.get(0).context.contextValue, CollectionName, skip, limit, connection);
-        for(int i=0; i<documents.size(); i++) {
+        for (Document document : documents) {
 
             patientData = new PatientData();
-            patientData.setId(documents.get(i).get("id").toString());
-            patientData.setBirthDate(getConvertedDate(documents.get(i).get("birthDate").toString()));
-            patientData.setGender(documents.get(i).get("gender").toString());
-            patientData.setHospiceFlag(documents.get(i).getString("hospiceFlag"));
-            Object o = documents.get(i).get("payerInfo");
+            patientData.setId(document.get("id").toString());
+            patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
+            patientData.setGender(document.get("gender").toString());
 
-            List<PayerInfo> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<PayerInfo>>() {});
-
+            Object object = document.get("payerInfo");
+            List<PayerInfo> payerCodes = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {
+            });
             patientData.setPayerInfo(payerCodes);
 
-            bundle = (IBaseBundle) selectedParser.parseResource(documents.get(i).toJson());
+            if (null != document.get("premium")) {
+                object = document.get("premium");
+                List<Premium> premium = new ObjectMapper().convertValue(object, new TypeReference<List<Premium>>() {
+                });
+                patientData.setPremium(premium);
+            }
+
+            if (null != document.get("hospiceFlag")) {
+                patientData.setHospiceFlag(document.getString("hospiceFlag"));
+            }
+
+            patientData.setRace(document.getString("race"));
+            patientData.setRaceDS(document.getString("raceDS"));
+            patientData.setRaceCode(document.getString("raceCode"));
+
+
+            patientData.setEthnicity(document.getString("ethnicity"));
+            patientData.setEthnicityDS(document.getString("ethnicityDS"));
+            patientData.setEthnicityCode(document.getString("ethnicityCode"));
+
+
+            bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
             RetrieveProvider retrieveProvider;
             retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData, payerInfo);
             retrieveProviders.add(retrieveProvider);
@@ -114,7 +161,7 @@ public class UtilityFunction {
         return retrieveProviders;
     }
 
-    Date getConvertedDate(String birthDate) {
+   public Date getConvertedDate(String birthDate) {
         Date date = null;
         try {
             date = new SimpleDateFormat("yyyy-MM-dd").parse(birthDate);
@@ -318,6 +365,22 @@ public class UtilityFunction {
         Period period = Period.between(dob, curDate);
         return String.valueOf(period.getYears());
     }
+
+    public String getAgeFromMeasureEndDate(String birthday) {
+        Calendar measurementDate = new GregorianCalendar(2022, 12, 31);
+        Calendar dob = new GregorianCalendar(Integer.parseInt(birthday.substring(0,4)), Integer.parseInt(birthday.substring(4,6)), Integer.parseInt(birthday.substring(6,8)));
+//
+//determines the year of DOB and current date
+        int age = measurementDate.get(Calendar.YEAR) - dob.get(Calendar.YEAR);
+        if ((dob.get(Calendar.MONTH) > measurementDate.get(Calendar.MONTH)) || (dob.get(Calendar.MONTH) == measurementDate.get(Calendar.MONTH) && dob.get(Calendar.DAY_OF_MONTH) > measurementDate.get(Calendar.DAY_OF_MONTH)))
+        {
+//decrements age by 1
+            age--;
+        }
+//prints the age
+        return String.valueOf(age);
+    }
+
     public String getAgeV2(String birthday) {
         Calendar measurementDate = new GregorianCalendar(2022, 01, 01);
         Calendar dob = new GregorianCalendar(Integer.parseInt(birthday.substring(0,4)), Integer.parseInt(birthday.substring(4,6)), Integer.parseInt(birthday.substring(6,8)));
@@ -332,8 +395,6 @@ public class UtilityFunction {
 //prints the age
         return String.valueOf(age);
     }
-
-
 
     public static Date getParsedDateInRequiredFormat(String date, String format){
         SimpleDateFormat sdformat = new SimpleDateFormat(format);

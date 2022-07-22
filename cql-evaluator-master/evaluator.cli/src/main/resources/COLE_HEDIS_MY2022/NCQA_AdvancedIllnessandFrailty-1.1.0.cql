@@ -8,6 +8,10 @@ include NCQA_Status version '1.1.0' called Status
 include NCQA_Encounter version '1.1.0' called Encounters
 include NCQA_Claims version '1.1.0' called Claims
 
+valueset "Inpatient Stay": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1395'
+
+valueset "Nonacute Inpatient Stay": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1398'
+
 valueset "Acute Inpatient": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1810'
 valueset "Advanced Illness": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1465'
 valueset "Dementia Medications": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1729'
@@ -96,16 +100,16 @@ define "Outpatient Encounters with Advanced Illness":
     where Encounters."Encounter Has Diagnosis" ( OutpatientEncounter, [Condition: "Advanced Illness"] )
       and date from start of FHIRBase."Normalize Interval" ( OutpatientEncounter.period ) during Interval[date from start of "Measurement Period" - 1 year, date from 
       end of "Measurement Period"]) EncounterWithDiagnosis
-    return date from 
-    end of FHIRBase."Normalize Interval" ( EncounterWithDiagnosis.period )
+    return date from
+end of FHIRBase."Normalize Interval" ( EncounterWithDiagnosis.period )
 
 define "Nonacute Inpatient Discharge with Advanced Illness":
   ( ( Claims."Medical Claims With Diagnosis" ( Claims."Medical Claims With Nonacute or Acute Inpatient Discharge" ( [Claim] ).NonacuteInpatientDischarge, "Advanced Illness ValueSet" ).ServicePeriod ) DischargeWithDiagnosis
     where date from 
     end of DischargeWithDiagnosis during Interval[date from start of "Measurement Period" - 1 year, date from 
     end of "Measurement Period"]) InpatientDischarge
-    return date from 
-    end of InpatientDischarge
+    return date from
+end of InpatientDischarge
 
 define "Advanced Illness ValueSet":
   FHIRBase."VS Cast Function" ( "Advanced Illness" )
@@ -119,8 +123,8 @@ define "Acute Inpatient Encounter with Advanced Illness":
 
 define "Acute Inpatient Discharge with Advanced Illness":
   exists ( ( Claims."Medical Claims With Diagnosis" ( Claims."Medical Claims With Nonacute or Acute Inpatient Discharge" ( [Claim] ).AcuteInpatientDischarge, "Advanced Illness ValueSet" ).ServicePeriod ) InpatientDischarge
-      where date from 
-      end of InpatientDischarge during Interval[date from start of "Measurement Period" - 1 year, date from 
+      where date from
+      end of InpatientDischarge during Interval[date from start of "Measurement Period" - 1 year, date from
       end of "Measurement Period"]
   )
 
