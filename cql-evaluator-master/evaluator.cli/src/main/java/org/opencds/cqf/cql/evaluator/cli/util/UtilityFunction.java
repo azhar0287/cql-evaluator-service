@@ -13,6 +13,7 @@ import org.opencds.cqf.cql.engine.retrieve.RetrieveProvider;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
+import org.opencds.cqf.cql.evaluator.engine.retrieve.DeliveryProcedureInfo;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PayerInfo;
@@ -103,8 +104,11 @@ public class UtilityFunction {
             Object o = documents.get(i).get("payerInfo");
 
             List<PayerInfo> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<PayerInfo>>() {});
-
             patientData.setPayerInfo(payerCodes);
+
+            o=documents.get(i).get("deliveryProcedureInfos");
+            List<DeliveryProcedureInfo> deliveryProcedureInfos = new ObjectMapper().convertValue(o, new TypeReference<List<DeliveryProcedureInfo>>() {});
+            patientData.setDeliveryProcedureInfos(deliveryProcedureInfos);
 
             bundle = (IBaseBundle) selectedParser.parseResource(documents.get(i).toJson());
             RetrieveProvider retrieveProvider;
@@ -114,7 +118,7 @@ public class UtilityFunction {
         return retrieveProviders;
     }
 
-    Date getConvertedDate(String birthDate) {
+    public Date getConvertedDate(String birthDate) {
         Date date = null;
         try {
             date = new SimpleDateFormat("yyyy-MM-dd").parse(birthDate);
@@ -146,10 +150,10 @@ public class UtilityFunction {
                     if(oid.equalsIgnoreCase(CODE_TYPE_COMMERCIAL)) {
                         codeTypes.put(pCode, CODE_TYPE_COMMERCIAL);
                     }
-                    if(oid.equalsIgnoreCase(CODE_TYPE_MEDICAID)) {
+                    else if(oid.equalsIgnoreCase(CODE_TYPE_MEDICAID)) {
                         codeTypes.put(pCode, CODE_TYPE_MEDICAID);
                     }
-                    if(oid.equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
+                    else if(oid.equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
                         codeTypes.put(pCode, CODE_TYPE_MEDICARE);
                     }
                 }
@@ -233,6 +237,14 @@ public class UtilityFunction {
         codeCheckList.add("MP");
         codeCheckList.add("MC");
         return codeCheckList;
+    }
+
+    public String getFormattedDate(String date){
+
+        if(date!=null){
+            return (date.substring(0,4)+"-"+date.substring(4,6)+"-"+date.substring(6,8));
+        }
+        return "";
     }
 
     public void saveScoreFile(HashMap<String, Map<String, Object>> finalResult, HashMap<String, PatientData> infoMap, Date measureDate, CSVPrinter csvPrinter) {
@@ -349,8 +361,62 @@ public class UtilityFunction {
         return String.valueOf(age);
     }
 
+    public static List<Document> getDeliveryProcedureInfoMap(List<DeliveryProcedureInfo> deliveryProcedureInfos) {
+        List<HashMap<String,String>> mapList = new ArrayList<>();
+        List<Document> documents = new LinkedList<>();
+//        for(PayerInfo payerInfo: list) {
+//            HashMap<String, String> patientMap = new HashMap<>();
+//            patientMap.put("payerCode", payerInfo.getPayerCode());
+//            patientMap.put("coverageStartDate", payerInfo.getCoverageStartDate());
+//            patientMap.put("coverageEndDate", payerInfo.getCoverageEndDate());
+//            patientMap.put("coverageStartDateString", payerInfo.getCoverageStartDateString());
+//            patientMap.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
+//            mapList.add(patientMap);
+//        }
 
 
+        if(null!=deliveryProcedureInfos) {
+            for (DeliveryProcedureInfo deliveryProcedure : deliveryProcedureInfos) {
+                Document document = new Document();
+                document.put("procedureCode", deliveryProcedure.getProcedureCode());
+                document.put("performedDateString", deliveryProcedure.getPerformedDateString());
+                document.put("performedTimeString", deliveryProcedure.getPerformedTimeString());
+                document.put("performedDate", deliveryProcedure.getPerformedDate());
+                document.put("performedDateTime", deliveryProcedure.getPerformedDateTime());
+                document.put("endDateString", deliveryProcedure.getEndDateString());
+                document.put("endTimeString", deliveryProcedure.getEndTimeString());
+                document.put("endDate", deliveryProcedure.getEndDate());
+                documents.add(document);
+            }
+        }
+        return documents;
+    }
+    public static List<Document> getPayerInfoMap(List<PayerInfo> list) {
+        List<HashMap<String,String>> mapList = new ArrayList<>();
+        List<Document> documents = new LinkedList<>();
+//        for(PayerInfo payerInfo: list) {
+//            HashMap<String, String> patientMap = new HashMap<>();
+//            patientMap.put("payerCode", payerInfo.getPayerCode());
+//            patientMap.put("coverageStartDate", payerInfo.getCoverageStartDate());
+//            patientMap.put("coverageEndDate", payerInfo.getCoverageEndDate());
+//            patientMap.put("coverageStartDateString", payerInfo.getCoverageStartDateString());
+//            patientMap.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
+//            mapList.add(patientMap);
+//        }
+
+
+        for(PayerInfo payerInfo: list) {
+            Document document = new Document();
+            document.put("payerCode", payerInfo.getPayerCode());
+            document.put("coverageStartDate", payerInfo.getCoverageStartDate());
+            document.put("coverageEndDate", payerInfo.getCoverageEndDate());
+            document.put("coverageStartDateString", payerInfo.getCoverageStartDateString());
+            document.put("coverageEndDateString", payerInfo.getCoverageEndDateString());
+            documents.add(document);
+        }
+
+        return documents;
+    }
     public static Date getParsedDateInRequiredFormat(String date, String format){
         SimpleDateFormat sdformat = new SimpleDateFormat(format);
         try{

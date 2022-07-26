@@ -25,6 +25,7 @@ import org.opencds.cqf.cql.evaluator.cli.command.CqlCommand;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.PdseScoreSheet;
 import org.opencds.cqf.cql.evaluator.cli.util.Constant;
 import org.opencds.cqf.cql.evaluator.cli.util.ThreadTaskCompleted;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
@@ -66,6 +67,12 @@ public class ProcessPatientService implements Runnable {
         this.totalCount = totalCount;
         this.threadTaskCompleted = threadTaskCompleted;
     }
+    public ProcessPatientService(int skip, List<LibraryOptions> libraries, DBConnection connection, int totalCount) {
+        this.libraries = libraries;
+        this.skip = skip;
+        this.dbConnection = connection;
+        this.totalCount = totalCount;
+    }
     public ProcessPatientService( List<LibraryOptions> libraries, DBConnection connection, int totalCount) {
         this.libraries = libraries;
         this.dbConnection = connection;
@@ -83,7 +90,7 @@ public class ProcessPatientService implements Runnable {
         List<RetrieveProvider> retrieveProviders;
         retrieveProviders = utilityFunction.mapToRetrieveProviderForSingle(patientId, skip, 1, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection, Constant.MAIN_FHIR_COLLECTION_NAME);
         processAndSavePatients(retrieveProviders, dbFunctions);
-        threadTaskCompleted.isTaskCompleted = true;
+//        threadTaskCompleted.isTaskCompleted = true;
 
     }
 
@@ -99,7 +106,7 @@ public class ProcessPatientService implements Runnable {
         List<RetrieveProvider> retrieveProviders;
         retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection,Constant.MAIN_FHIR_COLLECTION_NAME);
         processAndSavePatients(retrieveProviders, dbFunctions);
-        threadTaskCompleted.isTaskCompleted = true;
+//        threadTaskCompleted.isTaskCompleted = true;
     }
 
     List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders, DbFunctions dbFunctions) {
@@ -177,7 +184,7 @@ public class ProcessPatientService implements Runnable {
                 for(RetrieveProvider retrieveProvider : retrieveProviders) {
                     //for(int i=0; i<retrieveProviders.size(); i++) {
 
-                    PatientData patientData;
+                    org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData patientData;
                     library.context.contextValue = ((BundleRetrieveProvider) retrieveProvider).getPatientData().getId();
                     String patientId = ((BundleRetrieveProvider) retrieveProvider).bundle.getIdElement().toString();
 //                    LOGGER.info("Patient Id in Loop "+patientId);
@@ -231,7 +238,7 @@ public class ProcessPatientService implements Runnable {
                             EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                            documents.add(this.createDocumentForAiseResult(result.expressionResults, patientData));
+                            documents.add(PdseScoreSheet.createDocumentForPdseResult(result.expressionResults, patientData));
                             if(documents.size() > 15) {
                                 dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
                                 System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
@@ -390,7 +397,7 @@ public class ProcessPatientService implements Runnable {
                                 globalPatientId = library.context.contextValue;
                                 EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
-                                patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
+                                patientData = (((BundleRetrieveProvider) retrieveProvider).getPatientData());
                                 documents.add(this.createDocumentForResult(result.expressionResults, patientData));
                                 count++;
                                 if (documents.size() > 15) {
@@ -483,40 +490,7 @@ public class ProcessPatientService implements Runnable {
         return document;
     }
 
-    public Document createDocumentForAiseResult(Map<String, Object> expressionResults, PatientData patientData) {
-        Document document = new Document();
-        document.put("id", patientData.getId());
-        document.put("birthDate", patientData.getBirthDate());
-        document.put("gender", patientData.getGender());
-        document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
-        document.put("hospiceFlag",patientData.getHospiceFlag());
 
-
-        /* Removing extra fields also giving codex error*/
-        expressionResults.remove("Member Coverage");
-        expressionResults.remove("Patient");
-        expressionResults.remove("Influenza Vaccine");
-        expressionResults.remove("Td or Tdap Vaccine");
-        expressionResults.remove("Herpes Zoster Live Vaccine");
-        expressionResults.remove("Between Age 50 and the End of the Measurement Period");
-        expressionResults.remove("Herpes Zoster Recombinant Vaccine");
-        expressionResults.remove("Pneumococcal Polysaccharide Vaccine 23");
-        expressionResults.remove("Between Age 60 and the End of the Measurement Period");
-        expressionResults.remove("July 1 of the Year Prior to the Measurement Period");
-        expressionResults.remove("June 30 of the Measurement Period");
-        expressionResults.remove("Between July 1 of the Year Prior to the Measurement Period and June 30 of the Measurement Period");
-        expressionResults.remove("Between Nine Years Prior to the Start of the Measurement Period and the End of the Measurement Period");
-        expressionResults.remove("Pneumococcal Polysaccharide Vaccine 23");
-//        expressionResults.remove("Assessment Period Two");
-//        expressionResults.remove("May 1 of Measurement Period");
-//        expressionResults.remove("August 31 of Measurement Period");
-//        expressionResults.remove("Assessment Period Three");
-//        expressionResults.remove("September 1 of Measurement Period");
-
-
-        document.putAll(expressionResults); /* Mapping into Document*/
-        return document;
-    }
 
     @Override
     public void run() {

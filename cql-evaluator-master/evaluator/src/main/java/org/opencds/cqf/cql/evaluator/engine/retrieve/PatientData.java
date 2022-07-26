@@ -1,5 +1,6 @@
 package org.opencds.cqf.cql.evaluator.engine.retrieve;
 
+
 import java.util.Date;
 import java.util.List;
 
@@ -9,6 +10,16 @@ public class PatientData {
     private String id;
     List<PayerInfo> payerInfo;
     private String hospiceFlag;
+
+    public List<DeliveryProcedureInfo> getDeliveryProcedureInfos() {
+        return deliveryProcedureInfos;
+    }
+
+    public void setDeliveryProcedureInfos(List<DeliveryProcedureInfo> deliveryProcedureInfos) {
+        this.deliveryProcedureInfos = deliveryProcedureInfos;
+    }
+
+    List<DeliveryProcedureInfo> deliveryProcedureInfos;
 
     public PatientData() {
     }

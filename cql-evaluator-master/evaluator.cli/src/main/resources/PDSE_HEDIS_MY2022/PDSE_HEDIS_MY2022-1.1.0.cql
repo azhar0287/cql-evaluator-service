@@ -1,4 +1,4 @@
-library PDSE_HEDIS_MY2022 version '1.1.0'
+    library PDSE_HEDIS_MY2022 version '1.1.0'
 
 using FHIR version '4.0.1'
 
@@ -46,11 +46,12 @@ define "Initial Population 1":
 define "Delivery":
   "Delivery during Period"(Interval["September 8 of Year Prior to Measurement Period", "September 7 of Measurement Period"])
 
+
 define "Initial Population 2":
   "Initial Population 1"
 
 define "Denominator 1":
-  "Initial Population 1"
+  "Delivery during Period"(Interval["September 8 of Year Prior to Measurement Period", "September 7 of Measurement Period"])
 
 define "Denominator 2":
   ( "Adolescent Depression Screening with Positive Result 7 to 84 Days after Delivery"
@@ -246,15 +247,16 @@ define function "Screening 7 to 84 Days after Delivery"(screenDatetime Interval<
   date from start of screenDatetime in Interval[( deliveryDate ) + 7 days, ( deliveryDate ) + 84 days]
 
 define function "Delivery during Period"(period Interval<DateTime>):
-  ( ( Status."Completed Procedure" ( ["Procedure": "Deliveries"] ) ) DeliveryProcedure
+ ( ( Status."Completed Procedure" ( ["Procedure": "Deliveries"] ) ) DeliveryProcedure
     where date from 
     end of FHIRBase."Normalize Interval" ( DeliveryProcedure.performed ) during Interval[date from start of period, date from 
-    end of period]) deliveryDuringMP
+    end of period])  deliveryDuringMP
     return {
       deliveries: deliveryDuringMP,
-      deliveryDate: date from 
+      deliveryDate: date from
       end of FHIRBase."Normalize Interval" ( deliveryDuringMP.performed )
     }
+
 
 define function "Depression Screening with Documented Result"(assessmentDRC System.Code):
   [Observation: assessmentDRC] Obs

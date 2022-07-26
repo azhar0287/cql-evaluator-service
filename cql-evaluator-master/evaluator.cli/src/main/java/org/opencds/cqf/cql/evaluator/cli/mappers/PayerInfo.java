@@ -4,14 +4,11 @@ import java.util.Date;
 
 
 public class PayerInfo {
-    public String payerCode;
+    String payerCode;
     Date coverageStartDate;
     Date coverageEndDate;
     String coverageStartDateString;
     String coverageEndDateString;
-
-    public PayerInfo() {
-    }
 
     public String getPayerCode() {
         return payerCode;
@@ -19,24 +16,6 @@ public class PayerInfo {
 
     public void setPayerCode(String payerCode) {
         this.payerCode = payerCode;
-    }
-
-
-
-    public String getCoverageStartDateString() {
-        return coverageStartDateString;
-    }
-
-    public void setCoverageStartDateString(String coverageStartDateString) {
-        this.coverageStartDateString = coverageStartDateString;
-    }
-
-    public String getCoverageEndDateString() {
-        return coverageEndDateString;
-    }
-
-    public void setCoverageEndDateString(String coverageEndDateString) {
-        this.coverageEndDateString = coverageEndDateString;
     }
 
     public Date getCoverageStartDate() {
@@ -53,5 +32,21 @@ public class PayerInfo {
 
     public void setCoverageEndDate(Date coverageEndDate) {
         this.coverageEndDate = coverageEndDate;
+    }
+
+    public String getCoverageStartDateString() {
+        return coverageStartDateString;
+    }
+
+    public void setCoverageStartDateString(String coverageStartDateString) {
+        this.coverageStartDateString = coverageStartDateString;
+    }
+
+    public String getCoverageEndDateString() {
+        return coverageEndDateString;
+    }
+
+    public void setCoverageEndDateString(String coverageEndDateString) {
+        this.coverageEndDateString = coverageEndDateString;
     }
 }

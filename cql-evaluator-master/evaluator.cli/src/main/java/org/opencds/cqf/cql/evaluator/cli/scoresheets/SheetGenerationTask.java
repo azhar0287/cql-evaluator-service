@@ -8,6 +8,7 @@ import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.AiseScoreSheet;
 import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.DmseScoreSheet;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.PdseScoreSheet;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import java.io.IOException;
 import java.text.ParseException;
@@ -24,6 +25,10 @@ public class SheetGenerationTask {
 
     int skip;
     int batchSize = 500;
+
+    Map<String,String> stringDictionaryMap=new HashMap<>();
+
+
 
     public SheetGenerationTask(UtilityFunction utilityFunction, DBConnection db, DbFunctions dbFunctions, int skip, CSVPrinter csvPrinter) {
         this.utilityFunction = utilityFunction;
@@ -51,6 +56,18 @@ public class SheetGenerationTask {
 //        sheetGenerationService.generateSheetForDMSE(documents, measureDate, csvPrinter, db);
         documents.clear();
     }
+
+
+    public void generateSheetForPdse() throws IOException, ParseException {
+        Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
+        List<Document> documents;
+        documents = dbFunctions.getConditionalData("ep_cql_processed_data", skip, batchSize, db);
+        PdseScoreSheet pdseScoreSheet=new PdseScoreSheet();
+        pdseScoreSheet.generateSheet(documents, measureDate, csvPrinter, db,stringDictionaryMap);
+//        sheetGenerationService.generateSheetForDMSE(documents, measureDate, csvPrinter, db);
+        documents.clear();
+    }
+
     public void generateSheetForCCS() throws IOException, ParseException {
         Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
         List<Document> documents;

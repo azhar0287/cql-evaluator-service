@@ -10,6 +10,7 @@ import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.mappers.PayerInfo;
 import org.opencds.cqf.cql.evaluator.cli.util.Constant;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
+import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
 
 import java.io.IOException;
 import java.util.*;
@@ -138,6 +139,42 @@ public class AiseScoreSheet {
         sheetObj.add(utilityFunction.getGenderSymbol(document.getString("gender")));
         csvPrinter.printRecord(sheetObj);
     }
+
+    public static Document createDocumentForAiseResult(Map<String, Object> expressionResults, PatientData patientData) {
+        Document document = new Document();
+        document.put("id", patientData.getId());
+        document.put("birthDate", patientData.getBirthDate());
+        document.put("gender", patientData.getGender());
+        document.put("payerCodes", UtilityFunction.getPayerInfoMap(patientData.getPayerInfo()));
+        document.put("hospiceFlag",patientData.getHospiceFlag());
+
+
+        /* Removing extra fields also giving codex error*/
+        expressionResults.remove("Member Coverage");
+        expressionResults.remove("Patient");
+        expressionResults.remove("Influenza Vaccine");
+        expressionResults.remove("Td or Tdap Vaccine");
+        expressionResults.remove("Herpes Zoster Live Vaccine");
+        expressionResults.remove("Between Age 50 and the End of the Measurement Period");
+        expressionResults.remove("Herpes Zoster Recombinant Vaccine");
+        expressionResults.remove("Pneumococcal Polysaccharide Vaccine 23");
+        expressionResults.remove("Between Age 60 and the End of the Measurement Period");
+        expressionResults.remove("July 1 of the Year Prior to the Measurement Period");
+        expressionResults.remove("June 30 of the Measurement Period");
+        expressionResults.remove("Between July 1 of the Year Prior to the Measurement Period and June 30 of the Measurement Period");
+        expressionResults.remove("Between Nine Years Prior to the Start of the Measurement Period and the End of the Measurement Period");
+        expressionResults.remove("Pneumococcal Polysaccharide Vaccine 23");
+//        expressionResults.remove("Assessment Period Two");
+//        expressionResults.remove("May 1 of Measurement Period");
+//        expressionResults.remove("August 31 of Measurement Period");
+//        expressionResults.remove("Assessment Period Three");
+//        expressionResults.remove("September 1 of Measurement Period");
+
+
+        document.putAll(expressionResults); /* Mapping into Document*/
+        return document;
+    }
+
     void addObjectInSheet(String payerCodeType, int patientAge,Document document, String payerCode, Date measureDate, CSVPrinter csvPrinter) throws IOException {
 
         List<String> sheetObj  = new ArrayList<>();
