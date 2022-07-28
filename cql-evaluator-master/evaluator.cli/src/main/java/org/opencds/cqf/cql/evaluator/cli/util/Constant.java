@@ -22,7 +22,6 @@ public class Constant {
 
    public static final String MAIN_FHIR_COLLECTION_NAME = "ep_encounter_fhir_drr_sample_deck";
    public static final String FHIR_UNPROCESSED_COLLECTION_NAME = "Drr_Sample_Deck_Fhir_Unprocessed_Patients";
-
    public static final String EP_CQL_PROCESSED_DATA="ep_cql_drr_sample_deck_processed_data";
 
 }

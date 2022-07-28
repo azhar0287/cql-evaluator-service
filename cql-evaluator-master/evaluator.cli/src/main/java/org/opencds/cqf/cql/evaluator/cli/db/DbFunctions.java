@@ -1,5 +1,6 @@
 package org.opencds.cqf.cql.evaluator.cli.db;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import org.apache.logging.log4j.LogManager;
@@ -18,6 +19,17 @@ public class DbFunctions {
     public List<Document> getConditionalData( String collectionName, int skip, int limit, DBConnection connection) {
         connection.collection = connection.database.getCollection(collectionName);
         FindIterable<Document> documents = connection.collection.find().skip(skip).limit(limit).batchSize(20000).projection(excludeId());
+        MongoCursor<Document> cursor = documents.iterator();
+        List<Document> list = new LinkedList<>();
+        while(cursor.hasNext()) {
+            list.add(cursor.next());
+        }
+        return list;
+    }
+
+    public List<Document> getSortedConditionalData( String collectionName, int skip, int limit, DBConnection connection) {
+        String toBeSort="id";
+        FindIterable<Document> documents = connection.database.getCollection(collectionName).find().skip(skip).limit(limit).batchSize(20000).projection(excludeId()).sort(new BasicDBObject(toBeSort,1));
         MongoCursor<Document> cursor = documents.iterator();
         List<Document> list = new LinkedList<>();
         while(cursor.hasNext()) {

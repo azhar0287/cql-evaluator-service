@@ -19,12 +19,12 @@ import java.util.Map;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 
-public class DrreScoreSheet {
+public class ApmeScoreSheet {
 
     UtilityFunction utilityFunction = new UtilityFunction();
     DbFunctions dbFunctions = new DbFunctions();
 
-    void addDrrObjectInSheet(Document document, String payerCode, CSVPrinter csvPrinter) throws IOException {
+    void addApmObjectInSheet(Document document, String payerCode, CSVPrinter csvPrinter,boolean flag) throws IOException {
         List<String> codeList = new LinkedList<>();
         codeList.add ("MEP");
         codeList.add ("MMO");
@@ -34,17 +34,17 @@ public class DrreScoreSheet {
         /////////////////////////////  Sheet A Mapping ////////////////////////////////////////////////
         List<String> sheetObjA = new LinkedList<>();
         sheetObjA.add(document.getString("id"));
-        sheetObjA.add("DRRA");
+        sheetObjA.add("APM1");
         sheetObjA.add(payerCode);
         sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
-        sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 1")));// Added Event Here
-        if(document.getBoolean("Exclusions 1") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+        sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 1"))); // Added Event Here
+        if(!(document.getBoolean("Enrolled During Participation Period") )|| !(document.getBoolean("Denominator 1"))|| codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) || flag ){
             sheetObjA.add("0"); //epop (Also known as denominator)
         }
         else {
-            sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 1"))); //epop
+            //sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 1"))); //epop
+            sheetObjA.add("1"); //epop
         }
-        //sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 1"))); //epop
         sheetObjA.add("0"); //excl
         sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 1"))); //Numerator
         if(document.getBoolean("Exclusions 1")){
@@ -57,25 +57,24 @@ public class DrreScoreSheet {
             sheetObjA.add("0");
         }
         sheetObjA.add("0"); //RexlD
-        sheetObjA.add(document.get("Age").toString());
+        sheetObjA.add(document.getInteger("Age").toString());
         sheetObjA.add(utilityFunction.getGenderSymbol(document.getString("gender")));
         csvPrinter.printRecord(sheetObjA);
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////  Sheet B Mapping ////////////////////////////////////////////////
         List<String> sheetObjB = new LinkedList<>();
         sheetObjB.add(document.getString("id"));
-        sheetObjB.add("DRRB");
+        sheetObjB.add("APM2");
         sheetObjB.add(payerCode);
         sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
         sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 2")));
         //denominator 2 false
-        if(!document.getBoolean("Denominator 2") || document.getBoolean("Exclusions 2") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+        if(!(document.getBoolean("Enrolled During Participation Period") )|| !(document.getBoolean("Denominator 2"))|| codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) || flag){
             sheetObjB.add("0"); //epop (Also known as denominator)
         }
         else {
             sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 2"))); //epop
         }
-        //sheetObjB.add("Initial Population 2");
         sheetObjB.add("0"); //excl
         sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 2"))); //Numerator
         if(document.getBoolean("Exclusions 2")){
@@ -88,18 +87,19 @@ public class DrreScoreSheet {
             sheetObjB.add("0");
         }
         sheetObjB.add("0"); //RexlD
-        sheetObjB.add(document.get("Age").toString());
+        sheetObjB.add(document.getInteger("Age").toString());
         sheetObjB.add(utilityFunction.getGenderSymbol(document.getString("gender")));
         csvPrinter.printRecord(sheetObjB);
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////  Sheet C Mapping ////////////////////////////////////////////////
         List<String> sheetObjC = new LinkedList<>();
         sheetObjC.add(document.getString("id"));
-        sheetObjC.add("DRRC");
+        sheetObjC.add("APM3");
         sheetObjC.add(payerCode);
         sheetObjC.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
         sheetObjC.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 3")));
-        if(!document.getBoolean("Denominator 3") || document.getBoolean("Exclusions 3") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+        //denominator 3 false
+        if(!(document.getBoolean("Enrolled During Participation Period") )|| !(document.getBoolean("Denominator 3"))|| codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) || flag ){
             sheetObjC.add("0"); //epop (Also known as denominator)
         }
         else {
@@ -117,12 +117,12 @@ public class DrreScoreSheet {
             sheetObjC.add("0");
         }
         sheetObjC.add("0"); //RexlD
-        sheetObjC.add(document.get("Age").toString());
+        sheetObjC.add(document.getInteger("Age").toString());
         sheetObjC.add(utilityFunction.getGenderSymbol(document.getString("gender")));
         csvPrinter.printRecord(sheetObjC);
     }
 
-    String getPayerCodeType(String payerCode ,DBConnection dbConnection,Map<String,String> dictionaryStringMap){
+    String getPayerCodeType(String payerCode , DBConnection dbConnection, Map<String,String> dictionaryStringMap){
         if(!dictionaryStringMap.isEmpty()){
             String payerCodeOid=dictionaryStringMap.get(payerCode);
             if(payerCodeOid !=null && payerCodeOid!=""){
@@ -146,7 +146,7 @@ public class DrreScoreSheet {
         }
         else if(payerCode.equals("MMP")){
             payersList.add("MCD");
-            payersList.add("MCR");
+            //payersList.add("MCR");
         }
         else{
             payersList.add(payerCode);
@@ -155,41 +155,31 @@ public class DrreScoreSheet {
 
     public List<String> mapPayersCodeInList(List<PayerInfo> payerInfoList){
         List<String> payersList=new LinkedList<>();
-        List<PayerInfo> tempPayersList=new LinkedList<>();
         if(payerInfoList != null && payerInfoList.size() != 0) {
             Date measurementPeriodEndingDate = UtilityFunction.getParsedDateInRequiredFormat("2022-12-31", "yyyy-MM-dd");
+            Date insuranceEndDate = null,insuranceStartDate=null;
             for (PayerInfo payerInfo : payerInfoList) {
-                Date insuranceEndDate = payerInfo.getCoverageEndDate();
-                Date insuranceStartDate = payerInfo.getCoverageStartDate();
-                if (insuranceEndDate != null  && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0 &&
-                        !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
+                insuranceEndDate = payerInfo.getCoverageEndDate();
+                insuranceStartDate = payerInfo.getCoverageStartDate();
+                if (null != insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0 && !payerInfo.getCoverageStartDateString().equals("20240101") && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
                     payersList.add(payerInfo.getPayerCode());
                 }
             }
 
-            //If no payer matches the above condition than get previous date from and check the range within the anchordate and send the latest POS back
+            //If no payer matches the above condition than the recent payer code in appended in payerlist
+            //Commenting as Faizan bhai said.
             if (payersList.isEmpty()) {
-                Date measurementPeriodStartingDate = UtilityFunction.getParsedDateInRequiredFormat("2021-05-01", "yyyy-MM-dd");
-                for (PayerInfo payerInfo : payerInfoList) {
-                    Date insuranceEndDate = payerInfo.getCoverageEndDate();
-                    Date insuranceStartDate = payerInfo.getCoverageStartDate();
-
-                    //It returns the value 0 if the argument Date is equal to this Date.
-                    //It returns a value less than 0 if this Date is before the Date argument.
-                    //It returns a value greater than 0 if this Date is after the Date argument.
-                    int oneYearBefore= insuranceStartDate.compareTo(measurementPeriodStartingDate);
-                    int twoYearBefore= insuranceStartDate.compareTo(measurementPeriodEndingDate);
-
-                    int oneYearEndBefore= insuranceEndDate.compareTo(measurementPeriodStartingDate);
-                    int twoYearEndBefore= insuranceEndDate.compareTo(measurementPeriodEndingDate);
-                    if( (oneYearBefore>=0 && twoYearBefore<0) || (oneYearEndBefore>=0 && twoYearEndBefore<0)){
-                        tempPayersList.add(payerInfo);
+                for(int i=payerInfoList.size()-1;i>-1;i--) {
+                    String lastCoverageObjectStartDate = payerInfoList.get(i).getCoverageStartDateString();
+                    String lastCoverageObjectEndDate = payerInfoList.get(i).getCoverageEndDateString();
+                    if ((null != lastCoverageObjectStartDate) && (null != lastCoverageObjectEndDate)) {
+                        if (!lastCoverageObjectStartDate.equals("20240101") && (lastCoverageObjectEndDate.substring(0, 4).equals("2022"))) {
+                            payersList.add(payerInfoList.get(i).getPayerCode());
+                            break;
+                        }
                     }
                 }
-                if(tempPayersList.size()>0){
-                    int size=tempPayersList.size()-1;
-                    payersList.add(tempPayersList.get(size).getPayerCode());
-                }
+
             }
         }
         return payersList;
@@ -265,28 +255,36 @@ public class DrreScoreSheet {
             payerCodes.addAll(updatedPayersList);
         }
     }
-    public void generateSheet(List<Document> documents, Date measureDate, CSVPrinter csvPrinter, DBConnection db,Map<String,String> dictionaryStringMap) throws IOException {
-        try {
 
+    public void generateSheet(List<Document> documents, CSVPrinter csvPrinter, DBConnection db,Map<String,String> dictionaryStringMap) throws IOException {
+        try {
             List<PayerInfo> payerInfoList;
             for(Document document : documents) {
                 System.out.println("Processing patient: "+document.getString("id"));
-                if(document.getString("id").equals("95446")){
-                    int a=0;
-                }
+//                if(document.getString("id").equals("125902")){
+//                    int a=0;
+//                }
                 int patientAge = document.getInteger("Age");
-                if(patientAge>11 ) {
+                if(patientAge>0 && patientAge<18) {
                     Object object = document.get("payerCodes");
                     payerInfoList = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {});
                     List<String> payersList=mapPayersCodeInList(payerInfoList);
                     updatePayerCodes(payersList, dbFunctions, db);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
                     if (payersList.size() != 0) {
                         for (String payerCode:payersList) {
-                            String payerCodeType = getPayerCodeType(payerCode,db,dictionaryStringMap);
-                            if (((payerCodeType.equals(Constant.CODE_TYPE_COMMERCIAL) || payerCodeType.equals(Constant.CODE_TYPE_MEDICAID)) && patientAge>11)
-                                    || (payerCodeType.equals(Constant.CODE_TYPE_MEDICARE) && patientAge > 17))
-                            {
-                                addDrrObjectInSheet(document,payerCode,csvPrinter);
+                            if(payersList.size() == 2){
+                                String payerCodeType = getPayerCodeType(payerCode,db,dictionaryStringMap);
+                                if(!payerCodeType.equals(CODE_TYPE_MEDICARE)){
+                                    addApmObjectInSheet(document,payerCode,csvPrinter,false);
+                                }
+                            }
+                            else {
+                                boolean flag=false;
+                                String payerCodeType = getPayerCodeType(payerCode,db,dictionaryStringMap);
+                                if(payerCodeType.equals(CODE_TYPE_MEDICARE)){
+                                    flag=true;
+                                }
+                                addApmObjectInSheet(document,payerCode,csvPrinter,flag);
                             }
                         }
                     }

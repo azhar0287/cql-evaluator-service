@@ -22,7 +22,7 @@ public class SheetGenerationTask {
     DBConnection db;
     DbFunctions dbFunctions;
     CSVPrinter csvPrinter;
-    Map<String,String> stringDictionaryMap;
+    Map<String,String> stringDictionaryMap=new HashMap<>();
 
     int skip;
     int batchSize = 500;
@@ -35,14 +35,6 @@ public class SheetGenerationTask {
         this.csvPrinter = csvPrinter;
     }
 
-    public SheetGenerationTask(UtilityFunction utilityFunction, DBConnection db, DbFunctions dbFunctions, int skip, CSVPrinter csvPrinter,Map<String,String> documentList) {
-        this.utilityFunction = utilityFunction;
-        this.db = db;
-        this.dbFunctions = dbFunctions;
-        this.skip = skip;
-        this.csvPrinter = csvPrinter;
-        this.stringDictionaryMap=documentList;
-    }
 
     public void generateSheetForDMSE() throws IOException, ParseException {
         Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
@@ -85,6 +77,22 @@ public class SheetGenerationTask {
         documents = dbFunctions.getConditionalData(EP_CQL_PROCESSED_DATA, skip, batchSize, db);
         DrreScoreSheet drreScoreSheet=new DrreScoreSheet();
         drreScoreSheet.generateSheet(documents, measureDate, csvPrinter, db,stringDictionaryMap);
+        documents.clear();
+    }
+
+    public void generateSheetForAPME() throws IOException, ParseException {
+        List<Document> documents;
+        documents = dbFunctions.getSortedConditionalData(EP_CQL_PROCESSED_DATA, skip, batchSize, db);
+        ApmeScoreSheet apmeScoreSheet=new ApmeScoreSheet();
+        apmeScoreSheet.generateSheet(documents, csvPrinter, db,stringDictionaryMap);
+        documents.clear();
+    }
+
+    public void generateSheetForAPM() throws IOException, ParseException {
+        List<Document> documents;
+        documents = dbFunctions.getSortedConditionalData(EP_CQL_PROCESSED_DATA, skip, batchSize, db);
+        ApmScoreSheet apmScoreSheet=new ApmScoreSheet();
+        apmScoreSheet.generateSheet(documents, csvPrinter, db,stringDictionaryMap);
         documents.clear();
     }
 
