@@ -611,6 +611,8 @@ public class ProcessPatientService implements Runnable {
         expressionResults.remove("PHQ-9 Modified For Teens");
         expressionResults.remove("PHQ-9 Assessments");
         expressionResults.remove("Index Episode Start Date");
+        expressionResults.remove("Index Episode Start Date 123456");
+        expressionResults.remove("Index Episode Start Date Orignal");
         expressionResults.remove("Depression Follow Up Period");
         expressionResults.remove("Last PHQ9 Assessment During Depression Follow Up Period");
 

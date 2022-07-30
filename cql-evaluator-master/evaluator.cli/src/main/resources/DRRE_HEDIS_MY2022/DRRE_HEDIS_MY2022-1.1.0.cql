@@ -25,12 +25,15 @@ parameter "Measurement Period" default Interval [@2022-01-01T00:00:00.0, @2022-1
 
 context Patient
 
+define "Age":
+  AgeInYearsAt(date from start of "Intake Period")
+
 define "Initial Population 1":
   AgeInYearsAt(date from start of "Intake Period")>= 12
-    and ( "Index Episode Start Date" is not null )
+    and ( "Index Episode Start Date Orignal" is not null )
     and "Enrolled During Participation Period"
 
-define "Index Episode Start Date":
+define "Index Episode Start Date Orignal":
   First(("PHQ-9 Assessments")PHQ
       where start of FHIRBase."Normalize Interval"(PHQ.effective)during "Intake Period"
         and FHIRHelpers.ToInteger(PHQ.value)> 9
@@ -42,6 +45,24 @@ define "Index Episode Start Date":
         )
       sort by start of FHIRBase."Normalize Interval"(effective)asc
   )
+
+define "Index Episode Start Date 123456":
+  First(("PHQ-9 Assessments")PHQ
+      where start of FHIRBase."Normalize Interval"(PHQ.effective)during "Intake Period"
+        and FHIRHelpers.ToInteger(PHQ.value)> 9
+      sort by start of FHIRBase."Normalize Interval"(effective)asc
+  )
+
+define "Index Episode Start Date":
+  "Index Episode Start Date 123456" PQ
+      where start of FHIRBase."Normalize Interval"(PQ.effective)during "Intake Period"
+        and FHIRHelpers.ToInteger(PQ.value)> 9
+        and exists((Status."Active Condition"([Condition: "Major Depression or Dysthymia"]))MajorDepressionDysthymia
+            where start of FHIRBase."Prevalence Period"(MajorDepressionDysthymia)same day or before start of FHIRBase."Normalize Interval"(PQ.effective)
+              and not(
+                end of FHIRBase."Prevalence Period"(MajorDepressionDysthymia)same day or before start of FHIRBase."Normalize Interval"(PQ.effective)
+              )
+        )
 
 define "Member Coverage":
   [Coverage] C
@@ -63,13 +84,16 @@ define "Initial Population 3":
   "Initial Population 1"
 
 define "Denominator 1":
-  "Initial Population 1"
+  AgeInYearsAt(date from start of "Intake Period")>= 12
+    and ( "Index Episode Start Date" is not null )
 
 define "Denominator 2":
-  "Initial Population 1"
+  AgeInYearsAt(date from start of "Intake Period")>= 12
+    and ( "Index Episode Start Date" is not null )
 
 define "Denominator 3":
-  "Initial Population 1"
+  AgeInYearsAt(date from start of "Intake Period")>= 12
+    and ( "Index Episode Start Date" is not null )
 
 define "Exclusions 1":
   exists ( ( Status."Active Condition" ( [Condition: "Bipolar Disorder"]
@@ -92,15 +116,15 @@ define "Intake Period":
   Interval["May 1 of Year Prior to Measurement Period", "April 30 of Measurement Period"]
 
 define "Depression Follow Up Period":
-  if "Index Episode Start Date" is null
-    or "Index Episode Start Date".effective is null
-    or ( date from start of FHIRBase."Normalize Interval" ( "Index Episode Start Date".effective ) = minimum DateTime ) then null 
-    else Interval[( date from start of FHIRBase."Normalize Interval" ( "Index Episode Start Date".effective ) + 120 days ), ( date from start of FHIRBase."Normalize Interval" ( "Index Episode Start Date".effective ) + 240 days )]
+  if "Index Episode Start Date 123456" is null
+    or "Index Episode Start Date 123456".effective is null
+    or ( date from start of FHIRBase."Normalize Interval" ( "Index Episode Start Date 123456".effective ) = minimum DateTime ) then null
+    else Interval[( date from start of FHIRBase."Normalize Interval" ( "Index Episode Start Date 123456".effective ) + 120 days ), ( date from start of FHIRBase."Normalize Interval" ( "Index Episode Start Date 123456".effective ) + 240 days )]
 
 define "Numerator 1":
-  if "Depression Follow Up Period" is null then false 
+  if "Depression Follow Up Period" is null then false
     else ( exists "PHQ-9 Assessments" PHQ9Assessment
-      where date from start of FHIRBase."Normalize Interval" ( PHQ9Assessment.effective ) during Interval[date from start of "Depression Follow Up Period", date from 
+      where date from start of FHIRBase."Normalize Interval" ( PHQ9Assessment.effective ) during Interval[date from start of "Depression Follow Up Period", date from
       end of "Depression Follow Up Period"]
   )
 
@@ -131,7 +155,7 @@ define "Last PHQ9 Assessment During Depression Follow Up Period":
 
 define "Numerator 3":
   ( ( "Last PHQ9 Assessment During Depression Follow Up Period" ) LastPHQ9
-      with "Index Episode Start Date" IndexPHQ9
+      with "Index Episode Start Date 123456" IndexPHQ9
         such that FHIRHelpers.ToInteger ( LastPHQ9.value ) <= FHIRHelpers.ToInteger ( IndexPHQ9.value ) / 2
   ) is not null
 

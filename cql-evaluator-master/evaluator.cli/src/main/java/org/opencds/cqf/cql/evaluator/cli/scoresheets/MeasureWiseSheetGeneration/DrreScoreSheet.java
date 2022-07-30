@@ -38,13 +38,13 @@ public class DrreScoreSheet {
         sheetObjA.add(payerCode);
         sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
         sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 1")));// Added Event Here
-        if(document.getBoolean("Exclusions 1") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+        if(!document.getBoolean("Enrolled During Participation Period") ||!document.getBoolean("Denominator 1") || document.getBoolean("Exclusions 1")
+                || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
             sheetObjA.add("0"); //epop (Also known as denominator)
         }
         else {
             sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 1"))); //epop
         }
-        //sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 1"))); //epop
         sheetObjA.add("0"); //excl
         sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 1"))); //Numerator
         if(document.getBoolean("Exclusions 1")){
@@ -69,7 +69,8 @@ public class DrreScoreSheet {
         sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
         sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 2")));
         //denominator 2 false
-        if(!document.getBoolean("Denominator 2") || document.getBoolean("Exclusions 2") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+        if(!document.getBoolean("Enrolled During Participation Period") ||!document.getBoolean("Denominator 2") || document.getBoolean("Exclusions 2")
+                || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
             sheetObjB.add("0"); //epop (Also known as denominator)
         }
         else {
@@ -99,7 +100,8 @@ public class DrreScoreSheet {
         sheetObjC.add(payerCode);
         sheetObjC.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
         sheetObjC.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 3")));
-        if(!document.getBoolean("Denominator 3") || document.getBoolean("Exclusions 3") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
+        if(!document.getBoolean("Enrolled During Participation Period") ||!document.getBoolean("Denominator 3") || document.getBoolean("Exclusions 3")
+                || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
             sheetObjC.add("0"); //epop (Also known as denominator)
         }
         else {
