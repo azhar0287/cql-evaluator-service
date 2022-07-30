@@ -243,7 +243,8 @@ public class ProcessPatientService implements Runnable {
                             //documents.add(this.createDocumentForCISEResult(result.expressionResults, patientData));
                             //documents.add(this.createDocumentForASFEResult(result.expressionResults, patientData));
                             //documents.add(this.createDocumentForDRREResult(result.expressionResults, patientData));
-                            documents.add(this.createDocumentForAMPEResult(result.expressionResults, patientData));
+                            //documents.add(this.createDocumentForAMPEResult(result.expressionResults, patientData));
+                            documents.add(this.createDocumentForUOPResult(result.expressionResults,patientData));
                             if(documents.size() > 15) {
                                 dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
                                 System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
@@ -404,7 +405,8 @@ public class ProcessPatientService implements Runnable {
 
                                 patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
                                 //documents.add(this.createDocumentForDRREResult(result.expressionResults, patientData));
-                                documents.add(this.createDocumentForAMPEResult(result.expressionResults, patientData));
+                                //documents.add(this.createDocumentForAMPEResult(result.expressionResults, patientData));
+                                documents.add(this.createDocumentForUOPResult(result.expressionResults,patientData));
                                 count++;
                                 if (documents.size() > 15) {
                                     dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
@@ -637,6 +639,20 @@ public class ProcessPatientService implements Runnable {
         expressionResults.remove("HbA1c Testing During Measurement Period");
         expressionResults.remove("LDLC Testing During Measurement Period");
         expressionResults.remove("Cholesterol Testing During Measurement Period");
+
+        document.putAll(expressionResults); /* Mapping into Document*/
+        return document;
+    }
+
+    public Document createDocumentForUOPResult(Map<String, Object> expressionResults, PatientData patientData){
+        Document document = new Document();
+        document.put("id", patientData.getId());
+        document.put("birthDate", patientData.getBirthDate());
+        document.put("gender", patientData.getGender());
+        document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
+        document.put("hospiceFlag",patientData.getHospiceFlag());
+        /* Removing extra fields also giving codex error*/
+        expressionResults.remove("Patient");
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
