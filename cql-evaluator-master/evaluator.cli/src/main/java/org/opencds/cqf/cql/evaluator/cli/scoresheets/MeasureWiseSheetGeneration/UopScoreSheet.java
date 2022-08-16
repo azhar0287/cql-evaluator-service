@@ -157,46 +157,42 @@ public class UopScoreSheet {
 
     public List<String> mapPayersCodeInList(List<PayerInfo> payerInfoList){
         List<String> payersList=new LinkedList<>();
-        List<PayerInfo> tempPayersList=new LinkedList<>();
         if(payerInfoList != null && payerInfoList.size() != 0) {
             Date measurementPeriodEndingDate = UtilityFunction.getParsedDateInRequiredFormat("2022-12-31", "yyyy-MM-dd");
-            for (PayerInfo payerInfo : payerInfoList) {
-                Date insuranceEndDate = payerInfo.getCoverageEndDate();
-                Date insuranceStartDate = payerInfo.getCoverageStartDate();
-                if (insuranceEndDate != null  && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0 &&
-                        !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
-                    payersList.add(payerInfo.getPayerCode());
+            Date insuranceEndDate = null,insuranceStartDate=null;
+            for (int i = 0; i < payerInfoList.size(); i++) {
+                insuranceEndDate = payerInfoList.get(i).getCoverageEndDate();
+                insuranceStartDate=payerInfoList.get(i).getCoverageStartDate();
+                if (null!=insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0 && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101") && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
+//                    payersList.add(insuranceList.get(i).getPayerCode());
+//                    mapSpecialPayerCodes(payersList,payerInfoList.get(i).getPayerCode());
+                    payersList.add(payerInfoList.get(i).getPayerCode());
                 }
             }
 
-            //If no payer matches the above condition than get previous date from and check the range within the anchordate and send the latest POS back
-            if (payersList.isEmpty()) {
-                Date measurementPeriodStartingDate = UtilityFunction.getParsedDateInRequiredFormat("2021-05-01", "yyyy-MM-dd");
-                for (PayerInfo payerInfo : payerInfoList) {
-                    Date insuranceEndDate = payerInfo.getCoverageEndDate();
-                    Date insuranceStartDate = payerInfo.getCoverageStartDate();
+            //If no payer matches the above condition than the recent payer code in appended in payerlist
+            //Commenting as Faizan bhai said.
+            if (payersList.isEmpty() || payersList.size() == 0) {
 
-                    //It returns the value 0 if the argument Date is equal to this Date.
-                    //It returns a value less than 0 if this Date is before the Date argument.
-                    //It returns a value greater than 0 if this Date is after the Date argument.
-                    int oneYearBefore= insuranceStartDate.compareTo(measurementPeriodStartingDate);
-                    int twoYearBefore= insuranceStartDate.compareTo(measurementPeriodEndingDate);
+                for(int i=payerInfoList.size()-1;i>-1;i--) {
 
-                    int oneYearEndBefore= insuranceEndDate.compareTo(measurementPeriodStartingDate);
-                    int twoYearEndBefore= insuranceEndDate.compareTo(measurementPeriodEndingDate);
-                    if( (oneYearBefore>=0 && twoYearBefore<0) || (oneYearEndBefore>=0 && twoYearEndBefore<0)){
-                        tempPayersList.add(payerInfo);
+                    String lastCoverageObjectStartDate = payerInfoList.get(i).getCoverageStartDateString();
+                    String lastCoverageObjectEndDate = payerInfoList.get(i).getCoverageEndDateString();
+                    if ((null != lastCoverageObjectStartDate) && (null != lastCoverageObjectEndDate)) {
+
+                        if (!lastCoverageObjectStartDate.equals("20240101") && (lastCoverageObjectEndDate.substring(0, 4).equals("2022"))) {
+//                            mapSpecialPayerCodes(payersList, payerInfoList.get(i).getPayerCode());
+                            payersList.add(payerInfoList.get(i).getPayerCode());
+                            break;
+                        }
+
                     }
                 }
-                if(tempPayersList.size()>0){
-                    int size=tempPayersList.size()-1;
-                    payersList.add(tempPayersList.get(size).getPayerCode());
-                }
+
             }
         }
         return payersList;
     }
-
     public void updatePayerCodes(List<String> payerCodes, DbFunctions dbFunctions, DBConnection db) {
         int flag1 = 0;
         int flag2 = 0;

@@ -138,13 +138,19 @@ define "Initial Population 3":
   "Initial Population 1"
 
 define "Denominator 1":
-  "Initial Population 1"
+    AgeInYearsAt(date from start of "Measurement Period")>= 18
+    and "Two Opioid Medications Dispensed on Different Dates of Service"
+    and "Opioid Medication Coverage Days" >= 15
 
 define "Denominator 2":
-  "Initial Population 1"
+    AgeInYearsAt(date from start of "Measurement Period")>= 18
+    and "Two Opioid Medications Dispensed on Different Dates of Service"
+    and "Opioid Medication Coverage Days" >= 15
 
 define "Denominator 3":
-  "Initial Population 1"
+    AgeInYearsAt(date from start of "Measurement Period")>= 18
+    and "Two Opioid Medications Dispensed on Different Dates of Service"
+    and "Opioid Medication Coverage Days" >= 15
 
 define "Exclusions 1":
   Hospice."Hospice Intervention or Encounter"

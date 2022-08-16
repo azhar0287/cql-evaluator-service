@@ -135,10 +135,10 @@ define function "RolloutIntervalsOnce"(Intervals List<Interval<DateTime>>):
         end of X,
         ndate: 
         end of X + System.Quantity { value: DDiff, unit: 'day' }
-      } ) X
+      } ) Y
         return Tuple {
-          CInterval: Interval[X.sdate, X.edate],
-          RInterval: Interval[X.sdate, X.ndate]
+          CInterval: Interval[Y.sdate, Y.edate],
+          RInterval: Interval[Y.sdate, Y.ndate]
         }
     return ( Tuple {
       IntervalsinCollapse: IinC,
@@ -148,9 +148,9 @@ define function "RolloutIntervalsOnce"(Intervals List<Interval<DateTime>>):
       DurationofIntervalsinCollapse: DSum,
       NewInterval: NewInterval,
       DaysDiff: DDiff
-    } ) X
-      return all ( if X.IntervalsinCollapseCount > 1 then X.NewInterval.RInterval 
-          else X.NewInterval.CInterval
+    } ) R
+      return all ( if R.IntervalsinCollapseCount > 1 then R.NewInterval.RInterval
+          else R.NewInterval.CInterval
       ) ) A
     return all A
 

@@ -653,6 +653,16 @@ public class ProcessPatientService implements Runnable {
         document.put("hospiceFlag",patientData.getHospiceFlag());
         /* Removing extra fields also giving codex error*/
         expressionResults.remove("Patient");
+        expressionResults.remove("Medication Dispensed from 4 or More Different Pharmacies during Measurement Period");
+        expressionResults.remove("Medication Dispensed from 4 or More Different Prescribers during Measurement Period");
+        expressionResults.remove("Member Coverage");
+        expressionResults.remove("Opioid Medication Coverage Intervals");
+        expressionResults.remove("Opioid Medication Coverage Days");
+        expressionResults.remove("Opioid Medication Valuesets");
+        expressionResults.remove("Member Claims");
+        expressionResults.remove("Member Claim Responses");
+        expressionResults.remove("Pharmacy Claim With Opioid Medication");
+        expressionResults.remove("Two Opioid Medications Dispensed on Different Dates of Service");
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
