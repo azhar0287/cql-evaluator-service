@@ -111,7 +111,7 @@ public class ProcessPatientService implements Runnable {
     }
 
     List<Document> processAndSavePatients(List<RetrieveProvider> retrieveProviders, DbFunctions dbFunctions) {
-        List<Document> documents = new ArrayList<>();
+        List<Document> documents = new LinkedList<>();
         String globalPatientId = "";
         try {
             int chaipi = 0;
@@ -244,7 +244,8 @@ public class ProcessPatientService implements Runnable {
                             //documents.add(this.createDocumentForASFEResult(result.expressionResults, patientData));
                             //documents.add(this.createDocumentForDRREResult(result.expressionResults, patientData));
                             //documents.add(this.createDocumentForAMPEResult(result.expressionResults, patientData));
-                            documents.add(this.createDocumentForUOPResult(result.expressionResults,patientData));
+                            //documents.add(this.createDocumentForUOPResult(result.expressionResults,patientData));
+                            documents.add(this.createDocumentForFUMResult(result.expressionResults,patientData));
                             if(documents.size() > 15) {
                                 dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
                                 System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
@@ -406,7 +407,8 @@ public class ProcessPatientService implements Runnable {
                                 patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
                                 //documents.add(this.createDocumentForDRREResult(result.expressionResults, patientData));
                                 //documents.add(this.createDocumentForAMPEResult(result.expressionResults, patientData));
-                                documents.add(this.createDocumentForUOPResult(result.expressionResults,patientData));
+                                //documents.add(this.createDocumentForUOPResult(result.expressionResults,patientData));
+                                documents.add(this.createDocumentForFUMResult(result.expressionResults,patientData));
                                 count++;
                                 if (documents.size() > 15) {
                                     dbFunctions.insertProcessedDataInDb(EP_CQL_PROCESSED_DATA, documents, dbConnection);
@@ -663,6 +665,33 @@ public class ProcessPatientService implements Runnable {
         expressionResults.remove("Member Claim Responses");
         expressionResults.remove("Pharmacy Claim With Opioid Medication");
         expressionResults.remove("Two Opioid Medications Dispensed on Different Dates of Service");
+
+        document.putAll(expressionResults); /* Mapping into Document*/
+        return document;
+    }
+
+    public Document createDocumentForFUMResult(Map<String, Object> expressionResults, PatientData patientData) {
+        Document document = new Document();
+        System.out.println("Here");
+        document.put("id", patientData.getId());
+        document.put("birthDate", patientData.getBirthDate());
+        document.put("gender", patientData.getGender());
+        document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
+        document.put("hospiceFlag", patientData.getHospiceFlag());
+        /* Removing extra fields also giving codex error*/
+        expressionResults.remove("Patient");
+        expressionResults.remove("Member Claims");
+        expressionResults.remove("Mental Illness or Intentional Self-Harm");
+        expressionResults.remove("December 1 of the Measurement Period");
+        expressionResults.remove("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm");
+        expressionResults.remove("Member Coverage");
+        expressionResults.remove("Eligible ED Visits");
+        expressionResults.remove("Eligible ED Visits Not Followed by Inpatient Admission");
+        expressionResults.remove("First Eligible ED Visits per 31 Day Period");
+        expressionResults.remove("ED Visits with Hospice Intervention or Encounter");
+        expressionResults.remove("Follow Up Visits");
+        expressionResults.remove("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm");
+
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
