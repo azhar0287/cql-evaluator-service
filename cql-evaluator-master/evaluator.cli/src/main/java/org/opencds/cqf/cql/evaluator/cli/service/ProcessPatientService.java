@@ -35,10 +35,8 @@ import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PayerInfo;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.Premium;
-
 import java.util.*;
 
-import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 
 public class ProcessPatientService implements Runnable {
 
@@ -88,14 +86,14 @@ public class ProcessPatientService implements Runnable {
 
     public void singleDataProcessing(String patientId) {
         List<RetrieveProvider> retrieveProviders;
-        retrieveProviders = utilityFunction.mapToRetrieveProviderForSingle(patientId, skip, 1, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection, Constant.MAIN_FHIR_COLLECTION_NAME);
+        retrieveProviders = utilityFunction.mapToRetrieveProviderForSingle(patientId, libraries.get(0).fhirVersion,  dbFunctions, dbConnection, Constant.MAIN_FHIR_COLLECTION_NAME);
         processAndSavePatients(retrieveProviders, dbFunctions);
         threadTaskCompleted.isTaskCompleted = true;
     }
 
     public void dataBatchingAndProcessing() {
         List<RetrieveProvider> retrieveProviders;
-        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection,Constant.MAIN_FHIR_COLLECTION_NAME);
+        retrieveProviders = utilityFunction.mapToRetrieveProvider(skip, batchSize, libraries.get(0).fhirVersion, libraries, dbFunctions, dbConnection, Constant.MAIN_FHIR_COLLECTION_NAME);
         processAndSavePatients(retrieveProviders, dbFunctions);
 //        threadTaskCompleted.isTaskCompleted = true;
     }
@@ -222,8 +220,8 @@ public class ProcessPatientService implements Runnable {
                             EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
                             patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                            documents.add(this.createDocumentForResultCOLE(result.expressionResults, patientData));
-                            if(documents.size() > 15) {
+                            documents.add(this.createDocumentForResultADDE(result.expressionResults, patientData));
+                            if(documents.size() > 15 ) {
                                 dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
                                 System.out.println("Going to add 15 patients in db, and Thread is going to sleep");
                                 Thread.sleep(100);
@@ -281,7 +279,6 @@ public class ProcessPatientService implements Runnable {
             if(null != premium.getLisHist()) {
                 document.put("lisHist", premium.getLisHist());
             }
-
             documents.add(document);
         }
         return documents;
@@ -321,12 +318,57 @@ public class ProcessPatientService implements Runnable {
         expressionResults.remove("test func");
         expressionResults.remove("claimType func");
         expressionResults.remove("Acute Inpatient Discharge with Advanced Illness");
-
-
-
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;
     }
+
+    public Document createDocumentForResultADDE(Map<String, Object> expressionResults, PatientData patientData) {
+        Document document = new Document();
+        document.put("id", patientData.getId());
+        document.put("birthDate", patientData.getBirthDate());
+        document.put("gender", patientData.getGender());
+        document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
+        document.put("hospiceFlag", patientData.getHospiceFlag());
+
+        if(null != expressionResults.get("Index Prescription Start Date")) {
+            document.put("Index Prescription Start Date", expressionResults.get("Index Prescription Start Date").toString());
+        }
+
+        if(null != patientData.getPremium()) {
+            document.put("premium", getPremiumInfoMap(patientData.getPremium()));
+        }
+
+        /* Removing extra fields also giving codex error*/
+        expressionResults.remove("Patient");
+        expressionResults.remove("Participation Period");
+        expressionResults.remove("Member Coverage");
+        expressionResults.remove("Follow Up Encounters or Assessments During Initiation Phase");
+        expressionResults.remove("March 1 of Year Prior to Measurement Period");
+        expressionResults.remove("Last Calendar Day of February");
+        expressionResults.remove("Intake Period");
+        expressionResults.remove("Member Claims");
+        expressionResults.remove("ADHD Medication Dispensed");
+        expressionResults.remove("Index Prescription Start Date");
+        expressionResults.remove("Claims with Principal Diagnosis of Mental Behavioral and Neurodevelopmental Disorders");
+        expressionResults.remove("Acute Inpatient Encounter for Mental Behavioral or Neurodevelopmental Disorders");
+        expressionResults.remove("Acute Inpatient Encounter for Mental Behavioral or Neurodevelopmental Disorders During Initiation Phase");
+        expressionResults.remove("Acute Inpatient Discharge for Mental Behavioral or Neurodevelopmental Disorders");
+        expressionResults.remove("Acute Inpatient Discharge for Mental Behavioral or Neurodevelopmental Disorders During Initiation Phase");
+        expressionResults.remove("ADHD Medication Coverage Intervals");
+        expressionResults.remove("Acute Inpatient Encounter for Mental Behavioral or Neurodevelopmental Disorders Before End of Continuation and Maintenance Phase");
+        expressionResults.remove("Acute Inpatient Discharge for Mental Behavioral or Neurodevelopmental Disorders Before End of Continuation and Maintenance Phase");
+        expressionResults.remove("Diagnosis of Narcolepsy");
+        expressionResults.remove("Follow Up Encounters with Telehealth or Telephone Visits");
+        expressionResults.remove("test funcFollow Up Encounters or Assessments During Initiation Phase");
+        expressionResults.remove("Follow Up Encounters or Assessments During Continuation and Maintenance Phase");
+        expressionResults.remove("Follow Up Encounter with eVisit or Virtual Check in During Continuation and Maintenance Phase");
+        document.putAll(expressionResults); /* Mapping into Document*/
+        if (expressionResults.get("Enrolled During Participation Period 2") == null) {
+            document.put("Enrolled During Participation Period 2", false);
+        }
+        return document;
+    }
+
     public Document createDocumentForResult(Map<String, Object> expressionResults, PatientData patientData) {
         Document document = new Document();
         document.put("id", patientData.getId());

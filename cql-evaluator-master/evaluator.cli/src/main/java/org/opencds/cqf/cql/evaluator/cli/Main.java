@@ -5,7 +5,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -14,7 +14,7 @@ import org.apache.commons.csv.CSVPrinter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
-import org.opencds.cqf.cql.evaluator.cli.command.CliCommand;
+
 
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
@@ -51,7 +51,6 @@ public class Main {
         System.out.println(String.format("Test resource directory: %s", testResourcePath));
     }
 
-
     public static LibraryOptions setupLibrary() {
         ContextParameter context = new ContextParameter(CONTEXT, "TEST");
         ModelParameter modelParameter = new ModelParameter(MODEL, MODEL_URL);
@@ -68,11 +67,11 @@ public class Main {
         connection.collection.createIndex(Indexes.ascending("id"));
 
 //         To Process Patients
-     //   processPatients(dbFunctions, connection);
+    //    processPatients(dbFunctions, connection);
 //        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Sample_Processing_failed_patients");
 
-       // Process Single Patient
-//       String patientId = "105005";
+        //Process Single Patient
+//       String patientId = "95002";
 //      processSinglePatient(patientId, dbFunctions, connection);
 //        ////////////////////
 
@@ -83,9 +82,9 @@ public class Main {
         //Generating sheet for single patient
 
 //        UtilityFunction utilityFunction = new UtilityFunction();
-//        CSVPrinter csvPrinter = utilityFunction.setupSheetHeadersForCol(); //More headers for COLE
+//        CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
 //        SheetGenerationTask sheetGenerationTask = new SheetGenerationTask(utilityFunction, connection, dbFunctions, csvPrinter);
-//        sheetGenerationTask.generateSheetSingleForCOLE("96591");
+//        sheetGenerationTask.generateSheetSingleForADDE("95002");
 
     }
 
@@ -107,6 +106,7 @@ public class Main {
         List<ThreadTaskCompleted> isAllTasksCompleted = new LinkedList<>();
         int totalCount = dbFunctions.getDataCount(Constant.MAIN_FHIR_COLLECTION_NAME, connection);
 
+       // int totalSkips = totalCount;
         int totalSkips = (int) Math.ceil(totalCount/10);
         int totalSkipped = 0;
         if(totalCount % 10 > 0) { //remaining missing records issue fix
@@ -145,31 +145,24 @@ public class Main {
 
     public static void generateSheet(DbFunctions dbFunctions, DBConnection connection, UtilityFunction utilityFunction) throws IOException, ParseException {
         System.out.println("Sheet generation has started");
-        List<ThreadTaskCompleted> isAllTasksCompleted=new LinkedList<>();
+//        List<ThreadTaskCompleted> isAllTasksCompleted=new LinkedList<>();
         int totalDataCountForSheet = dbFunctions.getDataCount("ep_cql_processed_data", connection);
         int totalSkipped = 0;
         int totalSkipsForSheet = (int) Math.ceil(totalDataCountForSheet/500) ;
-        if(totalDataCountForSheet % 500 > 0) { //remaining missing records issue fix
-            totalSkipsForSheet+=1; //for remaining records
+        if(totalDataCountForSheet % 500 > 0) {
+            totalSkipsForSheet+=1;
         }
-
-        CSVPrinter csvPrinter = utilityFunction.setupSheetHeadersForCol(); //More headers for COLE
-
-      //  ExecutorService executorServiceForSheet = Executors.newFixedThreadPool(10);
+        CSVPrinter csvPrinter = utilityFunction.setupSheetHeaders();
 
         for(int i=0; i<totalSkipsForSheet; i++) {
             SheetGenerationTask sheetGenerationTask = new SheetGenerationTask(utilityFunction, connection, dbFunctions, totalSkipped, csvPrinter);
-            sheetGenerationTask.generateSheetForCOLE();
+            sheetGenerationTask.generateSheetForADDE();
             System.out.println("Iteration: "+i);
-            totalSkipped+=500;
+            totalSkipped += 500;
         }
-
         csvPrinter.close();
         System.out.println("Sheet generation has completed");
     }
-
-
-
 
     public static void insertFailedPatient(DbFunctions dbFunctions, DBConnection dbConnection,String collectionName) {
         List<Document>documents = new ArrayList<>();

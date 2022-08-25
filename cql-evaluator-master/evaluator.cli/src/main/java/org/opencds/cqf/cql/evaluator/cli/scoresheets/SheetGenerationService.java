@@ -23,7 +23,7 @@ public class SheetGenerationService {
 
     public void generateSheetForCCS(List<Document> documents, Date measureDate, CSVPrinter csvPrinter, DBConnection db) throws IOException {
         try {
-            String globalPatientId;
+
             List<String> sheetObj;
             List<String> payerCodes;
             List<String> codeCheckList = utilityFunction.checkCodeForCCS();

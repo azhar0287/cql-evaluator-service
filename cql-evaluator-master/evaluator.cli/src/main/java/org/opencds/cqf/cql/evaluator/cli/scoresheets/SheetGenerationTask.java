@@ -6,7 +6,8 @@ import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
-import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.ColeScoreSheet;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.AddEScoreSheet;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.ColEScoreSheet;
 import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.DmseScoreSheet;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import java.io.IOException;
@@ -40,11 +41,30 @@ public class SheetGenerationTask {
         this.csvPrinter = csvPrinter;
     }
 
+    public void generateSheetSingleForADDE(String patientId) throws IOException, ParseException {
+        Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
+        List<Document> documents;
+        documents = dbFunctions.getSinglePatient(patientId, "ep_cql_processed_data", db);
+        AddEScoreSheet addEScoreSheet = new AddEScoreSheet();
+        addEScoreSheet.generateSheet(documents, measureDate, csvPrinter, db);
+        csvPrinter.close();
+        documents.clear();
+    }
+
+    public void generateSheetForADDE() throws IOException, ParseException {
+        Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
+        List<Document> documents;
+        documents = dbFunctions.getConditionalData("ep_cql_processed_data", skip, batchSize, db);
+        AddEScoreSheet addEScoreSheet = new AddEScoreSheet();
+        addEScoreSheet.generateSheet(documents, measureDate, csvPrinter, db);
+        documents.clear();
+    }
+
     public void generateSheetSingleForCOLE(String patientId) throws IOException, ParseException {
         Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
         List<Document> documents;
         documents = dbFunctions.getSinglePatient(patientId, "ep_cql_processed_data", db);
-        ColeScoreSheet coleScoreSheet = new ColeScoreSheet();
+        ColEScoreSheet coleScoreSheet = new ColEScoreSheet();
         coleScoreSheet.generateSheet(documents, measureDate, csvPrinter, db);
         csvPrinter.close();
         documents.clear();
@@ -54,7 +74,7 @@ public class SheetGenerationTask {
         Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
         List<Document> documents;
         documents = dbFunctions.getConditionalData("ep_cql_processed_data", skip, batchSize, db);
-        ColeScoreSheet coleScoreSheet = new ColeScoreSheet();
+        ColEScoreSheet coleScoreSheet = new ColEScoreSheet();
         coleScoreSheet.generateSheet(documents, measureDate, csvPrinter, db);
         documents.clear();
     }
@@ -75,7 +95,5 @@ public class SheetGenerationTask {
         sheetGenerationService.generateSheetForCCS(documents, measureDate, csvPrinter, db);
         documents.clear();
     }
-
-
 
 }

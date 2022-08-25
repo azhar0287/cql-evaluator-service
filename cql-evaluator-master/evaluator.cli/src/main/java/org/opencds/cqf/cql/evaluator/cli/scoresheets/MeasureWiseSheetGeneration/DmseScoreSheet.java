@@ -27,7 +27,6 @@ public class DmseScoreSheet {
 
     public String getFieldCount(String fieldName, Document document) {
         int eventSum = 0;
-        String feildname=fieldName.concat(" 1");
         if(document.getBoolean(fieldName.concat(" 1") )) {
             eventSum+=1;
         }
@@ -57,25 +56,21 @@ public class DmseScoreSheet {
         }
         else {
             sheetObj.add(getFieldCount("Denominator", document)); //epop
-
         }
 
         sheetObj.add("0"); //excl
 
-
         sheetObj.add(getFieldCount("Numerator", document)); //Num
 
-
-        if(document.getBoolean("Exclusions 1")){
+        if(document.getBoolean("Exclusions 1")) {
             sheetObj.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //rexcl
         }
         else if(document.getString("hospiceFlag").equals("Y")) {
             sheetObj.add("1");
         }
-        else{
+        else {
             sheetObj.add("0");
         }
-
 
         sheetObj.add("0"); //RexlD
         sheetObj.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
@@ -156,9 +151,9 @@ public class DmseScoreSheet {
             for (int i = 0; i < payerInfoList.size(); i++) {
                 insuranceEndDate = payerInfoList.get(i).getCoverageEndDate();
                 insuranceStartDate=payerInfoList.get(i).getCoverageStartDate();
-                if (null!=insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0 && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101") && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
-//                    payersList.add(insuranceList.get(i).getPayerCode());
-//                    mapSpecialPayerCodes(payersList,payerInfoList.get(i).getPayerCode());
+                if (null!=insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0
+                        && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101")
+                        && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
                     payersList.add(payerInfoList.get(i).getPayerCode());
                 }
             }
@@ -166,9 +161,7 @@ public class DmseScoreSheet {
             //If no payer matches the above condition than the recent payer code in appended in payerlist
             //Commenting as Faizan bhai said.
             if (payersList.isEmpty() || payersList.size() == 0) {
-
                 for(int i=payerInfoList.size()-1;i>-1;i--) {
-
                     String lastCoverageObjectStartDate = payerInfoList.get(i).getCoverageStartDateString();
                     String lastCoverageObjectEndDate = payerInfoList.get(i).getCoverageEndDateString();
                     if ((null != lastCoverageObjectStartDate) && (null != lastCoverageObjectEndDate)) {
@@ -181,7 +174,6 @@ public class DmseScoreSheet {
 
                     }
                 }
-
             }
         }
         return payersList;

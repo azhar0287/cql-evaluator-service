@@ -20,8 +20,7 @@ import org.opencds.cqf.cql.evaluator.engine.retrieve.Premium;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -57,7 +56,7 @@ public class UtilityFunction {
         return csvPrinter;
     }
 
-    public List<RetrieveProvider> mapToRetrieveProviderForSingle(String patientId, int skip, int limit, String fhirVersion, List<LibraryOptions> libraries, DbFunctions dbFunctions, DBConnection connection,String CollectionName) {
+    public List<RetrieveProvider> mapToRetrieveProviderForSingle(String patientId, String fhirVersion, DbFunctions dbFunctions, DBConnection connection, String CollectionName) {
         DBConnection db = new DBConnection();
         PatientData patientData;
         PayerInfo payerInfo = new PayerInfo();
@@ -147,11 +146,9 @@ public class UtilityFunction {
             patientData.setRaceDS(document.getString("raceDS"));
             patientData.setRaceCode(document.getString("raceCode"));
 
-
             patientData.setEthnicity(document.getString("ethnicity"));
             patientData.setEthnicityDS(document.getString("ethnicityDS"));
             patientData.setEthnicityCode(document.getString("ethnicityCode"));
-
 
             bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
             RetrieveProvider retrieveProvider;
@@ -208,6 +205,94 @@ public class UtilityFunction {
         }
         return codeTypes;
     }
+
+    public void updatePayerCodes(List<String> payerCodes, DbFunctions dbFunctions, DBConnection db) {
+        int flag1 = 0;
+        int flag2 = 0;
+        int flag3  = 0;
+        List<String> updatedPayersList=new LinkedList<>();
+        Map<String,String> codeTypes;
+        if(payerCodes.size() == 2) {
+            codeTypes = assignCodeToType(payerCodes,dbFunctions, db);
+            for (String code : payerCodes) {
+                String codeType;
+                if(codeTypes != null) {
+                    codeType = codeTypes.get(code);
+                    if (codeType.equalsIgnoreCase(CODE_TYPE_COMMERCIAL)) {
+                        flag1 += 1;
+                    }
+                    if (codeType.equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
+                        flag1 += 1;
+                    }
+                    if (codeType.equalsIgnoreCase(CODE_TYPE_COMMERCIAL)) {
+                        flag2 += 1;
+                    }
+                    if (codeType.equalsIgnoreCase(CODE_TYPE_MEDICAID)) {
+                        flag2 += 1;
+                    }
+
+                    if (codeType.equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
+                        flag3 += 1;
+                    }
+                    if (codeType.equalsIgnoreCase(CODE_TYPE_MEDICAID)) {
+                        flag3 += 1;
+                    }
+                }
+            }
+
+            if(flag1 == 2) {
+                payerCodes.clear();
+                for (Map.Entry<String, String> entry : codeTypes.entrySet()) {
+                    if (entry.getValue().equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
+                        mapSpecialPayerCodes(updatedPayersList,entry.getKey());
+                    }
+                }
+            }
+
+            if(flag2 == 2) {
+                payerCodes.clear();
+                for (Map.Entry<String, String> entry : codeTypes.entrySet()) {
+                    if (entry.getValue().equalsIgnoreCase(CODE_TYPE_COMMERCIAL)) {
+                        mapSpecialPayerCodes(updatedPayersList,entry.getKey());
+
+                    }
+                }
+            }
+
+            if(flag3 == 2) {
+                payerCodes.clear();
+                for (Map.Entry<String, String> entry : codeTypes.entrySet()) {
+                    mapSpecialPayerCodes(updatedPayersList,entry.getKey());
+                }
+            }
+            payerCodes.clear();
+            payerCodes.addAll(updatedPayersList);
+        }
+        else {
+            for(String payerCode:payerCodes) {
+                mapSpecialPayerCodes(updatedPayersList,payerCode);
+            }
+            payerCodes.clear();
+            payerCodes.addAll(updatedPayersList);
+        }
+    }
+
+   void mapSpecialPayerCodes(List<String> payersList,String payerCode) {
+        if(payerCode.equals("MD") || payerCode.equals("MDE") || payerCode.equals("MLI")|| payerCode.equals("MRB")){
+            payersList.add("MCD");
+        }
+        else if(payerCode.equals("SN1") || payerCode.equals("SN2") || payerCode.equals("SN3")){
+            payersList.add("MCR");
+        }
+        else if(payerCode.equals("MMP")){
+            payersList.add("MCD");
+            payersList.add("MCR");
+        }
+        else{
+            payersList.add(payerCode);
+        }
+    }
+
 
     public void updatePayerCodesCCS(List<String> payerCodes, DbFunctions dbFunctions, DBConnection db) {
         int flag1 = 0;
@@ -271,7 +356,6 @@ public class UtilityFunction {
         }
     }
 
-
     public List<String> checkCodeForCCS() {
 
         List<String> codeCheckList = new ArrayList<>();
@@ -298,10 +382,6 @@ public class UtilityFunction {
 
                 patientData = infoMap.get(map.getKey());
                 exp = map.getValue();
-                //payerCodes = patientData.getPayerCodes();
-
-                //this.updatePayerCodes(payerCodes);  //update payer codes for Commercial/Medicaid and Commercial/Medicare conditions
-
                 for(int i=0; i< payerCodes.size(); i++) {
                     data = new ArrayList<>();
                     data.add(map.getKey());
@@ -405,4 +485,115 @@ public class UtilityFunction {
         }
         return null;
     }
+
+   public List<String> getPayerCodesFromObject(Document document) {
+        List<String> payerCodes;
+        Object object = document.get("payerCodes");
+        payerCodes = new ObjectMapper().convertValue(object, new TypeReference<List<String>>() {});
+        return payerCodes;
+   }
+
+   public boolean ageCheck(int age) {
+        if(age>5 && age<13) {
+            return true;
+        }
+        else {
+            return false;
+        }
+   }
+
+   public List<String> mapPayersCodeInList(List<org.opencds.cqf.cql.evaluator.cli.mappers.PayerInfo> payerInfoList) {
+        List<String> payersList=new LinkedList<>();
+        if(payerInfoList != null && payerInfoList.size() != 0) {
+            Date measurementPeriodEndingDate = UtilityFunction.getParsedDateInRequiredFormat("2022-12-31", "yyyy-MM-dd");
+            Date insuranceEndDate = null, insuranceStartDate = null;
+            for (int i = 0; i < payerInfoList.size(); i++) {
+                insuranceEndDate = payerInfoList.get(i).getCoverageEndDate();
+                insuranceStartDate=payerInfoList.get(i).getCoverageStartDate();
+                if (null!=insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0
+                        && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101") && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
+                    payersList.add(payerInfoList.get(i).getPayerCode());
+                }
+            }
+            if (payersList.isEmpty() || payersList.size() == 0) {
+                for(int i=payerInfoList.size()-1;i>-1;i--) {
+                    String lastCoverageObjectStartDate = payerInfoList.get(i).getCoverageStartDateString();
+                    String lastCoverageObjectEndDate = payerInfoList.get(i).getCoverageEndDateString();
+                    if ((null != lastCoverageObjectStartDate) && (null != lastCoverageObjectEndDate)) {
+                        if (!lastCoverageObjectStartDate.equals("20240101") && (lastCoverageObjectEndDate.startsWith("2022") || (lastCoverageObjectEndDate.startsWith("2021")))) {
+                            payersList.add(payerInfoList.get(i).getPayerCode());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return payersList;
+   }
+
+    public List<String> mapPayersCodeAddE(List<org.opencds.cqf.cql.evaluator.cli.mappers.PayerInfo> payerInfoList, String anchorDate) {
+        List<String> payersList=new LinkedList<>();
+        if(payerInfoList != null && payerInfoList.size() != 0) {
+            Date measurementPeriodEndingDate = UtilityFunction.getParsedDateInRequiredFormat(anchorDate, "yyyy-MM-dd");
+            Date insuranceEndDate = null, insuranceStartDate = null;
+            for (int i = 0; i < payerInfoList.size(); i++) {
+                insuranceEndDate = payerInfoList.get(i).getCoverageEndDate();
+                insuranceStartDate = payerInfoList.get(i).getCoverageStartDate();
+                if (null!=insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0
+                        && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101") && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
+                    payersList.add(payerInfoList.get(i).getPayerCode());
+                }
+            }
+
+            if (payersList.isEmpty()) {
+                for(int i=payerInfoList.size()-1; i>-1; i--) {
+                    String lastCoverageObjectStartDate = payerInfoList.get(i).getCoverageStartDateString();
+                    String lastCoverageObjectEndDate = payerInfoList.get(i).getCoverageEndDateString();
+
+                    insuranceEndDate = payerInfoList.get(i).getCoverageEndDate();
+                    insuranceStartDate = payerInfoList.get(i).getCoverageStartDate();
+
+                    if ((null != lastCoverageObjectStartDate) && (null != lastCoverageObjectEndDate)) {
+                        if (!lastCoverageObjectStartDate.equals("20240101") && (lastCoverageObjectEndDate.startsWith("2022") || (lastCoverageObjectEndDate.startsWith("2021")))) {
+                            payersList.add(payerInfoList.get(i).getPayerCode());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return payersList;
+    }
+
+    public List<String> mapPayersCodeForAddE2(List<org.opencds.cqf.cql.evaluator.cli.mappers.PayerInfo> payerInfoList, String anchorDate) {
+        List<String> payersList=new LinkedList<>();
+        if(payerInfoList != null && payerInfoList.size() != 0) {
+            Date measurementPeriodEndingDate = UtilityFunction.getParsedDateInRequiredFormat(anchorDate, "yyyy-MM-dd");
+            Date insuranceEndDate = null, insuranceStartDate = null;
+            for (int i = 0; i < payerInfoList.size(); i++) {
+                insuranceEndDate = payerInfoList.get(i).getCoverageEndDate();
+                insuranceStartDate=payerInfoList.get(i).getCoverageStartDate();
+                if (null!=insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0
+                        && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101") && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
+                    payersList.add(payerInfoList.get(i).getPayerCode());
+                }
+            }
+            if (payersList.isEmpty() || payersList.size() == 0) {
+                for(int i=payerInfoList.size()-1;i>-1;i--) {
+                    String lastCoverageObjectStartDate = payerInfoList.get(i).getCoverageStartDateString();
+                    String lastCoverageObjectEndDate = payerInfoList.get(i).getCoverageEndDateString();
+                    if ((null != lastCoverageObjectStartDate) && (null != lastCoverageObjectEndDate)) {
+                        if (!lastCoverageObjectStartDate.equals("20240101") && (lastCoverageObjectEndDate.startsWith("2022") || (lastCoverageObjectEndDate.startsWith("2021")))) {
+                            payersList.add(payerInfoList.get(i).getPayerCode());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return payersList;
+    }
+
+
+
 }

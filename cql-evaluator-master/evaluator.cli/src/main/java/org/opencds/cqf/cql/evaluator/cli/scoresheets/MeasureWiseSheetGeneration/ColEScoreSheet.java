@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.csv.CSVPrinter;
 import org.bson.Document;
-import org.opencds.cqf.cql.evaluator.cli.Main;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.mappers.PayerInfo;
@@ -17,7 +16,7 @@ import java.util.*;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
 
-public class ColeScoreSheet {
+public class ColEScoreSheet {
 
     UtilityFunction utilityFunction = new UtilityFunction();
     DbFunctions dbFunctions = new DbFunctions();
@@ -134,29 +133,6 @@ public class ColeScoreSheet {
             }
         }
         return payersList;
-    }
-
-    public boolean checkMedicareCodeType(List<String> payerCodes, DbFunctions dbFunctions, DBConnection db) {
-        int flag = 0;
-        Map<String,String> codeTypes;
-        if(payerCodes.size() == 2) {
-            codeTypes = utilityFunction.assignCodeToType(payerCodes, dbFunctions, db);
-            for (String code : payerCodes) {
-                String codeType;
-                if(codeTypes != null) {
-                    codeType = codeTypes.get(code);
-                    if (codeType.equalsIgnoreCase(CODE_TYPE_MEDICARE)) {
-                        flag++;
-                    }
-                }
-            }
-        }
-        if(flag == 1) {
-            return true;
-        }
-        else {
-            return false;
-        }
     }
 
     public void updatePayerCodes(List<String> payerCodes, DbFunctions dbFunctions, DBConnection db) {
@@ -328,7 +304,6 @@ public class ColeScoreSheet {
                             }
                             addObjectInSheet(sheetObj, document, payerCode, measureDate, csvPrinter, ltiFlag, rexcleFlag);
                             rexcleFlag = false;
-                            ltiFlag = false;
                         }
                     }
                 }

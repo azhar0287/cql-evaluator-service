@@ -71,19 +71,6 @@
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="cql-evaluator-master" target="8" />
-      <module name="evaluator" target="8" />
-      <module name="evaluator.activitydefinition" target="8" />
-      <module name="evaluator.builder" target="8" />
-      <module name="evaluator.cli" target="1.8" />
-      <module name="evaluator.content-test" target="8" />
-      <module name="evaluator.dagger" target="8" />
-      <module name="evaluator.expression" target="8" />
-      <module name="evaluator.fhir" target="8" />
-      <module name="evaluator.library" target="8" />
-      <module name="evaluator.measure" target="8" />
-      <module name="evaluator.measure-hapi" target="8" />
-      <module name="evaluator.plandefinition" target="8" />
-      <module name="evaluator.spring" target="8" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
