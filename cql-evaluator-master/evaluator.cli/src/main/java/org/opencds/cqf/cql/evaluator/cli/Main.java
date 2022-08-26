@@ -40,8 +40,8 @@ public class Main {
     private static final PrintStream originalOut = System.out;
     private static final PrintStream originalErr = System.err;
 
-//    private static final String testResourceRelativePath = "evaluator.cli/src/main/resources"; //for Jar
-  //  private static final String testResourceRelativePath = "evaluator.cli/src/main/resources";
+    //    private static final String testResourceRelativePath = "evaluator.cli/src/main/resources"; //for Jar
+    //  private static final String testResourceRelativePath = "evaluator.cli/src/main/resources";
     private static String testResourcePath = null;
     public static List<String> failedPatients = new ArrayList<>();
 
@@ -67,20 +67,20 @@ public class Main {
         connection.collection = connection.database.getCollection("ep_cql_processed_data");
         connection.collection.createIndex(Indexes.ascending("id"));
 
-//         To Process Patients
-//        processPatients(dbFunctions, connection);
-//        insertFailedPatient(dbFunctions, connection,"ep_cql_DMSE_Sample_Processing_failed_patients");
+//         To Process Patien/ts
+        processPatients(dbFunctions, connection);
+        insertFailedPatient(dbFunctions, connection,"ep_cql_Pnde_Sample_Sheet_failed_patients");
 
 //        //Process Single Patient
-        String patientId = "96317";
-        processSinglePatient(patientId, dbFunctions, connection);
-        ////////////////////
+//        String patientId = "97296";
+//        processSinglePatient(patientId, dbFunctions, connection);
+        ////////////////
 
         //To generate Sheet and failed patients
 //        generateSheet(dbFunctions, connection, new UtilityFunction());
-//        insertFailedPatient(dbFunctions, connection,"ep_cql_AISE_Test_Sheet_failed_patients");
+//        insertFailedPatient(dbFunctions, connection,"ep_cql_Pnde_Sample_Sheet_failed_patients");
 
-
+//
 
         //This function is not in our use now, can be refactored later
         //To Process Patients
@@ -99,6 +99,49 @@ public class Main {
         System.out.println("Finished");
     }
 
+//        public static void processPatients(DbFunctions dbFunctions, DBConnection connection) {
+//
+//        System.out.println("Patient processing has started");
+//
+//        List<ThreadTaskCompleted> isAllTasksCompleted = new LinkedList<>();
+//        int totalCount = dbFunctions.getDataCount(Constant.MAIN_FHIR_COLLECTION_NAME, connection);
+//
+//        int totalSkips = (int) Math.ceil(totalCount/10);
+//        int totalSkipped = 0;
+//        if(totalCount % 10 > 0) { //remaining missing records issue fix
+//            totalSkips+=1;
+//        }
+//
+//        List<LibraryOptions> libraryOptions = new ArrayList<>();
+//        libraryOptions.add(setupLibrary());
+//
+//        //Patient processing
+//        ExecutorService executorService = Executors.newFixedThreadPool(1);
+//        for(int i=0; i < totalSkips; i++) {
+//            //connection = new DBConnection();
+//            ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
+//            isAllTasksCompleted.add(isTaskCompleted);
+//            executorService.submit(new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount, isTaskCompleted));
+//            totalSkipped += 10;
+//            //connection.closeConnection();
+//
+//        }
+//
+//        /*Shutting Down service*/
+//        while(true) {
+//            if(dbFunctions.isAllTasksCompletedByThreads(isAllTasksCompleted)){
+//                LOGGER.info("****** Patients are processed");
+//                break;
+//            }
+//            try {
+//                Thread.sleep(10000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        System.out.println("Patients Processing has completed");
+//        executorService.shutdown();
+//    }
     public static void processPatients(DbFunctions dbFunctions, DBConnection connection) {
 
         System.out.println("Patient processing has started");
@@ -118,27 +161,26 @@ public class Main {
         //Patient processing
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         for(int i=0; i < totalSkips; i++) {
-            //connection = new DBConnection();
-            ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
-            isAllTasksCompleted.add(isTaskCompleted);
-            executorService.submit(new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount, isTaskCompleted));
+            //ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
+            //isAllTasksCompleted.add(isTaskCompleted);
+            //executorService.submit(new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount, isTaskCompleted));
+            ProcessPatientService processPatientService = new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount);
+            processPatientService.dataBatchingAndProcessing();
             totalSkipped += 10;
-            //connection.closeConnection();
-
         }
 
         /*Shutting Down service*/
-        while(true) {
-            if(dbFunctions.isAllTasksCompletedByThreads(isAllTasksCompleted)){
-                LOGGER.info("****** Patients are processed");
-                break;
-            }
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+//        while(true) {
+//            if(dbFunctions.isAllTasksCompletedByThreads(isAllTasksCompleted)){
+//                LOGGER.info("****** Patients are processed");
+//                break;
+//            }
+//            try {
+//                Thread.sleep(10000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
         System.out.println("Patients Processing has completed");
         executorService.shutdown();
     }
@@ -171,7 +213,7 @@ public class Main {
 
         for(int i=0; i<totalSkipsForSheet; i++) {
             SheetGenerationTask sheetGenerationTask = new SheetGenerationTask(utilityFunction, connection, dbFunctions, totalSkipped, csvPrinter);
-            sheetGenerationTask.generateSheetForAISE();
+            sheetGenerationTask.generateSheetForPnde();
             System.out.println("Iteration: "+i);
             totalSkipped+=500;
         }
