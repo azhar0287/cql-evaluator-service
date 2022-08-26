@@ -73,7 +73,12 @@ public class UtilityFunction {
             });
 
             patientData.setPayerInfo(payerCodes);
-
+            if(document.get("pndNumerator1A")!=null){
+                patientData.setPndNumerator1A(document.get("pndNumerator1A").toString());
+            }
+            if(document.get("pndNumerator1B")!=null){
+                patientData.setPndNumerator1B(document.get("pndNumerator1B").toString());
+            }
             bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
             RetrieveProvider retrieveProvider;
             retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData, payerInfo);
@@ -110,6 +115,15 @@ public class UtilityFunction {
             List<DeliveryProcedureInfo> deliveryProcedureInfos = new ObjectMapper().convertValue(o, new TypeReference<List<DeliveryProcedureInfo>>() {});
             patientData.setDeliveryProcedureInfos(deliveryProcedureInfos);
 
+            if(documents.get(i).get("pndNumerator1A")!=null){
+                patientData.setPndNumerator1A(documents.get(i).get("pndNumerator1A").toString());
+            }
+            if(documents.get(i).get("pndNumerator1B")!=null){
+                patientData.setPndNumerator1B(documents.get(i).get("pndNumerator1B").toString());
+            }
+            if(documents.get(i).get("pndNumeratorForAorB")!=null){
+                patientData.setPndNumeratorForAorB(documents.get(i).get("pndNumeratorForAorB").toString());
+            }
             bundle = (IBaseBundle) selectedParser.parseResource(documents.get(i).toJson());
             RetrieveProvider retrieveProvider;
             retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData, payerInfo);

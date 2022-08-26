@@ -240,13 +240,7 @@ public class AiseScoreSheet {
 
         sheetObj2.add("0");   //event
 
-//        if(document.getBoolean("Exclusions 1") || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
-//            sheetObj.add("0"); //epop
-//        }
-//        else {
-//            sheetObj.add(utilityFunction.getFieldCount("Denominator", document)); //epop
-//
-//        }
+
 
         if(!isExchangeCode(payerCode)) {
             if(document.getBoolean("Exclusions 2") || document.getString("hospiceFlag").equals("Y")  ){

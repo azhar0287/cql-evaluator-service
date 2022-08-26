@@ -43,7 +43,7 @@ code "Total score [CUDOS]": '90221-3' from "LOINC" display 'Total score [CUDOS]'
 code "Total score [M3]": '71777-7' from "LOINC" display 'Total score [M3]'
 code "Exercise counseling": 'Z71.82' from "ICD-10" display 'Exercise counseling'
 
-parameter "Measurement Period" Interval<DateTime>
+parameter "Measurement Period" default Interval [@2022-01-01T00:00:00.0, @2022-12-31T23:59:59.0)
 
 context Patient
 
@@ -54,6 +54,33 @@ define "Initial Population 1":
 
 define "Delivery":
   "Delivery with Gestational Age Assessment or Diagnosis during Period"("Measurement Period")
+
+define "checkIfCodesPresent":
+if ( exists ([Observation: "Beck Depression Inventory Fast Screen total score [BDI]"]
+union
+   [Observation: "Beck Depression Inventory Fast Screen total score [BDI]"] union
+   [Observation: "Beck Depression Inventory II total score [BDI]"] union
+   [Observation: "Center for Epidemiologic Studies Depression Scale-Revised total score [CESD-R]"] union
+   [Observation: "Total score [CUDOS]"] union
+   [Observation: "Edinburgh Postnatal Depression Scale [EPDS]"] union
+   [Observation: "Final score [DUKE-AD]"] union
+   [Observation: "Total score [M3]"] union
+   [Observation: "Patient Health Questionnaire 2 item (PHQ-2) total score [Reported]"] union
+   [Observation: "Patient Health Questionnaire 9 item (PHQ-9) total score [Reported]"] union
+   [Observation: "Patient Health Questionnaire-9: Modified for Teens total score [Reported.PHQ.Teen]"] union
+   [Observation: "PROMIS-29 Depression score T-score"]    )
+      ) then ( true
+      )
+        else ( false
+      )
+
+define "checkIfObsValuePresent":
+if ( exists ( [Observation: "Length of gestation at birth (observable entity)"] obs
+where obs.value is not null ) ) then ( true
+      )
+        else ( false
+      )
+
 
 define "Gestational Age Diagnosis":
   ( "Length of Gestation in Weeks"([Condition: "37 Weeks Gestation"], 37)
@@ -69,7 +96,7 @@ define "Initial Population 2":
   "Initial Population 1"
 
 define "Denominator 1":
-  "Initial Population 1"
+  "Delivery with Gestational Age Assessment or Diagnosis during Period"("Measurement Period")
 
 define "Denominator 2":
   "Depression Screen with Delivery during Period"(("Adolescent Full Length Depression Screen with Positive Result"
@@ -78,7 +105,7 @@ define "Denominator 2":
   )
     union "Depression Screen with Delivery during Period"(("Adolescent Full Length Depression Screen with Positive Result"
           union "Adolescent Brief Screen with Positive Result"
-      ), Interval["December 2 of Measurement Period", 
+      ), Interval["December 2 of Measurement Period",
       end of "Measurement Period"]
     )
     union "Depression Screen with Delivery during Period"(("Adult Full Length Depression Screen with Positive Result"
@@ -87,7 +114,7 @@ define "Denominator 2":
     )
     union "Depression Screen with Delivery during Period"(("Adolescent Full Length Depression Screen with Positive Result"
           union "Adolescent Brief Screen with Positive Result"
-      ), Interval["December 2 of Measurement Period", 
+      ), Interval["December 2 of Measurement Period",
       end of "Measurement Period"]
     )
 
@@ -139,7 +166,7 @@ define "Numerator 1":
   )
     union "Depression Screen with Delivery during Period"(("Adolescent Full Length Depression Screen with Documented Result"
           union "Adolescent Brief Screen with Documented Result"
-      ), Interval["December 2 of Measurement Period", 
+      ), Interval["December 2 of Measurement Period",
       end of "Measurement Period"]
     )
     union "Depression Screen with Delivery during Period"(("Adult Full Length Depression Screen with Documented Result"
@@ -148,9 +175,40 @@ define "Numerator 1":
     )
     union "Depression Screen with Delivery during Period"(("Adult Full Length Depression Screen with Documented Result"
           union "Adult Brief Screen with Documented Result"
-      ), Interval["December 2 of Measurement Period", 
+      ), Interval["December 2 of Measurement Period",
       end of "Measurement Period"]
     )
+
+define "deliveryDateCustom":
+(First( "Delivery" d
+    where d.deliveryDate during Interval[start of "Measurement Period", "December 1 of Measurement Period"]) )
+
+define "Numerator 1A":
+  "Depression Screen with Delivery during Period"(("Adolescent Full Length Depression Screen with Documented Result"
+        union "Adolescent Brief Screen with Documented Result"
+    ), Interval[start of "Measurement Period", "December 1 of Measurement Period"]
+  )
+
+    union "Depression Screen with Delivery during Period"(("Adult Full Length Depression Screen with Documented Result"
+          union "Adult Brief Screen with Documented Result"
+      ), Interval[start of "Measurement Period", "December 1 of Measurement Period"]
+    )
+
+
+define "Numerator 1B":
+   "Depression Screen with Delivery during Period"(("Adolescent Full Length Depression Screen with Documented Result"
+          union "Adolescent Brief Screen with Documented Result"
+      ), Interval["December 2 of Measurement Period",
+      end of "Measurement Period"]
+    )
+
+    union "Depression Screen with Delivery during Period"(("Adult Full Length Depression Screen with Documented Result"
+          union "Adult Brief Screen with Documented Result"
+      ), Interval["December 2 of Measurement Period",
+      end of "Measurement Period"]
+    )
+
+
 
 define "Adolescent Full Length Depression Screen with Documented Result":
   ( "Depression Screening with Documented Result"("Patient Health Questionnaire 9 item (PHQ-9) total score [Reported]")
@@ -255,15 +313,15 @@ define "Follow Up Care on or 30 days After First Positive Screen on or before De
       hasAntidepressantMedication: exists ( Status."Dispensed Medication" ( [MedicationDispense: "Antidepressant Medications"] ) ) ADMeds
         where date from ADMeds.whenHandedOver 30 days or less on or after date from start of FHIRBase."Normalize Interval" ( Screening.effective )
     } ) FollowUpCare
-      return if AnyTrue({ FollowUpCare.hasFollowUpVisit, FollowUpCare.hasDepressionCaseManagementEncounterWithDx, FollowUpCare.hasDepressionCaseManagementEncounterWithSymptom, FollowUpCare.hasBehavioralHealthEncounter, FollowUpCare.hasAntidepressantMedication })then Screening 
+      return if AnyTrue({ FollowUpCare.hasFollowUpVisit, FollowUpCare.hasDepressionCaseManagementEncounterWithDx, FollowUpCare.hasDepressionCaseManagementEncounterWithSymptom, FollowUpCare.hasBehavioralHealthEncounter, FollowUpCare.hasAntidepressantMedication })then Screening
         else null ) screeningWithFollowUpCare
     where screeningWithFollowUpCare is not null
 
 define "Member Coverage":
   [Coverage] C
-    where Interval[date from start of FHIRBase."Normalize Interval" ( C.period ), date from 
-    end of FHIRBase."Normalize Interval" ( C.period )]overlaps Interval[date from start of "Measurement Period" - 28 days, date from 
-    end of "Measurement Period"]
+    where Interval[date from start of FHIRBase."Normalize Interval" ( C.period ), date from
+end of FHIRBase."Normalize Interval" ( C.period )]overlaps Interval[date from start of "Measurement Period" - 28 days, date from
+end of "Measurement Period"]
 
 define "December 1 of Measurement Period":
   DateTime((year from start of "Measurement Period"), 12, 1, 23, 59, 59, 0, 0)
@@ -271,11 +329,15 @@ define "December 1 of Measurement Period":
 define "December 2 of Measurement Period":
   DateTime((year from start of "Measurement Period"), 12, 2, 0, 0, 0, 0, 0)
 
+
 define function "Conception Date from Diagnosis"(deliveryDate System.Date):
   deliveryDate - Last("Gestational Age Diagnosis" Diagnosis
       where date from start of Diagnosis.prevalencePeriod within 1 day of deliveryDate
       sort by start of prevalencePeriod
   ).value
+
+define "testingObservationLength of gestation at birth (observable entity)":
+(Last([Observation: "Length of gestation at birth (observable entity)"]))
 
 define function "Conception Date from Assessment"(DeliveryDate System.Date):
   DeliveryDate - ( ( Tuple {
@@ -284,21 +346,21 @@ define function "Conception Date from Assessment"(DeliveryDate System.Date):
           sort by start of FHIRBase."Normalize Interval"(effective)
       ).value
     } ) First
-      return ( if ( First.ConceptionQuantity is FHIR.Quantity ) then ( convert FHIRHelpers.ToQuantity ( First.ConceptionQuantity ) to weeks ) 
-          else if ( First.ConceptionQuantity is FHIR.integer ) then ( System.Quantity { value: FHIRHelpers.ToInteger ( First.ConceptionQuantity ), unit: 'weeks' } ) 
+      return ( if ( First.ConceptionQuantity is FHIR.Quantity ) then ( convert FHIRHelpers.ToQuantity ( First.ConceptionQuantity ) to weeks )
+          else if ( First.ConceptionQuantity is FHIR.integer ) then ( System.Quantity { value: FHIRHelpers.ToInteger ( First.ConceptionQuantity ), unit: 'weeks' } )
           else null
       )
   )
 
 define function "Delivery during Period"(period Interval<DateTime>):
   ( ( Status."Completed Procedure" ( [Procedure: "Deliveries"] ) ) DeliveryProcedure
-    where date from 
-    end of FHIRBase."Normalize Interval" ( DeliveryProcedure.performed ) during Interval[date from start of period, date from 
+    where date from
+    end of FHIRBase."Normalize Interval" ( DeliveryProcedure.performed ) during Interval[date from start of period, date from
     end of period]) deliveryDuringMP
     return {
       deliveries: deliveryDuringMP,
-      deliveryDate: date from 
-      end of FHIRBase."Normalize Interval" ( deliveryDuringMP.performed )
+      deliveryDate: date from
+start of FHIRBase."Normalize Interval" ( deliveryDuringMP.performed )
     }
 
 define function "Delivery in Period at Less Than 37 Weeks Gestation"(period Interval<DateTime>):
@@ -326,14 +388,14 @@ define function "Delivery with Gestational Age Assessment or Diagnosis during Pe
       deliveryDate: deliveryDuringPeriod.deliveryDate,
       assessments: Assessment,
       diagnoses: Diagnosis.Dx
-    } 
+    }
       else null
 
 define function "Depression Screening between Conception and December 1"(deliveryDate System.Date, Assessment Observation):
   if ( Assessment A
       where ( date from start of FHIRBase."Normalize Interval" ( A.effective ) during Interval["Conception Date from Assessment"(deliveryDate), date from "December 1 of Measurement Period"])
         or ( date from start of FHIRBase."Normalize Interval" ( A.effective ) during Interval["Conception Date from Diagnosis"(deliveryDate), date from "December 1 of Measurement Period"])
-  ) is not null then true 
+  ) is not null then true
     else false
 
 define function "Depression Screening During Pregnancy"(deliveryDate System.Date, Assessment Observation):
@@ -342,33 +404,63 @@ define function "Depression Screening During Pregnancy"(deliveryDate System.Date
         or ( date from start of FHIRBase."Normalize Interval" ( A.effective ) during Interval["Conception Date from Diagnosis"(deliveryDate), deliveryDate])
   ) is not null
 
+
+
+
 define function "Depression Screen with Delivery during Period"(depressionAssessments List<FHIR.Observation>, deliveryPeriod Interval<DateTime>):
   ( ( "Delivery" d
-    where d.deliveryDate during Interval[date from start of deliveryPeriod, date from 
+    where d.deliveryDate during Interval[date from start of deliveryPeriod, date from
     end of deliveryPeriod]) DeliveryProcedure
     return ( Tuple {
-      "Has Delivery prior to December 2": ( if DeliveryProcedure.deliveryDate during Interval[date from start of "Measurement Period", date from "December 1 of Measurement Period"]then DeliveryProcedure.deliveries 
+      "Has Delivery prior to December 2": ( if DeliveryProcedure.deliveryDate during Interval[date from start of "Measurement Period", date from "December 1 of Measurement Period"]then DeliveryProcedure.deliveries
           else null
       ),
-      "Has Delivery on or after December 2": ( if DeliveryProcedure.deliveryDate during Interval[date from "December 2 of Measurement Period", date from 
-        end of "Measurement Period"]then DeliveryProcedure.deliveries 
+      "Has Delivery on or after December 2": ( if DeliveryProcedure.deliveryDate during Interval[date from "December 2 of Measurement Period", date from
+        end of "Measurement Period"]then DeliveryProcedure.deliveries
           else null
       )
     } ) deliveryDateCheck
       return ( Tuple {
         "Screening during Pregnancy": if deliveryDateCheck."Has Delivery prior to December 2" is not null then ( "Has Depression Screening during Period"(depressionAssessments, Interval[date from "Conception Date from Assessment"(DeliveryProcedure.deliveryDate), date from DeliveryProcedure.deliveryDate])
             or "Has Depression Screening during Period"(depressionAssessments, Interval[date from "Conception Date from Assessment"(DeliveryProcedure.deliveryDate), date from DeliveryProcedure.deliveryDate])
-        ) 
+        )
           else null,
         "Screening between Conception and December 1": if deliveryDateCheck."Has Delivery on or after December 2" is not null then ( "Has Depression Screening during Period"(depressionAssessments, Interval[date from "Conception Date from Assessment"(DeliveryProcedure.deliveryDate), date from "December 1 of Measurement Period"])
             or "Has Depression Screening during Period"(depressionAssessments, Interval[date from "Conception Date from Assessment"(DeliveryProcedure.deliveryDate), date from "December 1 of Measurement Period"])
-        ) 
+        )
           else null
       } ) screeningAndDelivery
-        return if screeningAndDelivery."Screening during Pregnancy" = true then deliveryDateCheck."Has Delivery prior to December 2" 
-          else if screeningAndDelivery."Screening between Conception and December 1" = true then deliveryDateCheck."Has Delivery on or after December 2" 
+        return if screeningAndDelivery."Screening during Pregnancy" = true then deliveryDateCheck."Has Delivery prior to December 2"
+          else if screeningAndDelivery."Screening between Conception and December 1" = true then deliveryDateCheck."Has Delivery on or after December 2"
           else null ) screeningDuringPeriod
     where screeningDuringPeriod is not null
+
+
+define function "Depression Screen with Delivery during Period 1B"(depressionAssessments List<FHIR.Observation>, deliveryPeriod Interval<DateTime>):
+  ( ( "Delivery" d
+    where d.deliveryDate during Interval[date from start of deliveryPeriod, date from
+    end of deliveryPeriod]) DeliveryProcedure
+    return ( Tuple {
+      "Has Delivery prior to December 2": (  null
+      ),
+      "Has Delivery on or after December 2": ( if DeliveryProcedure.deliveryDate during Interval[date from "December 2 of Measurement Period", date from
+        end of "Measurement Period"]then DeliveryProcedure.deliveries
+          else null
+      )
+    } ) deliveryDateCheck
+      return ( Tuple {
+        "Screening during Pregnancy": if deliveryDateCheck."Has Delivery prior to December 2" is not null then ( null)
+          else null,
+        "Screening between Conception and December 1": if deliveryDateCheck."Has Delivery on or after December 2" is not null then ( "Has Depression Screening during Period"(depressionAssessments, Interval[date from "Conception Date from Assessment"(DeliveryProcedure.deliveryDate), date from "December 1 of Measurement Period"])
+            or "Has Depression Screening during Period"(depressionAssessments, Interval[date from "Conception Date from Assessment"(DeliveryProcedure.deliveryDate), date from "December 1 of Measurement Period"])
+        )
+          else null
+      } ) screeningAndDelivery
+        return if screeningAndDelivery."Screening during Pregnancy" = true then deliveryDateCheck."Has Delivery prior to December 2"
+          else if screeningAndDelivery."Screening between Conception and December 1" = true then deliveryDateCheck."Has Delivery on or after December 2"
+          else null ) screeningDuringPeriod
+    where screeningDuringPeriod is not null
+
 
 define function "Depression Screening with Documented Result"(assessmentDRC System.Code):
   [Observation: assessmentDRC] Obs
@@ -378,16 +470,17 @@ define function "Depression Screening with Positive Result"(assessmentDRC System
   [Observation: assessmentDRC] Obs
     where Obs.value >= positiveScoreThreshold
 
+
 define function "Has Depression Screening during Period"(Assessment List<Observation>, period Interval<DateTime>):
   exists Assessment A
-    where ( date from start of FHIRBase."Normalize Interval" ( A.effective ) ) during Interval[date from start of period, date from 
-    end of period]
+    where ( date from start of FHIRBase."Normalize Interval" ( A.effective ) ) during Interval[date from start of period, date from
+end of period]
 
 define function "Length of Gestation in Weeks"(gaCondition List<FHIR.Condition>, weeksValue Integer):
   ( ( Status."Active Condition" ( gaCondition ) ) Dx
       return {
         prevalencePeriod: FHIRBase."Prevalence Period" ( Dx ),
-        value: if weeksValue is null then null 
+        value: if weeksValue is null then null
           else System.Quantity { value: weeksValue, unit: 'weeks' },
         Dx: Dx
       }

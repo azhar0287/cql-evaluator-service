@@ -10,6 +10,35 @@ public class PatientData {
     private String id;
     List<PayerInfo> payerInfo;
     private String hospiceFlag;
+    private String pndNumerator1A="0";
+    private String pndNumerator1B="0";
+
+    public String getPndNumeratorForAorB() {
+        return pndNumeratorForAorB;
+    }
+
+    public void setPndNumeratorForAorB(String pndNumeratorForAorB) {
+        this.pndNumeratorForAorB = pndNumeratorForAorB;
+    }
+
+    private String pndNumeratorForAorB="noOne";
+    public String getPndNumerator1A() {
+        return pndNumerator1A;
+    }
+
+    public void setPndNumerator1A(String pndNumerator1A) {
+        this.pndNumerator1A = pndNumerator1A;
+    }
+
+    public String getPndNumerator1B() {
+        return pndNumerator1B;
+    }
+
+    public void setPndNumerator1B(String pndNumerator1B) {
+        this.pndNumerator1B = pndNumerator1B;
+    }
+
+
 
     public List<DeliveryProcedureInfo> getDeliveryProcedureInfos() {
         return deliveryProcedureInfos;
