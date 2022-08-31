@@ -10,6 +10,7 @@ include NCQA_Immunization version '1.1.0' called Immunization
 include NCQA_Status version '1.1.0' called Status
 
 codesystem "SNOMEDCT": 'http://snomed.info/sct'
+codesystem "IcdCodeSystem": 'http://hl7.org/fhir/sid/icd-10-cm'
 
 valueset "37 Weeks Gestation": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1509'
 valueset "38 Weeks Gestation": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1510'
@@ -28,6 +29,31 @@ valueset "Tdap Vaccine Procedure": 'https://www.ncqa.org/fhir/valueset/2.16.840.
 valueset "Weeks of Gestation Less Than 37": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1479'
 
 code "Length of gestation at birth (observable entity)": '412726003' from "SNOMEDCT" display 'Length of gestation at birth (observable entity)'
+
+
+
+
+code "Gestation period, 38 weeks": '13798002' from "SNOMEDCT" display 'Gestation period, 38 weeks'
+code "Gestation period, 37 weeks": '43697006' from "SNOMEDCT" display 'Gestation period, 37 weeks'
+code "Gestation period, 39 weeks": '80487005' from "SNOMEDCT" display 'Gestation period, 39 weeks'
+code "Gestation period, 40 weeks": '46230007' from "SNOMEDCT" display 'Gestation period, 40 weeks'
+code "Gestation period, 41 weeks": '63503002' from "SNOMEDCT" display 'Gestation period, 41 weeks'
+code "Gestation period, 42 weeks": '36428009' from "SNOMEDCT" display 'Gestation period, 42 weeks'
+
+
+code "37 weeks gestation of pregnancy": 'Z3A.37' from "IcdCodeSystem" display '37 weeks gestation of pregnancy'
+code "38 weeks gestation of pregnancy": 'Z3A.38' from "IcdCodeSystem" display '38 weeks gestation of pregnancy'
+code "39 weeks gestation of pregnancy": 'Z3A.39' from "IcdCodeSystem" display '39 weeks gestation of pregnancy'
+code "40 weeks gestation of pregnancy": 'Z3A.40' from "IcdCodeSystem" display '40 weeks gestation of pregnancy'
+code "41 weeks gestation of pregnancy": 'Z3A.41' from "IcdCodeSystem" display '41 weeks gestation of pregnancy'
+code "42 weeks gestation of pregnancy": 'Z3A.42' from "IcdCodeSystem" display '42 weeks gestation of pregnancy'
+code "Greater than 42 weeks gestation of pregnancy": 'Z3A.49' from "IcdCodeSystem" display 'Greater than 42 weeks gestation of pregnancy'
+
+
+
+
+
+
 
 parameter "Measurement Period" default Interval [@2022-01-01T00:00:00.0, @2022-12-31T23:59:59.0)
 
@@ -51,6 +77,28 @@ define "Member Coverage":
 
 define "Delivery":
   "Delivery with Gestational Age Assessment or Diagnosis during Period"("Measurement Period")
+
+
+define "checkIfCodesPresentInCondition":
+if ( exists ([Condition: "Gestation period, 38 weeks"] union
+             [Condition: "Gestation period, 37 weeks"] union
+             [Condition: "Gestation period, 39 weeks"] union
+             [Condition: "Gestation period, 40 weeks"] union
+             [Condition: "Gestation period, 41 weeks"] union
+             [Condition: "Gestation period, 42 weeks"] union
+
+
+             [Condition: "37 weeks gestation of pregnancy"] union
+             [Condition: "38 weeks gestation of pregnancy"] union
+             [Condition: "39 weeks gestation of pregnancy"] union
+             [Condition: "40 weeks gestation of pregnancy"] union
+             [Condition: "41 weeks gestation of pregnancy"] union
+             [Condition: "42 weeks gestation of pregnancy"] union
+             [Condition: "Greater than 42 weeks gestation of pregnancy"]
+      )) then ( true
+      )
+        else ( false
+      )
 
 define "Gestational Age Diagnosis":
   ( "Length of Gestation in Weeks"(["Condition": "37 Weeks Gestation"], 37)
