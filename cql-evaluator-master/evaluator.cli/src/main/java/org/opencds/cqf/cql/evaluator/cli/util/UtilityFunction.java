@@ -440,4 +440,13 @@ public class UtilityFunction {
         }
         return null;
     }
+    public String addSubtractDays(Date date,int days){
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.add(Calendar.DAY_OF_MONTH, days);
+        cal.add(Calendar.HOUR_OF_DAY, 10);
+        Date myDate = cal.getTime();
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        return df.format(myDate);
+    }
 }

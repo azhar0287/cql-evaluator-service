@@ -12,6 +12,7 @@ include NCQA_Status version '1.1.0' called Status
 codesystem "SNOMEDCT": 'http://snomed.info/sct'
 codesystem "IcdCodeSystem": 'http://hl7.org/fhir/sid/icd-10-cm'
 
+
 valueset "37 Weeks Gestation": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1509'
 valueset "38 Weeks Gestation": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1510'
 valueset "39 Weeks Gestation": 'https://www.ncqa.org/fhir/valueset/2.16.840.1.113883.3.464.1004.1511'
@@ -55,6 +56,75 @@ code "Greater than 42 weeks gestation of pregnancy": 'Z3A.49' from "IcdCodeSyste
 
 
 
+
+
+code "[Z3A.01] Less than 8 weeks gestation of pregnancy": 'Z3A.01' from "IcdCodeSystem" display '[Z3A.01] Less than 8 weeks gestation of pregnancy'
+code "[Z3A.08] 8 weeks gestation of pregnancy": 'Z3A.08'  from "IcdCodeSystem" display '[Z3A.08] 8 weeks gestation of pregnancy'
+code "[Z3A.09] 9 weeks gestation of pregnancy": 'Z3A.09'  from "IcdCodeSystem" display '[Z3A.09] 9 weeks gestation of pregnancy'
+code "[Z3A.10] 10 weeks gestation of pregnancy": 'Z3A.10' from "IcdCodeSystem" display '[Z3A.10] 10 weeks gestation of pregnancy'
+code "[Z3A.11] 11 weeks gestation of pregnancy": 'Z3A.11' from "IcdCodeSystem" display '[Z3A.11] 11 weeks gestation of pregnancy'
+code "[Z3A.12] 12 weeks gestation of pregnancy": 'Z3A.12' from "IcdCodeSystem" display '[Z3A.12] 12 weeks gestation of pregnancy'
+code "[Z3A.13] 13 weeks gestation of pregnancy": 'Z3A.13' from "IcdCodeSystem" display '[Z3A.13] 13 weeks gestation of pregnancy'
+code "[Z3A.14] 14 weeks gestation of pregnancy": 'Z3A.14' from "IcdCodeSystem" display '[Z3A.14] 14 weeks gestation of pregnancy'
+code "[Z3A.15] 15 weeks gestation of pregnancy": 'Z3A.15' from "IcdCodeSystem" display '[Z3A.15] 15 weeks gestation of pregnancy'
+code "[Z3A.16] 16 weeks gestation of pregnancy": 'Z3A.16' from "IcdCodeSystem" display '[Z3A.16] 16 weeks gestation of pregnancy'
+code "[Z3A.17] 17 weeks gestation of pregnancy": 'Z3A.17' from "IcdCodeSystem" display '[Z3A.17] 17 weeks gestation of pregnancy'
+code "[Z3A.18] 18 weeks gestation of pregnancy": 'Z3A.18' from "IcdCodeSystem" display '[Z3A.18] 18 weeks gestation of pregnancy'
+code "[Z3A.19] 19 weeks gestation of pregnancy": 'Z3A.19' from "IcdCodeSystem" display '[Z3A.19] 19 weeks gestation of pregnancy'
+code "[Z3A.20] 20 weeks gestation of pregnancy": 'Z3A.20' from "IcdCodeSystem" display '[Z3A.20] 20 weeks gestation of pregnancy'
+code "[Z3A.21] 21 weeks gestation of pregnancy": 'Z3A.21' from "IcdCodeSystem" display '[Z3A.21] 21 weeks gestation of pregnancy'
+code "[Z3A.22] 22 weeks gestation of pregnancy": 'Z3A.22' from "IcdCodeSystem" display '[Z3A.22] 22 weeks gestation of pregnancy'
+code "[Z3A.23] 23 weeks gestation of pregnancy": 'Z3A.23' from "IcdCodeSystem" display '[Z3A.23] 23 weeks gestation of pregnancy'
+code "[Z3A.24] 24 weeks gestation of pregnancy": 'Z3A.24' from "IcdCodeSystem" display '[Z3A.24] 24 weeks gestation of pregnancy'
+code "[Z3A.25] 25 weeks gestation of pregnancy": 'Z3A.25' from "IcdCodeSystem" display '[Z3A.25] 25 weeks gestation of pregnancy'
+code "[Z3A.26] 26 weeks gestation of pregnancy": 'Z3A.26' from "IcdCodeSystem" display '[Z3A.26] 26 weeks gestation of pregnancy'
+code "[Z3A.27] 27 weeks gestation of pregnancy": 'Z3A.27' from "IcdCodeSystem" display '[Z3A.27] 27 weeks gestation of pregnancy'
+code "[Z3A.28] 28 weeks gestation of pregnancy": 'Z3A.28' from "IcdCodeSystem" display '[Z3A.28] 28 weeks gestation of pregnancy'
+code "[Z3A.29] 29 weeks gestation of pregnancy": 'Z3A.29' from "IcdCodeSystem" display '[Z3A.29] 29 weeks gestation of pregnancy'
+code "[Z3A.30] 30 weeks gestation of pregnancy": 'Z3A.30' from "IcdCodeSystem" display '[Z3A.30] 30 weeks gestation of pregnancy'
+code "[Z3A.31] 31 weeks gestation of pregnancy": 'Z3A.31' from "IcdCodeSystem" display '[Z3A.31] 31 weeks gestation of pregnancy'
+code "[Z3A.32] 32 weeks gestation of pregnancy": 'Z3A.32' from "IcdCodeSystem" display '[Z3A.32] 32 weeks gestation of pregnancy'
+code "[Z3A.33] 33 weeks gestation of pregnancy": 'Z3A.33' from "IcdCodeSystem" display '[Z3A.33] 33 weeks gestation of pregnancy'
+code "[Z3A.34] 34 weeks gestation of pregnancy": 'Z3A.34' from "IcdCodeSystem" display '[Z3A.34] 34 weeks gestation of pregnancy'
+code "[Z3A.35] 35 weeks gestation of pregnancy": 'Z3A.35' from "IcdCodeSystem" display '[Z3A.35] 35 weeks gestation of pregnancy'
+code "[Z3A.36] 36 weeks gestation of pregnancy": 'Z3A.36' from "IcdCodeSystem" display '[Z3A.36] 36 weeks gestation of pregnancy'
+code "Gestation period, 9 weeks (finding)": '931004' from "SNOMEDCT" display 'Gestation period, 9 weeks (finding)'
+code "Gestation period, 15 weeks (finding)": '6678005' from "SNOMEDCT" display 'Gestation period, 15 weeks (finding)'
+code "Gestation period, 16 weeks (finding)": '15633004' from "SNOMEDCT" display 'Gestation period, 16 weeks (finding)'
+code "Gestation period, 20 weeks (finding)": '23464008' from "SNOMEDCT" display 'Gestation period, 20 weeks (finding)'
+code "Gestation period, 18 weeks (finding)": '25026004' from "SNOMEDCT" display 'Gestation period, 18 weeks (finding)'
+code "Gestation period, 8 weeks (finding)": '26690008' from "SNOMEDCT" display 'Gestation period, 8 weeks (finding)'
+code "Gestation period, 5 weeks (finding)": '37005007' from "SNOMEDCT" display 'Gestation period, 5 weeks (finding)'
+code "Gestation period, 10 weeks (finding)": '38039008' from "SNOMEDCT" display 'Gestation period, 10 weeks (finding)'
+code "Gestation period, 21 weeks (finding)": '41438001' from "SNOMEDCT" display 'Gestation period, 21 weeks (finding)'
+code "Gestation period, 4 weeks (finding)": '44398003' from "SNOMEDCT" display 'Gestation period, 4 weeks (finding)'
+code "Gestation period, 27 weeks (finding)": '46906003' from "SNOMEDCT" display 'Gestation period, 27 weeks (finding)'
+code "Gestation period, 26 weeks (finding)": '48688005' from "SNOMEDCT" display 'Gestation period, 26 weeks (finding)'
+code "Gestation period, 11 weeks (finding)": '50367001' from "SNOMEDCT" display 'Gestation period, 11 weeks (finding)'
+code "Gestation period, 19 weeks (finding)": '54318006' from "SNOMEDCT" display 'Gestation period, 19 weeks (finding)'
+code "Gestation period, 36 weeks (finding)": '57907009' from "SNOMEDCT" display 'Gestation period, 36 weeks (finding)'
+code "Gestation period, 13 weeks (finding)": '62333002' from "SNOMEDCT" display 'Gestation period, 13 weeks (finding)'
+code "Gestation period, 7 weeks (finding)": '63110000' from "SNOMEDCT" display 'Gestation period, 17 weeks (finding)'
+code "Gestation period, 22 weeks (finding)": '65035007' from "SNOMEDCT" display 'Gestation period, 22 weeks (finding)'
+code "Gestation period, 17 weeks (finding)": '65683006' from "SNOMEDCT" display 'Gestation period, 17 weeks (finding)'
+code "Gestation period, 25 weeks (finding)": '72544005' from "SNOMEDCT" display 'Gestation period, 25 weeks (finding)'
+code "Gestation period, 14 weeks (finding)": '72846000' from "SNOMEDCT" display 'Gestation period, 14 weeks (finding)'
+code "Gestation period, 3 weeks (finding)": '74952004' from "SNOMEDCT" display 'Gestation period, 3 weeks (finding)'
+code "Gestation period, 12 weeks (finding)": '79992004' from "SNOMEDCT" display 'Gestation period, 12 weeks (finding)'
+code "Gestation period, 2 weeks (finding)": '82118009' from "SNOMEDCT" display 'Gestation period, 2 weeks (finding)'
+code "Gestation period, 6 weeks (finding)": '86801005' from "SNOMEDCT" display 'Gestation period, 6 weeks (finding)'
+code "Gestation period, 23 weeks (finding)": '86883006' from "SNOMEDCT" display 'Gestation period, 23 weeks (finding)'
+code "Gestation period, 1 weeks (finding)": '87178007' from "SNOMEDCT" display 'Gestation period, 1 weeks (finding)'
+code "Gestation less than 24 weeks (finding)": '313178001' from "SNOMEDCT" display 'Gestation less than 24 weeks (finding)'
+code "Gestation period, 24 weeks (finding)": '313179009' from "SNOMEDCT" display 'Gestation period, 24 weeks (finding)'
+code "Gestation less than 9 weeks (finding)": '428058009' from "SNOMEDCT" display 'Gestation less than 9 weeks (finding)'
+code "Gestation less than 20 weeks (finding)": '428566005' from "SNOMEDCT" display 'Gestation less than 20 weeks (finding)'
+code "Gestation 14 - 20 weeks (finding)": '428567001' from "SNOMEDCT" display 'Gestation 14 - 20 weeks (finding)'
+code "Gestation 9- 13 weeks (finding)": '428930004' from "SNOMEDCT" display 'Gestation 9- 13 weeks (finding)'
+
+
+
+
 parameter "Measurement Period" default Interval [@2022-01-01T00:00:00.0, @2022-12-31T23:59:59.0)
 
 context Patient
@@ -72,8 +142,8 @@ define "Initial Population 3":
 
 define "Member Coverage":
   [Coverage] C
-    where FHIRBase."Normalize Interval" ( C.period ) overlaps Interval[start of "Measurement Period" - 28 days, 
-    end of "Measurement Period"]
+    where FHIRBase."Normalize Interval" ( C.period ) overlaps Interval[start of "Measurement Period" - 28 days,
+end of "Measurement Period"]
 
 define "Delivery":
   "Delivery with Gestational Age Assessment or Diagnosis during Period"("Measurement Period")
@@ -99,6 +169,84 @@ if ( exists ([Condition: "Gestation period, 38 weeks"] union
       )
         else ( false
       )
+
+define "checkIfObservationCodePresent":
+if ( exists ( [Observation: "Length of gestation at birth (observable entity)"] ) ) then ( true
+      )
+        else ( false
+      )
+
+
+define "checkIfNewCodesPresentInCondition":
+if ( exists (
+[Condition: "[Z3A.01] Less than 8 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.08] 8 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.09] 9 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.10] 10 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.11] 11 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.12] 12 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.13] 13 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.14] 14 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.15] 15 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.16] 16 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.17] 17 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.18] 18 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.19] 19 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.20] 20 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.21] 21 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.22] 22 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.23] 23 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.24] 24 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.25] 25 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.26] 26 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.27] 27 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.28] 28 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.29] 29 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.30] 30 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.31] 31 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.32] 32 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.33] 33 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.34] 34 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.35] 35 weeks gestation of pregnancy"] union
+[Condition: "[Z3A.36] 36 weeks gestation of pregnancy"] union
+[Condition: "Gestation period, 9 weeks (finding)"] union
+[Condition: "Gestation period, 15 weeks (finding)"] union
+[Condition: "Gestation period, 16 weeks (finding)"] union
+[Condition: "Gestation period, 20 weeks (finding)"] union
+[Condition: "Gestation period, 18 weeks (finding)"] union
+[Condition: "Gestation period, 8 weeks (finding)"] union
+[Condition: "Gestation period, 5 weeks (finding)"] union
+[Condition: "Gestation period, 10 weeks (finding)"] union
+[Condition: "Gestation period, 21 weeks (finding)"] union
+[Condition: "Gestation period, 4 weeks (finding)"] union
+[Condition: "Gestation period, 27 weeks (finding)"] union
+[Condition: "Gestation period, 26 weeks (finding)"] union
+[Condition: "Gestation period, 11 weeks (finding)"] union
+[Condition: "Gestation period, 19 weeks (finding)"] union
+[Condition: "Gestation period, 36 weeks (finding)"] union
+[Condition: "Gestation period, 13 weeks (finding)"] union
+[Condition: "Gestation period, 7 weeks (finding)"] union
+[Condition: "Gestation period, 22 weeks (finding)"] union
+[Condition: "Gestation period, 17 weeks (finding)"] union
+[Condition: "Gestation period, 25 weeks (finding)"] union
+[Condition: "Gestation period, 14 weeks (finding)"] union
+[Condition: "Gestation period, 3 weeks (finding)"] union
+[Condition: "Gestation period, 12 weeks (finding)"] union
+[Condition: "Gestation period, 2 weeks (finding)"] union
+[Condition: "Gestation period, 6 weeks (finding)"] union
+[Condition: "Gestation period, 23 weeks (finding)"] union
+[Condition: "Gestation period, 1 weeks (finding)"] union
+[Condition: "Gestation less than 24 weeks (finding)"] union
+[Condition: "Gestation period, 24 weeks (finding)"] union
+[Condition: "Gestation less than 9 weeks (finding)"] union
+[Condition: "Gestation less than 20 weeks (finding)"] union
+[Condition: "Gestation 14 - 20 weeks (finding)"] union
+[Condition: "Gestation 9- 13 weeks (finding)"] )) then ( true
+      )
+        else ( false
+      )
+
+
 
 define "Gestational Age Diagnosis":
   ( "Length of Gestation in Weeks"(["Condition": "37 Weeks Gestation"], 37)
@@ -228,8 +376,8 @@ define function "Delivery during Period"(period Interval<DateTime>):
     end of period]) deliveryDuringMP
     return {
       deliveries: deliveryDuringMP,
-      deliveryDate: date from 
-      end of FHIRBase."Normalize Interval" ( deliveryDuringMP.performed )
+      deliveryDate: date from
+end of FHIRBase."Normalize Interval" ( deliveryDuringMP.performed )
     }
 
 define function "Delivery in Period at Less Than 37 Weeks Gestation"(period Interval<DateTime>):

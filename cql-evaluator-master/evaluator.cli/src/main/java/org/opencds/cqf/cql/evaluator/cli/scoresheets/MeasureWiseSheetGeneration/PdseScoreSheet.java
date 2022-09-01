@@ -935,7 +935,7 @@ public class PdseScoreSheet {
         if(payerInfoList != null && payerInfoList.size() != 0) {
 
             for (DeliveryProcedureInfo deliveryProcedureInfo : deliveryProcedureInfos) {
-                String sixtyDaysAnchorDate=getAnchorDate(deliveryProcedureInfo.getPerformedDate(),60);
+                String sixtyDaysAnchorDate=getAnchorDate(deliveryProcedureInfo.getPerformedDate(),0);
 
                 Date measurementPeriodEndingDate = UtilityFunction.getParsedDateInRequiredFormat(sixtyDaysAnchorDate, "yyyy-MM-dd");
                 for (PayerInfo payerInfo : payerInfoList) {

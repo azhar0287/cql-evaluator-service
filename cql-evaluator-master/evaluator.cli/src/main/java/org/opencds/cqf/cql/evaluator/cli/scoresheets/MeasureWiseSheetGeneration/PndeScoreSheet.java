@@ -146,295 +146,292 @@ public class PndeScoreSheet {
         codeList.add ("MOS");
         ////////////////////////////// Mapping Started ////////////////////////////////////////////////
         /////////////////////////////  PND1A Mapping ////////////////////////////////////////////////
-        List<String> sheetObjPds1A = new LinkedList<>();
-        sheetObjPds1A.add(document.getString("id"));
-        sheetObjPds1A.add("PND1A");
-        sheetObjPds1A.add(payerCode);
+        List<String> sheetObjPnd1A = new LinkedList<>();
+        sheetObjPnd1A.add(document.getString("id"));
+        sheetObjPnd1A.add("PND1A");
+        sheetObjPnd1A.add(payerCode);
         if( document.getInteger("Initial Population 1") >0 ){//CE
-            sheetObjPds1A.add("1");
+            sheetObjPnd1A.add("1");
         }
         else{
-            sheetObjPds1A.add("0");
+            sheetObjPnd1A.add("0");
         }
 
-        sheetObjPds1A.add("1");//Event
+        sheetObjPnd1A.add("1");//Event
 
         if(payerCodeType.equals(CODE_TYPE_COMMERCIAL) || payerCodeType.equals(CODE_TYPE_MEDICAID)){
             if(document.getInteger("Initial Population 1")>0 && document.getInteger("Delivery")>0){
                 if(document.getInteger("Exclusions 1")>0 || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
-                    sheetObjPds1A.add("0"); //epop (Also known as denominator)
+                    sheetObjPnd1A.add("0"); //epop (Also known as denominator)
                 }
                 else {
-                    sheetObjPds1A.add("1"); //epop
+                    sheetObjPnd1A.add("1"); //epop
                 }
             }else{
-                sheetObjPds1A.add("0");
+                sheetObjPnd1A.add("0");
             }
         }
         else{
-            sheetObjPds1A.add("0");
+            sheetObjPnd1A.add("0");
         }
 
 
-        sheetObjPds1A.add("0"); //excl
+        sheetObjPnd1A.add("0"); //excl
 
 
         if((document.getString("pndNumerator1A").equals("1") ||  document.getString("pndNumerator1B").equals("1")) && document.getString("pndNumeratorForAorB").equals("pnd1A")){
-            sheetObjPds1A.add("1");
+            sheetObjPnd1A.add("1");
             numerator1A="1";
         }
         else if(document.getString("pndNumerator1A").equals("1") && document.getString("pndNumeratorForAorB").equals("noOne")){
-            sheetObjPds1A.add("1");
+            sheetObjPnd1A.add("1");
             numerator1A="1";
         }
         else{
-            sheetObjPds1A.add("0");
+            sheetObjPnd1A.add("0");
             numerator1A="0";
         }
 
         if(document.getInteger("Exclusions 1")>0){
-            sheetObjPds1A.add("1"); //rexcl
+            sheetObjPnd1A.add("1"); //rexcl
         }
         else if(document.getString("hospiceFlag").equals("Y")) {
-            sheetObjPds1A.add("1");
+            sheetObjPnd1A.add("1");
         }
         else{
-            sheetObjPds1A.add("0");
+            sheetObjPnd1A.add("0");
         }
-        sheetObjPds1A.add("0"); //RexlD
+        sheetObjPnd1A.add("0"); //RexlD
 
         if(deliveryProcedureInfos.size()>1){
-            sheetObjPds1A.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(deliveryProcedureInfos.size()-2).getPerformedDateString()));
+            sheetObjPnd1A.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(deliveryProcedureInfos.size()-2).getPerformedDateString()));
 
         }
         else if(deliveryProcedureInfos.size()>0){
-            sheetObjPds1A.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(deliveryProcedureInfos.size()-1).getPerformedDateString()));
+            sheetObjPnd1A.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(deliveryProcedureInfos.size()-1).getPerformedDateString()));
 
         }else{
-            sheetObjPds1A.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
+            sheetObjPnd1A.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
 
         }
-        sheetObjPds1A.add(utilityFunction.getGenderSymbol(document.getString("gender")));
-        csvPrinter.printRecord(sheetObjPds1A);
+        sheetObjPnd1A.add(utilityFunction.getGenderSymbol(document.getString("gender")));
+        csvPrinter.printRecord(sheetObjPnd1A);
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////  PND1B Mapping ////////////////////////////////////////////////
         if(document.getInteger("Delivery")>1){
-            List<String> sheetObjPds1B = new LinkedList<>();
-            sheetObjPds1B.add(document.getString("id"));
-            sheetObjPds1B.add("PND1B");
-            sheetObjPds1B.add(payerCode);
+            List<String> sheetObjPnd1B = new LinkedList<>();
+            sheetObjPnd1B.add(document.getString("id"));
+            sheetObjPnd1B.add("PND1B");
+            sheetObjPnd1B.add(payerCode);
             if(document.getInteger("Initial Population 1")>0){//CE
-                sheetObjPds1B.add("1");
+                sheetObjPnd1B.add("1");
             }
             else{
-                sheetObjPds1B.add("0");
+                sheetObjPnd1B.add("0");
             }
 
-            sheetObjPds1B.add("1");//Event
+            sheetObjPnd1B.add("1");//Event
 
             if(payerCodeType.equals(CODE_TYPE_COMMERCIAL) || payerCodeType.equals(CODE_TYPE_MEDICAID)){
                 if(document.getInteger("Initial Population 1")>0 && document.getInteger("Delivery")>0){
                     if(document.getInteger("Exclusions 1")>0 || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
-                        sheetObjPds1B.add("0"); //epop (Also known as denominator)
+                        sheetObjPnd1B.add("0"); //epop (Also known as denominator)
                     }
                     else {
-                        sheetObjPds1B.add("1"); //epop
+                        sheetObjPnd1B.add("1"); //epop
                     }
                 }
                 else{
-                    sheetObjPds1B.add("0");
+                    sheetObjPnd1B.add("0");
                 }
             }
             else{
-                sheetObjPds1B.add("0");
+                sheetObjPnd1B.add("0");
             }
 
-            sheetObjPds1B.add("0"); //excl
+            sheetObjPnd1B.add("0"); //excl
 
 
             if((document.getString("pndNumerator1A").equals("1") ||  document.getString("pndNumerator1B").equals("1")) && document.getString("pndNumeratorForAorB").equals("pnd1B")){
-                sheetObjPds1B.add("1");
+                sheetObjPnd1B.add("1");
                 numerator1B="1";
             }
             else if(document.getString("pndNumerator1B").equals("1") && document.getString("pndNumeratorForAorB").equals("noOne")){
-                sheetObjPds1B.add("1");
+                sheetObjPnd1B.add("1");
                 numerator1A="1";
             }
             else{
-                sheetObjPds1B.add("0");
+                sheetObjPnd1B.add("0");
                 numerator1B="0";
             }
 
             if(document.getInteger("Exclusions 1")>0){
-                sheetObjPds1B.add("1"); //rexcl
+                sheetObjPnd1B.add("1"); //rexcl
             }
             else if(document.getString("hospiceFlag").equals("Y")) {
-                sheetObjPds1B.add("1");
+                sheetObjPnd1B.add("1");
             }
             else{
-                sheetObjPds1B.add("0");
+                sheetObjPnd1B.add("0");
             }
 
-            sheetObjPds1B.add("0"); //RexlD
+            sheetObjPnd1B.add("0"); //RexlD
             if(document.getInteger("Delivery") > 0){
                 if(deliveryProcedureInfos.size()==0){
-                    sheetObjPds1B.add(String.valueOf(Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))))+1));
+                    sheetObjPnd1B.add(String.valueOf(Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))))+1));
 
                 }
                 else{
-                    sheetObjPds1B.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(1).getPerformedDateString()));
+                    sheetObjPnd1B.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(1).getPerformedDateString()));
 
                 }
 
             }else{
-                sheetObjPds1B.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
+                sheetObjPnd1B.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
 
             }
-            sheetObjPds1B.add(utilityFunction.getGenderSymbol(document.getString("gender")));
-            csvPrinter.printRecord(sheetObjPds1B);
+            sheetObjPnd1B.add(utilityFunction.getGenderSymbol(document.getString("gender")));
+            csvPrinter.printRecord(sheetObjPnd1B);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////  PND2A Mapping ////////////////////////////////////////////////
 
-        List<String> sheetObjPds2A = new LinkedList<>();
-        sheetObjPds2A.add(document.getString("id"));
-        sheetObjPds2A.add("PND2A");
-        sheetObjPds2A.add(payerCode);
+        List<String> sheetObjPnd2A = new LinkedList<>();
+        sheetObjPnd2A.add(document.getString("id"));
+        sheetObjPnd2A.add("PND2A");
+        sheetObjPnd2A.add(payerCode);
         if(document.getInteger("Initial Population 2")>0){//CE
-            sheetObjPds2A.add("1");
+            sheetObjPnd2A.add("1");
         }
         else{
-            sheetObjPds2A.add("0");
+            sheetObjPnd2A.add("0");
         }
 
         String pds2AEvent="0";
 
         if(document.getInteger("Denominator 2")>0 && numerator1A.equals("1")){//Event
-            sheetObjPds2A.add("1");
+            sheetObjPnd2A.add("1");
             pds2AEvent="1";
         }
         else{
-            sheetObjPds2A.add("0");
+            sheetObjPnd2A.add("0");
         }
 
         if(payerCodeType.equals(CODE_TYPE_COMMERCIAL) || payerCodeType.equals(CODE_TYPE_MEDICAID)) {
             if(document.getInteger("Initial Population 2") > 0 && document.getInteger("Denominator 2")>0 && numerator1A.equals("1")){
                 if(pds2AEvent.equals("0") || document.getInteger("Exclusions 2")>0 || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
-                    sheetObjPds2A.add("0"); //epop (Also known as denominator)
+                    sheetObjPnd2A.add("0"); //epop (Also known as denominator)
                 }
                 else {
-                    sheetObjPds2A.add("1"); //epop
+                    sheetObjPnd2A.add("1"); //epop
                 }
             }
             else{
-                sheetObjPds2A.add("0");
+                sheetObjPnd2A.add("0");
             }
         }
         else{
-            sheetObjPds2A.add("0");
+            sheetObjPnd2A.add("0");
         }
 
-        sheetObjPds2A.add("0"); //excl
+        sheetObjPnd2A.add("0"); //excl
 
         if(document.getInteger("Numerator 2") ==1){
-            sheetObjPds2A.add("1");
+            sheetObjPnd2A.add("1");
         }
         else{
-            sheetObjPds2A.add("0");
+            sheetObjPnd2A.add("0");
 
         }
         if(document.getInteger("Exclusions 2")>0){
-            sheetObjPds2A.add("1"); //rexcl
+            sheetObjPnd2A.add("1"); //rexcl
         }
         else if(document.getString("hospiceFlag").equals("Y")) {
-            sheetObjPds2A.add("1");
+            sheetObjPnd2A.add("1");
         }
         else{
-            sheetObjPds2A.add("0");
+            sheetObjPnd2A.add("0");
         }
-        sheetObjPds2A.add("0"); //RexlD
+        sheetObjPnd2A.add("0"); //RexlD
 
         if(deliveryProcedureInfos.size()>1){
-            sheetObjPds2A.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(deliveryProcedureInfos.size()-2).getPerformedDateString()));
+            sheetObjPnd2A.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(deliveryProcedureInfos.size()-2).getPerformedDateString()));
         }
         else if(deliveryProcedureInfos.size()>0){
-            sheetObjPds2A.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(deliveryProcedureInfos.size()-1).getPerformedDateString()));
+            sheetObjPnd2A.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(deliveryProcedureInfos.size()-1).getPerformedDateString()));
         }else{
-            sheetObjPds2A.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
+            sheetObjPnd2A.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
         }
-        sheetObjPds2A.add(utilityFunction.getGenderSymbol(document.getString("gender")));
-        csvPrinter.printRecord(sheetObjPds2A);
+        sheetObjPnd2A.add(utilityFunction.getGenderSymbol(document.getString("gender")));
+        csvPrinter.printRecord(sheetObjPnd2A);
 
 
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////  PND2B Mapping ////////////////////////////////////////////////
         if(document.getInteger("Delivery")>1){
-            List<String> sheetObjPds2B = new LinkedList<>();
-            sheetObjPds2B.add(document.getString("id"));
-            sheetObjPds2B.add("PND2B");
-            sheetObjPds2B.add(payerCode);
+            List<String> sheetObjPnd2B = new LinkedList<>();
+            sheetObjPnd2B.add(document.getString("id"));
+            sheetObjPnd2B.add("PND2B");
+            sheetObjPnd2B.add(payerCode);
             if(document.getInteger("Initial Population 2") > 0 ){//CE
-                sheetObjPds2B.add("1");
+                sheetObjPnd2B.add("1");
             }
             else{
-                sheetObjPds2B.add("0");
+                sheetObjPnd2B.add("0");
             }
 
             if(numerator1B.equals("1")){//Event
-                sheetObjPds2B.add("1");
+                sheetObjPnd2B.add("1");
             }
             else{
-                sheetObjPds2B.add("0");
+                sheetObjPnd2B.add("0");
             }
 
 
             if(payerCodeType.equals(CODE_TYPE_COMMERCIAL) || payerCodeType.equals(CODE_TYPE_MEDICAID)) {
                 if(document.getInteger("Initial Population 2")>0 ){
                     if(numerator1B.equals("0") || document.getInteger("Exclusions 2")>0 || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
-                        sheetObjPds2B.add("0"); //epop (Also known as denominator)
+                        sheetObjPnd2B.add("0"); //epop (Also known as denominator)
                     }
                     else {
-                        sheetObjPds2B.add("1"); //epop
+                        sheetObjPnd2B.add("1"); //epop
                     }
                 }
                 else{
-                    sheetObjPds2B.add("0");
+                    sheetObjPnd2B.add("0");
                 }
             }
             else{
-                sheetObjPds2B.add("0");
+                sheetObjPnd2B.add("0");
 
             }
 
-            sheetObjPds2B.add("0"); //excl
-            sheetObjPds2B.add("0");//Num
+            sheetObjPnd2B.add("0"); //excl
+            sheetObjPnd2B.add("0");//Num
 
             if(document.getInteger("Exclusions 2")>0){
-                sheetObjPds2B.add("1"); //rexcl
+                sheetObjPnd2B.add("1"); //rexcl
             }
             else if(document.getString("hospiceFlag").equals("Y")) {
-                sheetObjPds2B.add("1");
+                sheetObjPnd2B.add("1");
             }
             else{
-                sheetObjPds2B.add("0");
+                sheetObjPnd2B.add("0");
             }
-            sheetObjPds2B.add("0"); //RexlD
+            sheetObjPnd2B.add("0"); //RexlD
             if(document.getInteger("Delivery") > 0){
                 if(deliveryProcedureInfos.size()==0){
-                    sheetObjPds2B.add(String.valueOf(Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))))+1));
-
+                    sheetObjPnd2B.add(String.valueOf(Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))))+1));
                 }
                 else{
-                    sheetObjPds2B.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(1).getPerformedDateString()));
-
+                    sheetObjPnd2B.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(1).getPerformedDateString()));
                 }
             }else{
-                sheetObjPds2B.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
-
+                sheetObjPnd2B.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
             }
-            sheetObjPds2B.add(utilityFunction.getGenderSymbol(document.getString("gender")));
-            csvPrinter.printRecord(sheetObjPds2B);
+            sheetObjPnd2B.add(utilityFunction.getGenderSymbol(document.getString("gender")));
+            csvPrinter.printRecord(sheetObjPnd2B);
         }
 
     }
@@ -497,6 +494,7 @@ public class PndeScoreSheet {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
         return df.format(myDate);
     }
+
     public List<String> mapPayersCodeInList(List<PayerInfo> payerInfoList){
         List<String> payersList=new LinkedList<>();
         if(payerInfoList != null && payerInfoList.size() != 0) {

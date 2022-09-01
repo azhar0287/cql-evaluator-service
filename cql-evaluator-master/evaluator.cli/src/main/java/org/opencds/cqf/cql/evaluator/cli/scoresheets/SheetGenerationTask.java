@@ -6,10 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
-import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.AiseScoreSheet;
-import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.DmseScoreSheet;
-import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.PdseScoreSheet;
-import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.PndeScoreSheet;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.*;
 import org.opencds.cqf.cql.evaluator.cli.util.UtilityFunction;
 import java.io.IOException;
 import java.text.ParseException;
@@ -74,6 +71,16 @@ public class SheetGenerationTask {
         documents = dbFunctions.getConditionalData("ep_cql_processed_data", skip, batchSize, db);
         PndeScoreSheet pndeScoreSheet=new PndeScoreSheet();
         pndeScoreSheet.generateSheet(documents, measureDate, csvPrinter, db,stringDictionaryMap);
+//        sheetGenerationService.generateSheetForDMSE(documents, measureDate, csvPrinter, db);
+        documents.clear();
+    }
+
+    public void generateSheetForPrse() throws IOException, ParseException {
+        Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
+        List<Document> documents;
+        documents = dbFunctions.getConditionalData("ep_cql_processed_data", skip, batchSize, db);
+        PrseScoreSheet prseScoreSheet=new PrseScoreSheet();
+        prseScoreSheet.generateSheet(documents, measureDate, csvPrinter, db,stringDictionaryMap);
 //        sheetGenerationService.generateSheetForDMSE(documents, measureDate, csvPrinter, db);
         documents.clear();
     }

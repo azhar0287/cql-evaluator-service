@@ -88,6 +88,8 @@ public class PrseScoreSheet {
         document.put("Numerator 3",getSize(expressionResults.get("Numerator 3")));
 
         document.put("checkIfCodesPresentInCondition",expressionResults.get("checkIfCodesPresentInCondition"));
+        document.put("checkIfNewCodesPresentInCondition",expressionResults.get("checkIfNewCodesPresentInCondition"));
+        document.put("checkIfObservationCodePresent",expressionResults.get("checkIfObservationCodePresent"));
 
 
         return document;
@@ -915,20 +917,23 @@ public class PrseScoreSheet {
                         for (String payerCode:payersList) {
                             String payerCodeType = getPayerCodeType(payerCode,db,dictionaryStringMap);
                             if (((payerCodeType.equals(Constant.CODE_TYPE_COMMERCIAL) || payerCodeType.equals(Constant.CODE_TYPE_MEDICAID)
-                                    || payerCodeType.equals(CODE_TYPE_MEDICARE) || payerCodeType.equals("Exchange Codes")  ) && patientAge>10 && document.getInteger("Delivery")>0))
+                                    || payerCodeType.equals(CODE_TYPE_MEDICARE) || payerCodeType.equals("Exchange Codes")  )
+                                    && (
+                                            document.getBoolean("checkIfCodesPresentInCondition").booleanValue() ||
+                                            document.getBoolean("checkIfObservationCodePresent").booleanValue()  ||
+                                            document.getBoolean("checkIfNewCodesPresentInCondition").booleanValue()
+                                        )
+                                    && patientAge>10 && document.getInteger("Delivery")>0))
                             {
                                 addObjectInSheet(document,payerCode,csvPrinter,payerCodeType);
-                            }
-                            else{
+                            }else{
                                 Main.failedPatients.add(document.getString("id"));
                             }
                         }
-                    }
-                    else {
+                    }else {
                         Main.failedPatients.add(document.getString("id"));//patients missed due to payerlist size=0
                     }
-                }
-                else{
+                }else{
                     Main.failedPatients.add(document.getString("id"));
                 }
                 csvPrinter.flush();
