@@ -67,20 +67,20 @@ public class Main {
         connection.collection = connection.database.getCollection("ep_cql_processed_data");
         connection.collection.createIndex(Indexes.ascending("id"));
 
-//         To Process Patien/ts
+//        To Process Patien/ts
         processPatients(dbFunctions, connection);
         insertFailedPatient(dbFunctions, connection,"ep_cql_Pnde_Sample_Sheet_failed_patients");
 
 //        //Process Single Patient
-//        String patientId = "97296";
+//        String patientId = "95013";
 //        processSinglePatient(patientId, dbFunctions, connection);
-        ////////////////
+          ////////////////
 
         //To generate Sheet and failed patients
 //        generateSheet(dbFunctions, connection, new UtilityFunction());
 //        insertFailedPatient(dbFunctions, connection,"ep_cql_Pnde_Sample_Sheet_failed_patients");
 
-//
+
 
         //This function is not in our use now, can be refactored later
         //To Process Patients
@@ -213,7 +213,7 @@ public class Main {
 
         for(int i=0; i<totalSkipsForSheet; i++) {
             SheetGenerationTask sheetGenerationTask = new SheetGenerationTask(utilityFunction, connection, dbFunctions, totalSkipped, csvPrinter);
-            sheetGenerationTask.generateSheetForPnde();
+            sheetGenerationTask.generateSheetForPrse();
             System.out.println("Iteration: "+i);
             totalSkipped+=500;
         }

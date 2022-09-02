@@ -90,6 +90,7 @@ public class PrseScoreSheet {
         document.put("checkIfCodesPresentInCondition",expressionResults.get("checkIfCodesPresentInCondition"));
         document.put("checkIfNewCodesPresentInCondition",expressionResults.get("checkIfNewCodesPresentInCondition"));
         document.put("checkIfObservationCodePresent",expressionResults.get("checkIfObservationCodePresent"));
+        document.put("checkIfObservationCodeValuePresent",expressionResults.get("checkIfObservationCodeValuePresent"));
 
 
         return document;
@@ -166,16 +167,23 @@ public class PrseScoreSheet {
         sheetObjPrsInfl1A.add("0"); //excl
 
 
-        if((document.getInteger("Denominator 1")==2) && document.getInteger("Numerator 1") > 0  && document.getInteger("Denominator 1") > 0 ){
-            sheetObjPrsInfl1A.add("0");
-            numerator1A="0";
-        }else if(document.getInteger("Numerator 1") > 0  && document.getInteger("Denominator 1") > 0 ){
+        if(document.getInteger("Numerator 1") > 0 ){
             sheetObjPrsInfl1A.add("1");
             numerator1A="1";
         }else{
             sheetObjPrsInfl1A.add("0");
             numerator1A="0";
         }
+//        if((document.getInteger("Denominator 1")==2) && document.getInteger("Numerator 1") > 0  && document.getInteger("Denominator 1") > 0 ){
+//            sheetObjPrsInfl1A.add("0");
+//            numerator1A="0";
+//        }else if(document.getInteger("Numerator 1") > 0  && document.getInteger("Denominator 1") > 0 ){
+//            sheetObjPrsInfl1A.add("1");
+//            numerator1A="1";
+//        }else{
+//            sheetObjPrsInfl1A.add("0");
+//            numerator1A="0";
+//        }
 
 
         if(document.getInteger("Exclusions 1")>0){
@@ -312,7 +320,8 @@ public class PrseScoreSheet {
 
 
         if(payerCodeType.equals(CODE_TYPE_COMMERCIAL) || payerCodeType.equals(CODE_TYPE_MEDICAID)) {
-            if(document.getInteger("Initial Population 2") > 0 && document.getInteger("Denominator 2")>0 && numerator1A.equals("1")){
+//            if(document.getInteger("Initial Population 2") > 0 && document.getInteger("Denominator 2")>0 && numerator1A.equals("1")
+            if(document.getInteger("Initial Population 2") > 0){
                 if(document.getInteger("Exclusions 2")>0 || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
                     sheetObjPrsTdA.add("0"); //epop (Also known as denominator)
                 }
@@ -331,7 +340,7 @@ public class PrseScoreSheet {
 
         sheetObjPrsTdA.add("0"); //excl
 
-        if(document.getInteger("Numerator 2") ==1 && document.getInteger("Denominator 1")== 1){
+        if(document.getInteger("Numerator 2") ==1){
             sheetObjPrsTdA.add("1");
         }
         else{
@@ -472,7 +481,8 @@ public class PrseScoreSheet {
         sheetObjPrsCmbA.add("1");//Event
 
         if(payerCodeType.equals(CODE_TYPE_COMMERCIAL) || payerCodeType.equals(CODE_TYPE_MEDICAID)) {
-            if(document.getInteger("Initial Population 3") > 0 && document.getInteger("Denominator 3")>0 && numerator1A.equals("1")){
+//            if(document.getInteger("Initial Population 3") > 0 && document.getInteger("Denominator 3")>0 && numerator1A.equals("1")){
+            if(document.getInteger("Initial Population 3") > 0){
                 if(document.getInteger("Exclusions 3")>0 || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
                     sheetObjPrsCmbA.add("0"); //epop (Also known as denominator)
                 }
@@ -490,7 +500,8 @@ public class PrseScoreSheet {
 
         sheetObjPrsCmbA.add("0"); //excl
 
-        if(document.getInteger("Numerator 3") ==1 && document.getInteger("Denominator 3")== 1){
+        if(document.getInteger("Numerator 3") ==1){
+//        if(document.getInteger("Numerator 3") ==1 && document.getInteger("Denominator 3")== 1){
             sheetObjPrsCmbA.add("1");
         }
         else{
@@ -700,6 +711,7 @@ public class PrseScoreSheet {
         }
         return payersList;
     }
+
     public List<String> mapPayersCodeInList(List<PayerInfo> payerInfoList,Date birthDate){
         /// Add the 2 year in the birthdate that will be my anchor date
         String anchorDate=getAnchorDate(birthDate,2);
@@ -897,7 +909,7 @@ public class PrseScoreSheet {
                 Object deliveryProcedureInfoObject = document.get("deliveryProcedureInfos");
                 deliveryProcedureInfos = new ObjectMapper().convertValue(deliveryProcedureInfoObject, new TypeReference<List<DeliveryProcedureInfo>>() {});
                 mapAllowedDeliveryProcedureInList(deliveryProcedureInfos);
-                if(patientId.equals("95059")){
+                if(patientId.equals("95002")){
                     int a=0;
                 }
                 int patientAge = Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
@@ -920,7 +932,7 @@ public class PrseScoreSheet {
                                     || payerCodeType.equals(CODE_TYPE_MEDICARE) || payerCodeType.equals("Exchange Codes")  )
                                     && (
                                             document.getBoolean("checkIfCodesPresentInCondition").booleanValue() ||
-                                            document.getBoolean("checkIfObservationCodePresent").booleanValue()  ||
+                                          //document.getBoolean("checkIfObservationCodePresent").booleanValue()  ||
                                             document.getBoolean("checkIfNewCodesPresentInCondition").booleanValue()
                                         )
                                     && patientAge>10 && document.getInteger("Delivery")>0))

@@ -177,6 +177,13 @@ if ( exists ( [Observation: "Length of gestation at birth (observable entity)"] 
       )
 
 
+define "checkIfObservationCodeValuePresent":
+if ( exists ( [Observation: "Length of gestation at birth (observable entity)"] obs
+                where obs.value is not null ) ) then ( true
+      )
+        else ( false
+      )
+
 define "checkIfNewCodesPresentInCondition":
 if ( exists (
 [Condition: "[Z3A.01] Less than 8 weeks gestation of pregnancy"] union
@@ -377,7 +384,7 @@ define function "Delivery during Period"(period Interval<DateTime>):
     return {
       deliveries: deliveryDuringMP,
       deliveryDate: date from
-end of FHIRBase."Normalize Interval" ( deliveryDuringMP.performed )
+start of FHIRBase."Normalize Interval" ( deliveryDuringMP.performed )
     }
 
 define function "Delivery in Period at Less Than 37 Weeks Gestation"(period Interval<DateTime>):
