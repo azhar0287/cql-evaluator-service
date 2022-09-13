@@ -63,6 +63,11 @@ public class PrseScoreSheet {
         document.put("deliveryProcedureInfos", UtilityFunction.getDeliveryProcedureInfoMap(patientData.getDeliveryProcedureInfos()));
         document.put("hospiceFlag",patientData.getHospiceFlag());
 
+        document.put("prsNumeratorInflA",patientData.getPrsNumeratorInflA());
+        document.put("prsNumeratorInflB",patientData.getPrsNumeratorInflB());
+        document.put("prsNumeratorTdapA",patientData.getPrsNumeratorTdapA());
+        document.put("prsNumeratorTdapB",patientData.getPrsNumeratorTdapB());
+
         document.put("Gestational Age Diagnosis",getSize(expressionResults.get("Gestational Age Diagnosis")));
         document.put("Delivery",getSize(expressionResults.get("Delivery")));
         document.put("Member Coverage",getSize(expressionResults.get("Member Coverage")));

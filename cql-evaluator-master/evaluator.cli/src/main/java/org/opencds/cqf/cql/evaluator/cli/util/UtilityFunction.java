@@ -79,6 +79,29 @@ public class UtilityFunction {
             if(document.get("pndNumerator1B")!=null){
                 patientData.setPndNumerator1B(document.get("pndNumerator1B").toString());
             }
+            if(document.get("pndNumeratorForAorB")!=null){
+                patientData.setPndNumeratorForAorB(document.get("pndNumeratorForAorB").toString());
+            }
+
+            if(document.get("pndNumeratorForAorB")!=null){
+                patientData.setPndNumeratorForAorB(document.get("pndNumeratorForAorB").toString());
+            }
+
+            if(document.get("prsNumeratorInflA")!=null){
+                patientData.setPrsNumeratorInflA(document.get("prsNumeratorInflA").toString());
+            }
+
+            if(document.get("prsNumeratorInflB")!=null){
+                patientData.setPrsNumeratorInflB(document.get("prsNumeratorInflB").toString());
+            }
+
+            if(document.get("prsNumeratorTdapA")!=null){
+                patientData.setPrsNumeratorTdapA(document.get("prsNumeratorTdapA").toString());
+            }
+
+            if(document.get("prsNumeratorTdapB")!=null){
+                patientData.setPrsNumeratorTdapB(document.get("prsNumeratorTdapB").toString());
+            }
             bundle = (IBaseBundle) selectedParser.parseResource(document.toJson());
             RetrieveProvider retrieveProvider;
             retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData, payerInfo);
@@ -124,6 +147,28 @@ public class UtilityFunction {
             if(documents.get(i).get("pndNumeratorForAorB")!=null){
                 patientData.setPndNumeratorForAorB(documents.get(i).get("pndNumeratorForAorB").toString());
             }
+
+            if(documents.get(i).get("pndNumeratorForAorB")!=null){
+                patientData.setPndNumeratorForAorB(documents.get(i).get("pndNumeratorForAorB").toString());
+            }
+
+            if(documents.get(i).get("prsNumeratorInflA")!=null){
+                patientData.setPrsNumeratorInflA(documents.get(i).get("prsNumeratorInflA").toString());
+            }
+
+            if(documents.get(i).get("prsNumeratorInflB")!=null){
+                patientData.setPrsNumeratorInflB(documents.get(i).get("prsNumeratorInflB").toString());
+            }
+
+            if(documents.get(i).get("prsNumeratorTdapA")!=null){
+                patientData.setPrsNumeratorTdapA(documents.get(i).get("prsNumeratorTdapA").toString());
+            }
+
+            if(documents.get(i).get("prsNumeratorTdapB")!=null){
+                patientData.setPrsNumeratorTdapB(documents.get(i).get("prsNumeratorTdapB").toString());
+            }
+
+
             bundle = (IBaseBundle) selectedParser.parseResource(documents.get(i).toJson());
             RetrieveProvider retrieveProvider;
             retrieveProvider = new BundleRetrieveProvider(fhirContext, bundle, patientData, payerInfo);

@@ -13,6 +13,46 @@ public class PatientData {
     private String pndNumerator1A="0";
     private String pndNumerator1B="0";
 
+    private String prsNumeratorInflA="noOne";
+
+    public String getPrsNumeratorInflA() {
+        return prsNumeratorInflA;
+    }
+
+    public void setPrsNumeratorInflA(String prsNumeratorInflA) {
+        this.prsNumeratorInflA = prsNumeratorInflA;
+    }
+
+    public String getPrsNumeratorInflB() {
+        return prsNumeratorInflB;
+    }
+
+    public void setPrsNumeratorInflB(String prsNumeratorInflB) {
+        this.prsNumeratorInflB = prsNumeratorInflB;
+    }
+
+    public String getPrsNumeratorTdapA() {
+        return prsNumeratorTdapA;
+    }
+
+    public void setPrsNumeratorTdapA(String prsNumeratorTdapA) {
+        this.prsNumeratorTdapA = prsNumeratorTdapA;
+    }
+
+    public String getPrsNumeratorTdapB() {
+        return prsNumeratorTdapB;
+    }
+
+    public void setPrsNumeratorTdapB(String prsNumeratorTdapB) {
+        this.prsNumeratorTdapB = prsNumeratorTdapB;
+    }
+
+    private String prsNumeratorInflB="noOne";
+
+    private String prsNumeratorTdapA="noOne";
+
+    private String prsNumeratorTdapB="noOne";
+
     public String getPndNumeratorForAorB() {
         return pndNumeratorForAorB;
     }
