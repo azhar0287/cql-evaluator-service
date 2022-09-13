@@ -122,9 +122,35 @@ public class PrseScoreSheet {
 
     }
 
+    boolean deliveryProceduresOnSameDateExsists(List<DeliveryProcedureInfo> deliveryProcedureInfos){
+
+        boolean flag=false;
+        if(deliveryProcedureInfos.size()>1){
+            List<String> deliveryProceduresPerformedDates=new ArrayList<>();
+            for(DeliveryProcedureInfo deliveryProcedureInfo: deliveryProcedureInfos){
+                deliveryProceduresPerformedDates.add(deliveryProcedureInfo.getPerformedDateString());
+            }
+            for(String procedurePerformedDate:deliveryProceduresPerformedDates){
+                int occurrences = Collections.frequency(deliveryProceduresPerformedDates, procedurePerformedDate);
+                if(occurrences>1){
+                    deliveryProceduresPerformedDates.removeAll(Collections.singleton(procedurePerformedDate));
+                    if(deliveryProceduresPerformedDates.size()>0){
+                        return false;
+                    }
+                    else{
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     void addObjectInSheet(Document document, String payerCode, CSVPrinter csvPrinter,String payerCodeType) throws IOException {
         Object deliveryProcedureInfoObject = document.get("deliveryProcedureInfos");
         List<DeliveryProcedureInfo> deliveryProcedureInfos = new ObjectMapper().convertValue(deliveryProcedureInfoObject, new TypeReference<List<DeliveryProcedureInfo>>() {});
+
+        boolean deliveryProceduresOnSameDateExsists=deliveryProceduresOnSameDateExsists(deliveryProcedureInfos);
 
         String numerator1A="";
         String numerator1B="";
@@ -220,7 +246,7 @@ public class PrseScoreSheet {
 
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////  PRSINFLB Mapping ////////////////////////////////////////////////
-        if(document.getInteger("Denominator 1")>1){
+        if(document.getInteger("Denominator 1")>1 && (!deliveryProceduresOnSameDateExsists)){
 //        if(deliveryProcedureInfos.size()==2){
             List<String> sheetObjPrsInfl1B = new LinkedList<>();
             sheetObjPrsInfl1B.add(document.getString("id"));
@@ -379,7 +405,7 @@ public class PrseScoreSheet {
 
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////  PRSTDB Mapping ////////////////////////////////////////////////
-        if(document.getInteger("Denominator 1")>1){
+        if(document.getInteger("Denominator 1")>1 && (!deliveryProceduresOnSameDateExsists)){
 //        if(deliveryProcedureInfos.size()==2){
             List<String> sheetObjPrsTdB = new LinkedList<>();
             sheetObjPrsTdB.add(document.getString("id"));
@@ -540,7 +566,7 @@ public class PrseScoreSheet {
 
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////  PRSCMBB Mapping ////////////////////////////////////////////////
-        if(document.getInteger("Denominator 1")>1){
+        if(document.getInteger("Denominator 1")>1 && (!deliveryProceduresOnSameDateExsists)){
 //        if(deliveryProcedureInfos.size()==2){
             List<String> sheetObjPrsCmbB = new LinkedList<>();
             sheetObjPrsCmbB.add(document.getString("id"));
@@ -624,8 +650,8 @@ public class PrseScoreSheet {
 
 
     void mapAllowedDeliveryProcedureInList(List<DeliveryProcedureInfo> deliveryProcedureInfoList){
-        Date intervalStartDate = UtilityFunction.getParsedDateInRequiredFormat("2021-09-08", "yyyy-MM-dd");
-        Date intervalEndDate = UtilityFunction.getParsedDateInRequiredFormat("2022-09-07", "yyyy-MM-dd");
+        Date intervalStartDate = UtilityFunction.getParsedDateInRequiredFormat("2022-01-01", "yyyy-MM-dd");
+        Date intervalEndDate = UtilityFunction.getParsedDateInRequiredFormat("2022-12-31", "yyyy-MM-dd");
 
         List<DeliveryProcedureInfo> deliveryProcedureInfoTempList=new LinkedList<>();
         if(deliveryProcedureInfoList.size()>0){
@@ -680,14 +706,15 @@ public class PrseScoreSheet {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
         return df.format(myDate);
     }
+
     public List<String> mapPayersCodeInList(List<PayerInfo> payerInfoList){
         List<String> payersList=new LinkedList<>();
         if(payerInfoList != null && payerInfoList.size() != 0) {
             Date measurementPeriodEndingDate = UtilityFunction.getParsedDateInRequiredFormat("2022-12-31", "yyyy-MM-dd");
             Date insuranceEndDate = null,insuranceStartDate=null;
             for (int i = 0; i < payerInfoList.size(); i++) {
-                insuranceEndDate = payerInfoList.get(i).getCoverageEndDate();
-                insuranceStartDate=payerInfoList.get(i).getCoverageStartDate();
+                insuranceEndDate = utilityFunction.resetTimeZoneFrom( payerInfoList.get(i).getCoverageEndDate() );
+                insuranceStartDate=utilityFunction.resetTimeZoneFrom( payerInfoList.get(i).getCoverageStartDate() );
                 if (null!=insuranceEndDate && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0 && !payerInfoList.get(i).getCoverageStartDateString().equals("20240101") && !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
 
                     payersList.add(payerInfoList.get(i).getPayerCode());
@@ -770,12 +797,12 @@ public class PrseScoreSheet {
         if(payerInfoList != null && payerInfoList.size() != 0) {
 
             for (DeliveryProcedureInfo deliveryProcedureInfo : deliveryProcedureInfos) {
-                String sixtyDaysAnchorDate=getAnchorDate(deliveryProcedureInfo.getPerformedDate(),60);
+                String sixtyDaysAnchorDate=getAnchorDate(deliveryProcedureInfo.getPerformedDate(),0);
 
                 Date measurementPeriodEndingDate = UtilityFunction.getParsedDateInRequiredFormat(sixtyDaysAnchorDate, "yyyy-MM-dd");
                 for (PayerInfo payerInfo : payerInfoList) {
-                    Date insuranceEndDate = payerInfo.getCoverageEndDate();
-                    Date insuranceStartDate = payerInfo.getCoverageStartDate();
+                    Date insuranceEndDate =utilityFunction.resetTimeZoneFrom( payerInfo.getCoverageEndDate());
+                    Date insuranceStartDate = utilityFunction.resetTimeZoneFrom(payerInfo.getCoverageStartDate());
                     if (insuranceEndDate != null && insuranceEndDate.compareTo(measurementPeriodEndingDate) >= 0 &&
                             !(insuranceStartDate.compareTo(measurementPeriodEndingDate) > 0)) {
                         payersList.add(payerInfo.getPayerCode());
@@ -795,8 +822,8 @@ public class PrseScoreSheet {
                     Date anchorDate = UtilityFunction.getParsedDateInRequiredFormat(anchorDateString, "yyyy-MM-dd");
                     for (int z=payerInfoList.size()-1;z>=0;z--) {
                         PayerInfo payerInfo = payerInfoList.get(z);
-                        Date insuranceEndDate = payerInfo.getCoverageEndDate();
-                        Date insuranceStartDate = payerInfo.getCoverageStartDate();
+                        Date insuranceEndDate = utilityFunction.resetTimeZoneFrom(payerInfo.getCoverageEndDate());
+                        Date insuranceStartDate = utilityFunction.resetTimeZoneFrom(payerInfo.getCoverageStartDate());
 
                         //It returns the value 0 if the argument Date is equal to this Date.
                         //It returns a value less than 0 if this Date is before the Date argument.
@@ -914,7 +941,7 @@ public class PrseScoreSheet {
                 Object deliveryProcedureInfoObject = document.get("deliveryProcedureInfos");
                 deliveryProcedureInfos = new ObjectMapper().convertValue(deliveryProcedureInfoObject, new TypeReference<List<DeliveryProcedureInfo>>() {});
                 mapAllowedDeliveryProcedureInList(deliveryProcedureInfos);
-                if(patientId.equals("95002")){
+                if(patientId.equals("95169") || patientId.equals("97307") || patientId.equals("98443")){
                     int a=0;
                 }
                 int patientAge = Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
@@ -937,6 +964,7 @@ public class PrseScoreSheet {
                                     || payerCodeType.equals(CODE_TYPE_MEDICARE) || payerCodeType.equals("Exchange Codes")  )
                                     && (
                                             document.getBoolean("checkIfCodesPresentInCondition").booleanValue() ||
+                                            document.getBoolean("checkIfObservationCodeValuePresent").booleanValue() ||
                                           //document.getBoolean("checkIfObservationCodePresent").booleanValue()  ||
                                             document.getBoolean("checkIfNewCodesPresentInCondition").booleanValue()
                                         )

@@ -405,6 +405,7 @@ public class UtilityFunction {
         Period period = Period.between(dob, curDate);
         return String.valueOf(period.getYears());
     }
+
     public String getAgeV2(String birthday) {
         Calendar measurementDate = new GregorianCalendar(2022, 01, 01);
         Calendar dob = new GregorianCalendar(Integer.parseInt(birthday.substring(0,4)), Integer.parseInt(birthday.substring(4,6)), Integer.parseInt(birthday.substring(6,8)));
@@ -450,6 +451,7 @@ public class UtilityFunction {
         }
         return documents;
     }
+
     public static List<Document> getPayerInfoMap(List<PayerInfo> list) {
         List<HashMap<String,String>> mapList = new ArrayList<>();
         List<Document> documents = new LinkedList<>();
@@ -476,6 +478,7 @@ public class UtilityFunction {
 
         return documents;
     }
+
     public static Date getParsedDateInRequiredFormat(String date, String format){
         SimpleDateFormat sdformat = new SimpleDateFormat(format);
         try{
@@ -485,6 +488,7 @@ public class UtilityFunction {
         }
         return null;
     }
+
     public String addSubtractDays(Date date,int days){
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
@@ -494,4 +498,19 @@ public class UtilityFunction {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
         return df.format(myDate);
     }
+
+
+    public Date resetTimeZoneFrom(Date date){
+
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat sdformat = new SimpleDateFormat("yyyy-MM-dd");
+        try {
+            return sdformat.parse(df.format(date));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
 }
