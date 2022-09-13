@@ -198,7 +198,8 @@ public class PrseScoreSheet {
         sheetObjPrsInfl1A.add("0"); //excl
 
 
-        if(document.getInteger("Numerator 1") > 0 ){
+//        if(document.getInteger("Numerator 1") > 0 ){
+        if(document.getString("prsNumeratorInflA").equals("partA") ){
             sheetObjPrsInfl1A.add("1");
             numerator1A="1";
         }else{
@@ -287,7 +288,8 @@ public class PrseScoreSheet {
 
             sheetObjPrsInfl1B.add("0"); //excl
 
-            if(document.getInteger("Numerator 1") > 0 && document.getInteger("Denominator 1") > 0 ){
+//            if(document.getInteger("Numerator 1") > 0 && document.getInteger("Denominator 1") > 0 ){
+            if(document.getString("prsNumeratorInflB").equals("partB") ){
                 sheetObjPrsInfl1B.add("1");
                 numerator1B="1";
             }
@@ -371,7 +373,8 @@ public class PrseScoreSheet {
 
         sheetObjPrsTdA.add("0"); //excl
 
-        if(document.getInteger("Numerator 2") ==1){
+//      if(document.getInteger("Numerator 2") ==1){
+        if(document.getString("prsNumeratorTdapA").equals("partA") ){
             sheetObjPrsTdA.add("1");
         }
         else{
@@ -449,7 +452,8 @@ public class PrseScoreSheet {
             sheetObjPrsTdB.add("0"); //excl
 
 
-            if(document.getInteger("Numerator 2") ==1 && document.getInteger("Denominator 1")== 1){
+//            if(document.getInteger("Numerator 2") ==1 && document.getInteger("Denominator 1")== 1){
+            if(document.getString("prsNumeratorTdapB").equals("partB")){
                 sheetObjPrsTdB.add("1");//num
             }
             else{
