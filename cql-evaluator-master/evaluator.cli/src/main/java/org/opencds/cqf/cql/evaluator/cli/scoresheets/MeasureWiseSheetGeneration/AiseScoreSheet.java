@@ -88,6 +88,7 @@ public class AiseScoreSheet {
         }
         return false;
     }
+
     void mapPneumococcalImmunization(Document document, String payerCode, Date measureDate, CSVPrinter csvPrinter) throws IOException {
         List<String> sheetObj  = new ArrayList<>();
         sheetObj.add(document.getString("id"));
