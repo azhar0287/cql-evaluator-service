@@ -146,14 +146,61 @@ public class PrseScoreSheet {
         return false;
     }
 
+    DeliveryProcedureInfo getFirstOccurenceOfObject(List<DeliveryProcedureInfo> deliveryProcedureInfos,String deliveryProceduresPerformedDate){
+        for(DeliveryProcedureInfo deliveryProcedureInfo:deliveryProcedureInfos){
+            if(deliveryProcedureInfo.getPerformedDateString().equals(deliveryProceduresPerformedDate)){
+                return deliveryProcedureInfo;
+            }
+        }
+        return null;
+    }
+
+    List<DeliveryProcedureInfo> removeDuplicateDeliveryFromList(List<DeliveryProcedureInfo> deliveryProcedureInfos){
+        Set<String> deliveryProceduresPerformedDatesSet=new HashSet<>();
+        for(DeliveryProcedureInfo deliveryProcedureInfo: deliveryProcedureInfos){
+            deliveryProceduresPerformedDatesSet.add(deliveryProcedureInfo.getPerformedDateString());
+        }
+        List<String> deliveryProceduresPerformedDatesList = new ArrayList<String>(deliveryProceduresPerformedDatesSet);
+        Collections.sort(deliveryProceduresPerformedDatesList);
+
+        List<DeliveryProcedureInfo> deliveryProcedureInfoListTemp=new ArrayList<>();
+
+        for(String deliveryDate:deliveryProceduresPerformedDatesList){
+            deliveryProcedureInfoListTemp.add(getFirstOccurenceOfObject(deliveryProcedureInfos,deliveryDate));
+
+        }
+        return deliveryProcedureInfoListTemp;
+//        for(String procedurePerformedDate:deliveryProceduresPerformedDates){
+//            int occurrences = Collections.frequency(deliveryProceduresPerformedDates, procedurePerformedDate);
+//            if(occurrences>1){
+//                deliveryProcedureInfoListTemp.add(getFirstOccurenceOfObject(deliveryProcedureInfos,procedurePerformedDate));
+//                deliveryProceduresPerformedDates.removeAll(Collections.singleton(procedurePerformedDate));
+//            }else{
+//                deliveryProcedureInfoListTemp.add(getFirstOccurenceOfObject(deliveryProcedureInfos,procedurePerformedDate));
+//                deliveryProceduresPerformedDates.removeAll(Collections.singleton(procedurePerformedDate));
+//            }
+//
+//            if(deliveryProceduresPerformedDates.size()==0){
+//                break;
+//            }
+//        }
+//        return deliveryProcedureInfoListTemp;
+    }
+
     void addObjectInSheet(Document document, String payerCode, CSVPrinter csvPrinter,String payerCodeType) throws IOException {
         Object deliveryProcedureInfoObject = document.get("deliveryProcedureInfos");
         List<DeliveryProcedureInfo> deliveryProcedureInfos = new ObjectMapper().convertValue(deliveryProcedureInfoObject, new TypeReference<List<DeliveryProcedureInfo>>() {});
 
         boolean deliveryProceduresOnSameDateExsists=deliveryProceduresOnSameDateExsists(deliveryProcedureInfos);
 
+        if(deliveryProcedureInfos.size()>2){
+            deliveryProcedureInfos=removeDuplicateDeliveryFromList(deliveryProcedureInfos);
+        }
+
         String numerator1A="";
         String numerator1B="";
+
+        String numeratorTdapA="";
 
 
 
@@ -247,7 +294,8 @@ public class PrseScoreSheet {
 
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////  PRSINFLB Mapping ////////////////////////////////////////////////
-        if(document.getInteger("Denominator 1")>1 && (!deliveryProceduresOnSameDateExsists)){
+//        if(document.getInteger("Denominator 1")>1 && (!deliveryProceduresOnSameDateExsists)){
+        if(document.getInteger("Delivery")>1 && (!deliveryProceduresOnSameDateExsists)){
 //        if(deliveryProcedureInfos.size()==2){
             List<String> sheetObjPrsInfl1B = new LinkedList<>();
             sheetObjPrsInfl1B.add(document.getString("id"));
@@ -376,6 +424,7 @@ public class PrseScoreSheet {
 //      if(document.getInteger("Numerator 2") ==1){
         if(document.getString("prsNumeratorTdapA").equals("partA") ){
             sheetObjPrsTdA.add("1");
+            numeratorTdapA="1";
         }
         else{
             sheetObjPrsTdA.add("0");
@@ -408,7 +457,8 @@ public class PrseScoreSheet {
 
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////  PRSTDB Mapping ////////////////////////////////////////////////
-        if(document.getInteger("Denominator 1")>1 && (!deliveryProceduresOnSameDateExsists)){
+//        if(document.getInteger("Denominator 1")>1 && (!deliveryProceduresOnSameDateExsists)){
+        if(document.getInteger("Delivery")>1 && (!deliveryProceduresOnSameDateExsists)){
 //        if(deliveryProcedureInfos.size()==2){
             List<String> sheetObjPrsTdB = new LinkedList<>();
             sheetObjPrsTdB.add(document.getString("id"));
@@ -453,7 +503,7 @@ public class PrseScoreSheet {
 
 
 //            if(document.getInteger("Numerator 2") ==1 && document.getInteger("Denominator 1")== 1){
-            if(document.getString("prsNumeratorTdapB").equals("partB")){
+            if(document.getString("prsNumeratorTdapB").equals("partB") && (!numeratorTdapA.equals("1"))){
                 sheetObjPrsTdB.add("1");//num
             }
             else{
@@ -535,7 +585,8 @@ public class PrseScoreSheet {
 
         sheetObjPrsCmbA.add("0"); //excl
 
-        if(document.getInteger("Numerator 3") ==1){
+        if(document.getString("prsNumeratorTdapA").equals("partA")  && document.getString("prsNumeratorInflA").equals("partA") ){
+//        if(document.getInteger("Numerator 3") ==1){
 //        if(document.getInteger("Numerator 3") ==1 && document.getInteger("Denominator 3")== 1){
             sheetObjPrsCmbA.add("1");
         }
@@ -558,19 +609,20 @@ public class PrseScoreSheet {
 
         if(deliveryProcedureInfos.size()>1){
             sheetObjPrsCmbA.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(deliveryProcedureInfos.size()-2).getPerformedDateString()));
-        }
-        else if(deliveryProcedureInfos.size()>0){
+        }else if(deliveryProcedureInfos.size()>0){
             sheetObjPrsCmbA.add(getProcedureBasedAge(utilityFunction.getConvertedDateString(document.getDate("birthDate")),deliveryProcedureInfos.get(deliveryProcedureInfos.size()-1).getPerformedDateString()));
         }else{
             sheetObjPrsCmbA.add(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
         }
+
         sheetObjPrsCmbA.add(utilityFunction.getGenderSymbol(document.getString("gender")));
         csvPrinter.printRecord(sheetObjPrsCmbA);
 
 
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////  PRSCMBB Mapping ////////////////////////////////////////////////
-        if(document.getInteger("Denominator 1")>1 && (!deliveryProceduresOnSameDateExsists)){
+//        if(document.getInteger("Denominator 1")>1 && (!deliveryProceduresOnSameDateExsists)){
+        if(document.getInteger("Delivery")>1 && (!deliveryProceduresOnSameDateExsists)){
 //        if(deliveryProcedureInfos.size()==2){
             List<String> sheetObjPrsCmbB = new LinkedList<>();
             sheetObjPrsCmbB.add(document.getString("id"));
@@ -613,7 +665,8 @@ public class PrseScoreSheet {
 
             sheetObjPrsCmbB.add("0"); //excl
 
-            if(document.getInteger("Numerator 3") ==1 && document.getInteger("Denominator 3")== 1){
+//            if(document.getInteger("Numerator 3") ==1 && document.getInteger("Denominator 3")== 1){
+            if((document.getString("prsNumeratorTdapB").equals("partB") && (!numeratorTdapA.equals("1"))) && (document.getString("prsNumeratorInflB").equals("partB") )){
                 sheetObjPrsCmbB.add("1");//Num
             }
             else{
@@ -945,7 +998,7 @@ public class PrseScoreSheet {
                 Object deliveryProcedureInfoObject = document.get("deliveryProcedureInfos");
                 deliveryProcedureInfos = new ObjectMapper().convertValue(deliveryProcedureInfoObject, new TypeReference<List<DeliveryProcedureInfo>>() {});
                 mapAllowedDeliveryProcedureInList(deliveryProcedureInfos);
-                if(patientId.equals("95169") || patientId.equals("97307") || patientId.equals("98443")){
+                if(patientId.equals("125437")){
                     int a=0;
                 }
                 int patientAge = Integer.parseInt(utilityFunction.getAgeV2(utilityFunction.getConvertedDateString(document.getDate("birthDate"))));
@@ -967,11 +1020,11 @@ public class PrseScoreSheet {
                             if (((payerCodeType.equals(Constant.CODE_TYPE_COMMERCIAL) || payerCodeType.equals(Constant.CODE_TYPE_MEDICAID)
                                     || payerCodeType.equals(CODE_TYPE_MEDICARE) || payerCodeType.equals("Exchange Codes")  )
                                     && (
-                                            document.getBoolean("checkIfCodesPresentInCondition").booleanValue() ||
+                                    document.getBoolean("checkIfCodesPresentInCondition").booleanValue() ||
                                             document.getBoolean("checkIfObservationCodeValuePresent").booleanValue() ||
-                                          //document.getBoolean("checkIfObservationCodePresent").booleanValue()  ||
+                                            //document.getBoolean("checkIfObservationCodePresent").booleanValue()  ||
                                             document.getBoolean("checkIfNewCodesPresentInCondition").booleanValue()
-                                        )
+                            )
                                     && patientAge>10 && document.getInteger("Delivery")>0))
                             {
                                 addObjectInSheet(document,payerCode,csvPrinter,payerCodeType);

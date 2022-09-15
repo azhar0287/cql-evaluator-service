@@ -253,7 +253,6 @@ public class ProcessPatientService implements Runnable {
                                 }
                             }
                         }
-
                     }
                     catch(Exception e){
                         LOGGER.error(e.getMessage()+" PatientId: "+globalPatientId, e);
