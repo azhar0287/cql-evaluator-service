@@ -24,9 +24,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.Period;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.*;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
@@ -334,7 +332,35 @@ public class UtilityFunction {
         return String.valueOf(age);
     }
 
+    public String getFormattedDate(String date){
 
+        if(date!=null){
+            return (date.substring(0,4)+"-"+date.substring(4,6)+"-"+date.substring(6,8));
+        }
+        return "";
+    }
+
+    public String getEncounterBasedAge(String birthdate,String encounterDate){
+        birthdate=getFormattedDate(birthdate);
+        //encounterDate=getFormattedDate(encounterDate);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Date startDate = null;
+        Date endDate=null;
+        try {
+            startDate = sdf.parse(birthdate);
+            endDate = sdf.parse(encounterDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+
+        OffsetDateTime startOdt = startDate.toInstant().atOffset(ZoneOffset.UTC);
+        OffsetDateTime endOdt = endDate.toInstant().atOffset(ZoneOffset.UTC);
+
+        int years = Period.between(startOdt.toLocalDate(), endOdt.toLocalDate()).getYears();
+        return String.valueOf(years);
+
+    }
 
     public static Date getParsedDateInRequiredFormat(String date, String format){
         SimpleDateFormat sdformat = new SimpleDateFormat(format);

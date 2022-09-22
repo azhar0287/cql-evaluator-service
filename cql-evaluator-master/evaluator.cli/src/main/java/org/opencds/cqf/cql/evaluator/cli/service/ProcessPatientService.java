@@ -35,6 +35,8 @@ import org.opencds.cqf.cql.evaluator.engine.retrieve.BundleRetrieveProvider;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PatientData;
 import org.opencds.cqf.cql.evaluator.engine.retrieve.PayerInfo;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.opencds.cqf.cql.evaluator.cli.util.Constant.*;
@@ -443,6 +445,104 @@ public class ProcessPatientService implements Runnable {
         return documents;
     }
 
+    static int  getSize(Object obj){
+        return convertObjectToList(obj).size();
+    }
+
+    public static List<Document> convertDateObjectToList(Object obj) {
+        List<?> list = new ArrayList<>();
+        List<Document> documentList=new LinkedList<>();
+        if (obj.getClass().isArray()) {
+            list = Arrays.asList((Object[])obj);
+        } else if (obj instanceof Collection) {
+            list = new ArrayList<>((Collection<?>)obj);
+        }
+        if(list.size()>0){
+            for(Object date:list){
+                Document document=new Document();
+                document.put("eligibleEdDate",date.toString());
+                documentList.add(document);
+            }
+        }
+        return documentList;
+    }
+
+
+    public static List<?> convertObjectToList(Object obj) {
+        List<?> list = new ArrayList<>();
+        if (obj.getClass().isArray()) {
+            list = Arrays.asList((Object[])obj);
+        } else if (obj instanceof Collection) {
+            list = new ArrayList<>((Collection<?>)obj);
+        }
+        return list;
+    }
+
+
+
+    public static String getSecondEligibleEdVisitDate(Object obj,int index){
+        List<?> list = new ArrayList<>();
+        if (obj.getClass().isArray()) {
+            list = Arrays.asList((Object[])obj);
+
+        } else if (obj instanceof Collection) {
+            list = new ArrayList<>((Collection<?>)obj);
+        }
+        return list.get(index).toString();
+    }
+
+    public static String getSelfHarmDate(Object obj,int index){
+        List<?> list = new ArrayList<>();
+        if (obj.getClass().isArray()) {
+            list = Arrays.asList((Object[])obj);
+
+        } else if (obj instanceof Collection) {
+            list = new ArrayList<>((Collection<?>)obj);
+        }
+        return list.get(index).toString().substring(9,19);
+    }
+
+
+    public static Date getDateAdded(String dateString,int addDays){
+        try {
+            // date will be like this 2022-12-21
+            String year=dateString.substring(0,4);
+            String month=dateString.substring(5,7);
+            String day=dateString.substring(8,10);
+            // today
+            Calendar calendar = Calendar.getInstance();
+            Date tempDate=new Date();
+            calendar.set(Calendar.MONTH, Integer.parseInt(month)-1);
+            calendar.set(Calendar.DATE, Integer.parseInt(day));
+            calendar.set(Calendar.YEAR, Integer.parseInt(year));
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            calendar.set(Calendar.AM_PM,Calendar.AM);
+            calendar.add(Calendar.HOUR_OF_DAY, 5);
+            calendar.add(Calendar.DAY_OF_YEAR, addDays);
+            tempDate = calendar.getTime();
+            DateFormat df = new SimpleDateFormat("yyyyMMdd");
+            String nowAsISO = df.format(tempDate);
+            return df.parse(nowAsISO);
+
+        }catch (Exception e){
+            System.out.println("Error while parsing date to increase date "+e);
+            return null;
+        }
+    }
+    public static boolean compareDate(Date date1,Date date2){
+        //It returns the value 0 if the argument Date is equal to this Date.
+        //It returns a value less than 0 if this Date is before the Date argument.
+        //It returns a value greater than 0 if this Date is after the Date argument.
+        int value= date1.compareTo(date2);
+        if(value>=0){
+           return true;
+        }
+        return false;
+    }
+
 
     public List<Document> getPayerInfoMap(List<PayerInfo> list) {
         List<HashMap<String,String>> mapList = new ArrayList<>();
@@ -672,12 +772,533 @@ public class ProcessPatientService implements Runnable {
 
     public Document createDocumentForFUMResult(Map<String, Object> expressionResults, PatientData patientData) {
         Document document = new Document();
-        System.out.println("Here");
         document.put("id", patientData.getId());
         document.put("birthDate", patientData.getBirthDate());
         document.put("gender", patientData.getGender());
         document.put("payerCodes", getPayerInfoMap(patientData.getPayerInfo()));
         document.put("hospiceFlag", patientData.getHospiceFlag());
+        document.put("Eligible ED Visits",getSize(expressionResults.get("Eligible ED Visits")));
+        document.put("Denominator 1",getSize(expressionResults.get("Denominator 1")));
+        document.put("Denominator 2",getSize(expressionResults.get("Denominator 2")));
+        document.put("Numerator 1",getSize(expressionResults.get("Numerator 1")));
+        document.put("Numerator 2",getSize(expressionResults.get("Numerator 2")));
+        document.put("Exclusions 1",getSize(expressionResults.get("Exclusions 1")));
+        document.put("Exclusions 2",getSize(expressionResults.get("Exclusions 2")));
+        document.put("ED Exclusions 2",getSize(expressionResults.get("SelfHarm with Hospice Intervention or Encounter")));
+        document.put("Initial Population 1",getSize(expressionResults.get("Initial Population 1")));
+        document.put("Initial Population 2",getSize(expressionResults.get("Initial Population 2")));
+        document.put("Member Coverage",getSize(expressionResults.get("Member Coverage")));
+        document.put("Eligible ED Visits Not Followed by Inpatient Admission",getSize(expressionResults.get("Eligible ED Visits Not Followed by Inpatient Admission")));
+        document.put("First Eligible ED Visits per 31 Day Period Dates",convertDateObjectToList(expressionResults.get("First Eligible ED Visits per 31 Day Period")));
+        document.put("Follow Up Visits",getSize(expressionResults.get("Follow Up Visits")));
+        document.put("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm",getSize(expressionResults.get("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm")));
+        document.put("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm Size",getSize(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm")));
+        if(getSize(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm")) > 0){
+            document.put("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm",getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0));
+        }
+        UtilityFunction utilityFunction=new UtilityFunction();
+
+        /// LOGICS
+        if(getSize(expressionResults.get("First Eligible ED Visits per 31 Day Period")) > 0){
+            // Numerator 1 Logic
+            if(getSize(expressionResults.get("Numerator 1")) == 0){
+                document.put("numerator1Exist",false);
+                if(getSize(expressionResults.get("First Eligible ED Visits per 31 Day Period")) == 1){
+                    document.put("eligibleVisitMoreThan1Num1",false);
+                    String firstEncounter=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0);
+                    document.put("numerator1ExistAge1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),firstEncounter));
+                }
+                else if(getSize(expressionResults.get("First Eligible ED Visits per 31 Day Period")) >= 2){
+                    document.put("eligibleVisitMoreThan1Num1",true);
+                    String firstEncounter=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0);
+                    document.put("numerator1ExistAge1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),firstEncounter));
+                    document.put("numerator1ExistAge2",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),1)));
+                }
+                else{
+                    document.put("eligibleVisitMoreThan1Num1",false);
+                    if(getSize(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm")) > 0){
+                        String firstString=getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0);
+                        document.put("numerator1ExistAge1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),firstString));
+                    }
+                    else{
+                        document.put("numerator1ExistAge1","0");
+                    }
+                }
+            }
+            else{
+                document.put("numerator1Exist",true);
+                // means numerator 1 size = 1
+                if(getSize(expressionResults.get("First Eligible ED Visits per 31 Day Period")) >= 2 && getSize(expressionResults.get("Numerator 1")) == 1) {
+                    document.put("eligibleVisitMoreThan1Num1",true);
+                    String firstDateString=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0);
+                    document.put("eligibleVisitMoreThan1Num1Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),firstDateString));
+                    Date encounterFirstDate=getDateAdded(firstDateString,0);
+                    Date encounterThirtyDaysAddDate=getDateAdded(firstDateString,30);
+                    // get numerator 1 date
+                    String num1DateString=getSecondEligibleEdVisitDate(expressionResults.get("Numerator 1"),0);
+                    Date num1Date=getDateAdded(num1DateString,0);
+
+
+                    int firstEncounterDateLesser=encounterFirstDate.compareTo(num1Date);
+                    int firstEncounterDateGreater=encounterThirtyDaysAddDate.compareTo(num1Date);
+
+                    if(firstEncounterDateLesser <=0 && firstEncounterDateGreater>=0 ){
+                        document.put("FUM30A Num1",true);
+                    }
+                    else {
+                        document.put("FUM30A Num1",false);
+                    }
+                    String secondDateString=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),1);
+                    document.put("eligibleVisitMoreThan1Num1Age2",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),secondDateString));
+                    Date secondDateEncounter=getDateAdded(secondDateString,0);
+                    Date secondDateEncounterThirtyDaysAddDate=getDateAdded(secondDateString,30);
+
+                    int secondEncounterDateLesser=secondDateEncounter.compareTo(num1Date);
+                    int secondEncounterDateGreater=secondDateEncounterThirtyDaysAddDate.compareTo(num1Date);
+
+
+                    if(secondEncounterDateLesser <=0 && secondEncounterDateGreater>=0 ){
+                        document.put("FUM30B Num1",true);
+                    }
+                    else {
+                        document.put("FUM30B Num1",false);
+                    }
+                }
+                else if(getSize(expressionResults.get("First Eligible ED Visits per 31 Day Period")) >= 2 && getSize(expressionResults.get("Numerator 1")) >= 2) {
+                    document.put("eligibleVisitMoreThan1Num1",true);
+                    String firstDateString=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0);
+                    document.put("eligibleVisitMoreThan1Num1Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),firstDateString));
+                    Date encounterFirstDate=getDateAdded(firstDateString,0);
+                    Date encounterThirtyDaysAddDate=getDateAdded(firstDateString,30);
+                    // get numerator 1 date
+                    String num1DateString=getSecondEligibleEdVisitDate(expressionResults.get("Numerator 1"),0);
+                    Date num1Date=getDateAdded(num1DateString,0);
+
+
+                    int firstEncounterDateLesser=encounterFirstDate.compareTo(num1Date);
+                    int firstEncounterDateGreater=encounterThirtyDaysAddDate.compareTo(num1Date);
+
+                    if(firstEncounterDateLesser <=0 && firstEncounterDateGreater>=0 ){
+                        document.put("FUM30A Num1",true);
+                    }
+                    else {
+                        document.put("FUM30A Num1",false);
+                    }
+                    String secondDateString=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),1);
+                    document.put("eligibleVisitMoreThan1Num1Age2",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),secondDateString));
+                    Date secondDateEncounter=getDateAdded(secondDateString,0);
+                    Date secondDateEncounterThirtyDaysAddDate=getDateAdded(secondDateString,30);
+
+                    String num1DateString1=getSecondEligibleEdVisitDate(expressionResults.get("Numerator 1"),1);
+                    Date num1Date1=getDateAdded(num1DateString1,0);
+
+                    int secondEncounterDateLesser=secondDateEncounter.compareTo(num1Date1);
+                    int secondEncounterDateGreater=secondDateEncounterThirtyDaysAddDate.compareTo(num1Date1);
+                    if(secondEncounterDateLesser <=0 && secondEncounterDateGreater>=0 ){
+                        document.put("FUM30B Num1",true);
+                    }
+                    else {
+                        document.put("FUM30B Num1",false);
+                    }
+                }
+                else if(getSize(expressionResults.get("First Eligible ED Visits per 31 Day Period")) == 1 ) {
+                    document.put("eligibleVisitMoreThan1Num1",false);
+                    document.put("eligibleVisitMoreThan1Num1Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0)));
+                    String firstDateString=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0);
+                    Date encounterFirstDate=getDateAdded(firstDateString,0);
+                    Date encounterThirtyDaysAddDate=getDateAdded(firstDateString,30);
+                    // get numerator 1 date
+                    String num1DateString=getSecondEligibleEdVisitDate(expressionResults.get("Numerator 1"),0);
+                    Date num1Date=getDateAdded(num1DateString,0);
+
+
+                    int firstEncounterDateLesser=encounterFirstDate.compareTo(num1Date);
+                    int firstEncounterDateGreater=encounterThirtyDaysAddDate.compareTo(num1Date);
+
+                    if(firstEncounterDateLesser <=0 && firstEncounterDateGreater>=0 ){
+                        document.put("FUM30A Num1",true);
+                    }
+                    else {
+                        document.put("FUM30A Num1",false);
+                    }
+
+                }
+            }
+
+            // Numerator 2 Logic
+            if(getSize(expressionResults.get("Numerator 2")) == 0){
+                document.put("numerator2Exist",false);
+                if(getSize(expressionResults.get("First Eligible ED Visits per 31 Day Period")) == 1){
+                    document.put("eligibleVisitMoreThan1Num2",false);
+                    document.put("numerator2ExistAge1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0)));
+                }
+                else if(getSize(expressionResults.get("First Eligible ED Visits per 31 Day Period")) >= 2){
+                    document.put("eligibleVisitMoreThan1Num2",true);
+                    document.put("numerator2ExistAge1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0)));
+                    document.put("numerator2ExistAge2",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),1)));
+
+                }
+                else{
+                    document.put("eligibleVisitMoreThan1Num2",false);
+                    if(getSize(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm")) > 0){
+                        String firstString=getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0);
+                        document.put("numerator2ExistAge1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),firstString));
+                    }
+                    else{
+                        document.put("numerator2ExistAge1","0");
+                    }
+                }
+
+            }
+            else{
+                document.put("numerator2Exist",true);
+                // means numerator 1 size = 1
+                if(getSize(expressionResults.get("First Eligible ED Visits per 31 Day Period")) >= 2 && getSize(expressionResults.get("Numerator 2")) == 1) {
+                    document.put("eligibleVisitMoreThan1Num2",true);
+                    String firstDateString=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0);
+                    document.put("eligibleVisitMoreThan1Num2Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),firstDateString));
+                    Date encounterFirstDate=getDateAdded(firstDateString,0);
+                    Date encounterSevenDaysAddDate=getDateAdded(firstDateString,7);
+                    // get numerator 2 date
+                    String num2DateString=getSecondEligibleEdVisitDate(expressionResults.get("Numerator 2"),0);
+                    Date num2Date=getDateAdded(num2DateString,0);
+
+                    int firstEncounterDateLesser=encounterFirstDate.compareTo(num2Date);
+                    int firstEncounterDateGreater=encounterSevenDaysAddDate.compareTo(num2Date);
+
+                    if(firstEncounterDateLesser <=0 && firstEncounterDateGreater>=0 ){
+                        document.put("FUM7A Num2",true);
+                    }
+                    else {
+                        document.put("FUM7A Num2",false);
+                    }
+
+                    String secondDateString=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),1);
+                    document.put("eligibleVisitMoreThan1Num2Age2",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),secondDateString));
+                    Date secondDateEncounter=getDateAdded(secondDateString,0);
+                    Date secondDateEncounterSevenDaysAddDate=getDateAdded(secondDateString,7);
+
+                    int secondEncounterDateLesser=secondDateEncounter.compareTo(num2Date);
+                    int secondEncounterDateGreater=secondDateEncounterSevenDaysAddDate.compareTo(num2Date);
+
+
+                    if(secondEncounterDateLesser <=0 && secondEncounterDateGreater>=0 ){
+                        document.put("FUM7B Num2",true);
+                    }
+                    else {
+                        document.put("FUM7B Num2",false);
+                    }
+                }
+                else if(getSize(expressionResults.get("First Eligible ED Visits per 31 Day Period")) >= 2 && getSize(expressionResults.get("Numerator 2")) >=2) {
+                    document.put("eligibleVisitMoreThan1Num2",true);
+                    String firstDateString=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0);
+                    document.put("eligibleVisitMoreThan1Num2Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),firstDateString));
+                    Date encounterFirstDate=getDateAdded(firstDateString,0);
+                    Date encounterSevenDaysAddDate=getDateAdded(firstDateString,7);
+                    // get numerator 2 date
+                    String num2DateString=getSecondEligibleEdVisitDate(expressionResults.get("Numerator 2"),0);
+                    Date num2Date=getDateAdded(num2DateString,0);
+
+                    int firstEncounterDateLesser=encounterFirstDate.compareTo(num2Date);
+                    int firstEncounterDateGreater=encounterSevenDaysAddDate.compareTo(num2Date);
+
+                    if(firstEncounterDateLesser <=0 && firstEncounterDateGreater>=0 ){
+                        document.put("FUM7A Num2",true);
+                    }
+                    else {
+                        document.put("FUM7A Num2",false);
+                    }
+                    String secondDateString=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),1);
+                    document.put("eligibleVisitMoreThan1Num2Age2",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),secondDateString));
+                    String num2DateString2=getSecondEligibleEdVisitDate(expressionResults.get("Numerator 2"),1);
+                    Date num2Date2=getDateAdded(num2DateString2,0);
+                    Date secondDateEncounter=getDateAdded(secondDateString,0);
+                    Date secondDateEncounterSevenDaysAddDate=getDateAdded(secondDateString,7);
+
+                    int secondEncounterDateLesser=secondDateEncounter.compareTo(num2Date2);
+                    int secondEncounterDateGreater=secondDateEncounterSevenDaysAddDate.compareTo(num2Date2);
+                    if(secondEncounterDateLesser <=0 && secondEncounterDateGreater>=0 ){
+                        document.put("FUM7B Num2",true);
+                    }
+                    else {
+                        document.put("FUM7B Num2",false);
+                    }
+                }
+                else if(getSize(expressionResults.get("First Eligible ED Visits per 31 Day Period")) == 1) {
+                    document.put("eligibleVisitMoreThan1Num2",false);
+                    document.put("eligibleVisitMoreThan1Num2Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0)));
+                    String firstDateString=getSecondEligibleEdVisitDate(expressionResults.get("First Eligible ED Visits per 31 Day Period"),0);
+                    Date encounterFirstDate=getDateAdded(firstDateString,0);
+                    Date encounterSevenDaysAddDate=getDateAdded(firstDateString,7);
+                    // get numerator 2 date
+                    String num2DateString=getSecondEligibleEdVisitDate(expressionResults.get("Numerator 2"),0);
+                    Date num2Date=getDateAdded(num2DateString,0);
+
+                    int firstEncounterDateLesser=encounterFirstDate.compareTo(num2Date);
+                    int firstEncounterDateGreater=encounterSevenDaysAddDate.compareTo(num2Date);
+
+                    if(firstEncounterDateLesser <=0 && firstEncounterDateGreater>=0 ){
+                        document.put("FUM7A Num2",true);
+                    }
+                    else {
+                        document.put("FUM7A Num2",false);
+                    }
+
+                }
+            }
+        }
+        else{
+            if(getSize(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm")) == 1){
+                String firstString=getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0);
+                Date encounterOrignalDate=getDateAdded(firstString,0);
+                Date encounterthirtyDate=getDateAdded(firstString,30);
+                Date encountersevenDate=getDateAdded(firstString,7);
+
+                if(getSize(expressionResults.get("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm")) >= 2){
+                    boolean thirtyA=false;
+                    boolean sevenA=false;
+                    document.put("numerator1Exist",true);
+                    document.put("numerator2Exist",true);
+                    document.put("eligibleVisitMoreThan1Num1",false);
+                    document.put("eligibleVisitMoreThan1Num2",false);
+                    document.put("eligibleVisitMoreThan1Num1Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0)));
+                    document.put("eligibleVisitMoreThan1Num2Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0)));
+
+                    String firstDateString=getSecondEligibleEdVisitDate(expressionResults.get("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm"),0);
+                    Date numDate=getDateAdded(firstDateString,0);
+                    int firstEncounterDateLesser=encounterOrignalDate.compareTo(numDate);
+                    int firstEncounterDateGreater=encounterthirtyDate.compareTo(numDate);
+
+                    int sevenEncounterDateLesser=encounterOrignalDate.compareTo(numDate);
+                    int sevenEncounterDateGreater=encountersevenDate.compareTo(numDate);
+
+                    if(firstEncounterDateLesser <=0 && firstEncounterDateGreater>=0){
+                        thirtyA=true;
+                    }
+
+                    if(sevenEncounterDateLesser <=0 && sevenEncounterDateGreater>=0){
+                        sevenA=true;
+                    }
+
+
+
+                    String secondDateString=getSecondEligibleEdVisitDate(expressionResults.get("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm"),1);
+                    Date numDate1=getDateAdded(secondDateString,0);
+
+                     firstEncounterDateLesser=encounterOrignalDate.compareTo(numDate1);
+                     firstEncounterDateGreater=encounterthirtyDate.compareTo(numDate1);
+
+
+                     sevenEncounterDateLesser=encounterOrignalDate.compareTo(numDate1);
+                     sevenEncounterDateGreater=encountersevenDate.compareTo(numDate1);
+
+                    if(firstEncounterDateLesser <=0 && firstEncounterDateGreater>=0){
+                        thirtyA=true;
+                    }
+
+                    if(sevenEncounterDateLesser <=0 && sevenEncounterDateGreater>=0){
+                        sevenA=true;
+                    }
+
+
+                    if(thirtyA){
+                        document.put("FUM30A Num1",true);
+                    }
+                    else {
+                        document.put("FUM30A Num1",false);
+                    }
+
+                    if(sevenA){
+                        document.put("FUM7A Num2",true);
+                    }
+                    else {
+                        document.put("FUM7A Num2",false);
+                    }
+
+                }
+                else if(getSize(expressionResults.get("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm")) == 1){
+                    document.put("numerator1Exist",true);
+                    document.put("numerator2Exist",true);
+                    document.put("eligibleVisitMoreThan1Num1",false);
+                    document.put("eligibleVisitMoreThan1Num2",false);
+                    document.put("eligibleVisitMoreThan1Num1Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0)));
+                    document.put("eligibleVisitMoreThan1Num2Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0)));
+
+                    String firstDateString=getSecondEligibleEdVisitDate(expressionResults.get("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm"),0);
+                    Date numDate=getDateAdded(firstDateString,0);
+                    int firstEncounterDateLesser=encounterOrignalDate.compareTo(numDate);
+                    int firstEncounterDateGreater=encounterthirtyDate.compareTo(numDate);
+
+                    if(firstEncounterDateLesser <=0 && firstEncounterDateGreater>=0 ){
+                        document.put("FUM30A Num1",true);
+                    }
+                    else {
+                        document.put("FUM30A Num1",false);
+                    }
+
+
+                    int sevenEncounterDateGreater=encountersevenDate.compareTo(numDate);
+                    if(firstEncounterDateLesser <=0 && sevenEncounterDateGreater>=0 ){
+                        document.put("FUM7A Num2",true);
+                    }
+                    else {
+                        document.put("FUM7A Num2",false);
+                    }
+
+                }
+                else{
+                    document.put("numerator1Exist",false);
+                    document.put("numerator2Exist",false);
+                    document.put("numerator1ExistAge1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),firstString));
+                    document.put("numerator2ExistAge1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),firstString));
+                }
+            }
+            else if(getSize(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm")) > 1){
+                String firstString=getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0);
+                Date encounterFirstDate=getDateAdded(firstString,0);
+                Date encounterFirstthirtyDate=getDateAdded(firstString,30);
+                Date encounterFirstSevenDate=getDateAdded(firstString,7);
+
+
+                String SecondString=getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),1);
+                Date encounterSecondDate=getDateAdded(SecondString,0);
+                Date encounterSecondThirtyDate=getDateAdded(SecondString,30);
+                Date encounterSecondSevenDate=getDateAdded(SecondString,7);
+
+
+                if(getSize(expressionResults.get("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm")) == 1){
+                    document.put("numerator1Exist",true);
+                    document.put("numerator2Exist",true);
+                    document.put("eligibleVisitMoreThan1Num1",true);
+                    document.put("eligibleVisitMoreThan1Num2",true);
+                    document.put("eligibleVisitMoreThan1Num1Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0)));
+                    document.put("eligibleVisitMoreThan1Num2Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),1)));
+
+
+                    String firstDateString=getSecondEligibleEdVisitDate(expressionResults.get("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm"),0);
+                    Date num2Date=getDateAdded(firstDateString,0);
+
+                    int firstEncounterDateLesser=encounterFirstDate.compareTo(num2Date);
+                    int firstEncounterDateGreater=encounterFirstSevenDate.compareTo(num2Date);
+
+                    if(firstEncounterDateLesser <=0 && firstEncounterDateGreater>=0 ){
+                        document.put("FUM7A Num2",true);
+                    }
+                    else {
+                        document.put("FUM7A Num2",false);
+                    }
+
+
+                    int secondEncounterDateLesser=encounterSecondDate.compareTo(num2Date);
+                    int secondEncounterDateGreater=encounterSecondSevenDate.compareTo(num2Date);
+
+
+                    if(secondEncounterDateLesser <=0 && secondEncounterDateGreater>=0 ){
+                        document.put("FUM7B Num2",true);
+                    }
+                    else {
+                        document.put("FUM7B Num2", false);
+                    }
+
+                    /// FUM30
+                    int firstThirtyEncounterDateLesser=encounterFirstDate.compareTo(num2Date);
+                    int firstThirtyEncounterDateGreater=encounterFirstthirtyDate.compareTo(num2Date);
+
+                    if(firstThirtyEncounterDateLesser <=0 && firstThirtyEncounterDateGreater>=0 ){
+                        document.put("FUM30A Num1",true);
+                    }
+                    else {
+                        document.put("FUM30A Num1",false);
+                    }
+
+
+                    int secondThirtyEncounterDateLesser=encounterSecondDate.compareTo(num2Date);
+                    int secondThirtyEncounterDateGreater=encounterSecondThirtyDate.compareTo(num2Date);
+
+
+                    if(secondThirtyEncounterDateLesser <=0 && secondThirtyEncounterDateGreater>=0 ){
+                        document.put("FUM30B Num1",true);
+                    }
+                    else {
+                        document.put("FUM30B Num1", false);
+                    }
+                }
+                else if(getSize(expressionResults.get("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm")) >= 2){
+                    document.put("numerator1Exist",true);
+                    document.put("numerator2Exist",true);
+                    document.put("eligibleVisitMoreThan1Num1",true);
+                    document.put("eligibleVisitMoreThan1Num2",true);
+                    document.put("eligibleVisitMoreThan1Num1Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0)));
+                    document.put("eligibleVisitMoreThan1Num2Age1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),1)));
+
+
+                    String firstDateString=getSecondEligibleEdVisitDate(expressionResults.get("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm"),0);
+                    Date num2Date=getDateAdded(firstDateString,0);
+
+                    /// FUM30
+                    int firstThirtyEncounterDateLesser=encounterFirstDate.compareTo(num2Date);
+                    int firstThirtyEncounterDateGreater=encounterFirstthirtyDate.compareTo(num2Date);
+
+                    if(firstThirtyEncounterDateLesser <=0 && firstThirtyEncounterDateGreater>=0 ){
+                        document.put("FUM30A Num1",true);
+                    }
+                    else {
+                        document.put("FUM30A Num1",false);
+                    }
+
+                    int firstEncounterDateLesser=encounterFirstDate.compareTo(num2Date);
+                    int firstEncounterDateGreater=encounterFirstSevenDate.compareTo(num2Date);
+
+                    if(firstEncounterDateLesser <=0 && firstEncounterDateGreater>=0 ){
+                        document.put("FUM7A Num2",true);
+                    }
+                    else {
+                        document.put("FUM7A Num2",false);
+                    }
+
+
+                    String secondDateString=getSecondEligibleEdVisitDate(expressionResults.get("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm"),1);
+                    Date numDate=getDateAdded(secondDateString,0);
+
+                    int secondThirtyEncounterDateLesser=encounterSecondDate.compareTo(numDate);
+                    int secondThirtyEncounterDateGreater=encounterSecondThirtyDate.compareTo(numDate);
+                    if(secondThirtyEncounterDateLesser <=0 && secondThirtyEncounterDateGreater>=0 ){
+                        document.put("FUM30B Num1",true);
+                    }
+                    else {
+                        document.put("FUM30B Num1", false);
+                    }
+
+                    int secondEncounterDateLesser=encounterSecondDate.compareTo(numDate);
+                    int secondEncounterDateGreater=encounterSecondSevenDate.compareTo(numDate);
+
+                    if(secondEncounterDateLesser <=0 && secondEncounterDateGreater>=0 ){
+                        document.put("FUM7B Num2",true);
+                    }
+                    else {
+                        document.put("FUM7B Num2", false);
+                    }
+
+
+                }
+                else{
+                    document.put("numerator1Exist",false);
+                    document.put("numerator2Exist",false);
+//                    document.put("eligibleVisitMoreThan1Num1",true);
+//                    document.put("eligibleVisitMoreThan1Num2",true);
+                    document.put("numerator1ExistAge1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),0)));
+                    document.put("numerator2ExistAge1",utilityFunction.getEncounterBasedAge(utilityFunction.getConvertedDateString(patientData.getBirthDate()),getSelfHarmDate(expressionResults.get("ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm"),1)));
+                }
+
+
+            }
+            else{
+                document.put("numerator1Exist",false);
+                document.put("numerator2Exist",false);
+                document.put("numerator1ExistAge1","0");
+                document.put("numerator2ExistAge1","0");
+            }
+        }
         /* Removing extra fields also giving codex error*/
         expressionResults.remove("Patient");
         expressionResults.remove("Member Claims");
@@ -691,7 +1312,15 @@ public class ProcessPatientService implements Runnable {
         expressionResults.remove("ED Visits with Hospice Intervention or Encounter");
         expressionResults.remove("Follow Up Visits");
         expressionResults.remove("Follow Up Visits with Principal Diagnosis of Mental Health Disorder or Intentional Self-Harm");
-
+        expressionResults.remove("Denominator 1");
+        expressionResults.remove("Denominator 2");
+        expressionResults.remove("Numerator 1");
+        expressionResults.remove("Numerator 2");
+        expressionResults.remove("Exclusions 1");
+        expressionResults.remove("Exclusions 2");
+        expressionResults.remove("SelfHarm with Hospice Intervention or Encounter");
+        expressionResults.remove("Initial Population 1");
+        expressionResults.remove("Initial Population 2");
 
         document.putAll(expressionResults); /* Mapping into Document*/
         return document;

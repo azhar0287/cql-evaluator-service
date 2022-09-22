@@ -104,6 +104,14 @@ public class SheetGenerationTask {
         documents.clear();
     }
 
+    public void generateSheetForFUM() throws IOException, ParseException {
+        List<Document> documents;
+        documents = dbFunctions.getSortedConditionalData(EP_CQL_PROCESSED_DATA, skip, batchSize, db);
+        FumScoreSheet fumScoreSheet=new FumScoreSheet();
+        fumScoreSheet.generateSheet(documents, csvPrinter, db,stringDictionaryMap);
+        documents.clear();
+    }
+
     public void generateSheetForCCS() throws IOException, ParseException {
         Date measureDate = new SimpleDateFormat("yyyy-MM-dd").parse("2022-12-31");
         List<Document> documents;

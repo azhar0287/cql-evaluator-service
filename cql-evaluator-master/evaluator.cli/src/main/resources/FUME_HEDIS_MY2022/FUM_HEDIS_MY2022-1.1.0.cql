@@ -39,7 +39,7 @@ define "Eligible ED Visits Not Followed by Inpatient Admission":
   ( "Eligible ED Visits" EDVisits
     where not "ED Visits Followed by Inpatient Admission"(EDVisits)) EDVisitsWithoutExclusions
     return all date from 
-    end of EDVisitsWithoutExclusions
+    start of EDVisitsWithoutExclusions
     sort asc
 
 define "Eligible ED Visits":
@@ -59,7 +59,7 @@ define "ED Visits With Principal Diagnosis of Mental Illness or Intentional Self
       return ClaimList.ServicePeriod
   ) ) EDVisits
     where date from 
-    end of EDVisits during Interval[date from start of "Measurement Period", date from "December 1 of the Measurement Period"]
+    start of EDVisits during Interval[date from start of "Measurement Period", date from "December 1 of the Measurement Period"]
 
 define "Member Claims":
   [Claim] C
@@ -111,6 +111,10 @@ define "Exclusions 2":
 
 define "ED Visits with Hospice Intervention or Encounter":
   "Initial Population 1" EDVisits
+    where Hospice."Hospice Intervention or Encounter"
+
+define "SelfHarm with Hospice Intervention or Encounter":
+  "ED Visits With Principal Diagnosis of Mental Illness or Intentional Self-Harm" EDVisits
     where Hospice."Hospice Intervention or Encounter"
 
 define "Numerator 1":
