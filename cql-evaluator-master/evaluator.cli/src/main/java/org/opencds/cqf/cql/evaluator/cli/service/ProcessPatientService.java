@@ -25,6 +25,7 @@ import org.opencds.cqf.cql.evaluator.cli.command.CqlCommand;
 import org.opencds.cqf.cql.evaluator.cli.db.DBConnection;
 import org.opencds.cqf.cql.evaluator.cli.db.DbFunctions;
 import org.opencds.cqf.cql.evaluator.cli.libraryparameter.LibraryOptions;
+import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.CoueScoreSheet;
 import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.PdseScoreSheet;
 import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.PndeScoreSheet;
 import org.opencds.cqf.cql.evaluator.cli.scoresheets.MeasureWiseSheetGeneration.PrseScoreSheet;
@@ -244,7 +245,7 @@ public class ProcessPatientService implements Runnable {
                                 EvaluationResult result = evaluator.evaluate(identifier, contextParameter);
 
                                 patientData = ((BundleRetrieveProvider) retrieveProvider).getPatientData();
-                                documents.add(PrseScoreSheet.createDocumentForPrseResult(result.expressionResults, patientData));
+                                documents.add(CoueScoreSheet.createDocumentForCoueResult(result.expressionResults, patientData));
                                 if(documents.size() > 15) {
                                     dbFunctions.insertProcessedDataInDb("ep_cql_processed_data", documents, dbConnection);
                                     System.out.println("Going to add 15 patients in db, and Thread is going to sleep");

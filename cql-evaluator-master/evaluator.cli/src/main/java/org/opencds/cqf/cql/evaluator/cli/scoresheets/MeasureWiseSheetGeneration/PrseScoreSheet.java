@@ -50,7 +50,7 @@ public class PrseScoreSheet {
         }
         return false;
     }
-    
+
     static int  getSize(Object obj){
         return convertObjectToList(obj).size();
     }
@@ -101,6 +101,7 @@ public class PrseScoreSheet {
 
         return document;
     }
+
     public String getProcedureBasedAge(String birthdate,String procedurePerformedDate){
         birthdate=utilityFunction.getFormattedDate(birthdate);
         procedurePerformedDate=utilityFunction.getFormattedDate(procedurePerformedDate);
@@ -591,7 +592,6 @@ public class PrseScoreSheet {
         }
 
     }
-
 
     void mapAllowedDeliveryProcedureInList(List<DeliveryProcedureInfo> deliveryProcedureInfoList){
         Date intervalStartDate = UtilityFunction.getParsedDateInRequiredFormat("2022-01-01", "yyyy-MM-dd");

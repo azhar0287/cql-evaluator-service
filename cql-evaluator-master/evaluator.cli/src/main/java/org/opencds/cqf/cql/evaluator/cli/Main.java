@@ -72,7 +72,7 @@ public class Main {
         insertFailedPatient(dbFunctions, connection,"ep_cql_Pnde_Sample_Sheet_failed_patients");
 
 //        //Process Single Patient
-//        String patientId = "95013";
+//        String patientId = "95759";
 //        processSinglePatient(patientId, dbFunctions, connection);
           ////////////////
 
@@ -161,26 +161,30 @@ public class Main {
         //Patient processing
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         for(int i=0; i < totalSkips; i++) {
-            //ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
-            //isAllTasksCompleted.add(isTaskCompleted);
-            //executorService.submit(new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount, isTaskCompleted));
-            ProcessPatientService processPatientService = new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount);
-            processPatientService.dataBatchingAndProcessing();
+            ////////////////////////////////////////////////////////////////////////for multithread
+            ThreadTaskCompleted isTaskCompleted = new ThreadTaskCompleted();
+            isAllTasksCompleted.add(isTaskCompleted);
+            executorService.submit(new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount, isTaskCompleted));
+            ////////////////////////////////////////////////////////////////////////for multithread
+//            ProcessPatientService processPatientService = new ProcessPatientService(totalSkipped, libraryOptions, connection, totalCount);
+//            processPatientService.dataBatchingAndProcessing();
             totalSkipped += 10;
         }
 
         /*Shutting Down service*/
-//        while(true) {
-//            if(dbFunctions.isAllTasksCompletedByThreads(isAllTasksCompleted)){
-//                LOGGER.info("****** Patients are processed");
-//                break;
-//            }
-//            try {
-//                Thread.sleep(10000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
+        ////////////////////////////////////////////////////////////////////////for multithread
+        while(true) {
+            if(dbFunctions.isAllTasksCompletedByThreads(isAllTasksCompleted)){
+                LOGGER.info("****** Patients are processed");
+                break;
+            }
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        ////////////////////////////////////////////////////////////////////////for multithread
         System.out.println("Patients Processing has completed");
         executorService.shutdown();
     }
