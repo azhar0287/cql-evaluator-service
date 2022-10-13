@@ -37,8 +37,8 @@ public class UopScoreSheet {
         sheetObjA.add("UOPA");
         sheetObjA.add(payerCode);
         sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
-        sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 1")));// Added Event Here
-        if(!document.getBoolean("Enrolled During Participation Period") ||!document.getBoolean("Denominator 1") || document.getBoolean("Exclusions 1")
+        sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Denominator")));// Added Event Here
+        if(!document.getBoolean("Enrolled During Participation Period") ||!document.getBoolean("Denominator") || document.getBoolean("Exclusions 1")
                 || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
             sheetObjA.add("0"); //epop (Also known as denominator)
         }
@@ -46,7 +46,7 @@ public class UopScoreSheet {
             sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 1"))); //epop
         }
         sheetObjA.add("0"); //excl
-        sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 1"))); //Numerator
+        sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("uopNumeratorA"))); //Numerator
         sheetObjA.add("0"); //rexcl
         if(document.getBoolean("Exclusions 1")){
             sheetObjA.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 1"))); //RexlD
@@ -67,9 +67,9 @@ public class UopScoreSheet {
         sheetObjB.add("UOPB");
         sheetObjB.add(payerCode);
         sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
-        sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 2")));
+        sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Denominator")));
         //denominator 2 false
-        if(!document.getBoolean("Enrolled During Participation Period") ||!document.getBoolean("Denominator 2") || document.getBoolean("Exclusions 2")
+        if(!document.getBoolean("Enrolled During Participation Period") ||!document.getBoolean("Denominator") || document.getBoolean("Exclusions 2")
                 || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
             sheetObjB.add("0"); //epop (Also known as denominator)
         }
@@ -78,7 +78,7 @@ public class UopScoreSheet {
         }
         //sheetObjB.add("Initial Population 2");
         sheetObjB.add("0"); //excl
-        sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 2"))); //Numerator
+        sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("uopNumeratorB"))); //Numerator
         sheetObjB.add("0"); //rexcl
         if(document.getBoolean("Exclusions 2")){
             sheetObjB.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 2"))); //RexlD
@@ -99,8 +99,8 @@ public class UopScoreSheet {
         sheetObjC.add("UOPC");
         sheetObjC.add(payerCode);
         sheetObjC.add(utilityFunction.getIntegerString(document.getBoolean("Enrolled During Participation Period")));
-        sheetObjC.add(utilityFunction.getIntegerString(document.getBoolean("Denominator 3")));
-        if(!document.getBoolean("Enrolled During Participation Period") ||!document.getBoolean("Denominator 3") || document.getBoolean("Exclusions 3")
+        sheetObjC.add(utilityFunction.getIntegerString(document.getBoolean("Denominator")));
+        if(!document.getBoolean("Enrolled During Participation Period") ||!document.getBoolean("Denominator") || document.getBoolean("Exclusions 3")
                 || document.getString("hospiceFlag").equals("Y") || codeList.stream().anyMatch(str-> str.equalsIgnoreCase(payerCode)) ){
             sheetObjC.add("0"); //epop (Also known as denominator)
         }
@@ -108,7 +108,7 @@ public class UopScoreSheet {
             sheetObjC.add(utilityFunction.getIntegerString(document.getBoolean("Initial Population 3"))); //epop
         }
         sheetObjC.add("0"); //excl
-        sheetObjC.add(utilityFunction.getIntegerString(document.getBoolean("Numerator 3"))); //Numerator
+        sheetObjC.add(utilityFunction.getIntegerString(document.getBoolean("uopNumeratorC"))); //Numerator
         sheetObjC.add("0"); //rexcl
         if(document.getBoolean("Exclusions 3")){
             sheetObjC.add(utilityFunction.getIntegerString(document.getBoolean("Exclusions 3"))); //RexlD
@@ -122,21 +122,6 @@ public class UopScoreSheet {
         sheetObjC.add(document.get("Age").toString());
         sheetObjC.add(utilityFunction.getGenderSymbol(document.getString("gender")));
         csvPrinter.printRecord(sheetObjC);
-    }
-
-    String getPayerCodeType(String payerCode , DBConnection dbConnection, Map<String,String> dictionaryStringMap){
-        if(!dictionaryStringMap.isEmpty()){
-            String payerCodeOid=dictionaryStringMap.get(payerCode);
-            if(payerCodeOid !=null && payerCodeOid!=""){
-                return payerCodeOid;
-            }
-        }
-        List<Document> documentList=dbFunctions.getOidInfo(payerCode, Constant.EP_DICTIONARY,dbConnection);
-        if(documentList.size()>0){
-            dictionaryStringMap.put(payerCode,documentList.get(0).getString("oid"));
-            return documentList.get(0).getString("oid");
-        }
-        return "";
     }
 
     void mapSpecialPayerCodes(List<String> payersList,String payerCode){
@@ -273,7 +258,7 @@ public class UopScoreSheet {
 //                    int a=0;
 //                }
                 int patientAge = document.getInteger("Age");
-                if(patientAge>18 ) {
+                if(patientAge>17 ) {
                     Object object = document.get("payerCodes");
                     payerInfoList = new ObjectMapper().convertValue(object, new TypeReference<List<PayerInfo>>() {});
                     List<String> payersList=mapPayersCodeInList(payerInfoList);

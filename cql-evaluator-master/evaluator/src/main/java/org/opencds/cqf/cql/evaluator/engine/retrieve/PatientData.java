@@ -10,6 +10,14 @@ public class PatientData {
     List<PayerInfo> payerInfo;
     private String hospiceFlag;
 
+    private Boolean uopNumeratorA;
+    private Boolean uopNumeratorB;
+    private Boolean uopNumeratorC;
+
+    private Boolean uopDenominatorA;
+    private Boolean uopDenominatorB;
+    private Boolean uopDenominatorC;
+
     public PatientData() {
     }
 
@@ -51,5 +59,53 @@ public class PatientData {
 
     public void setHospiceFlag(String hospiceFlag) {
         this.hospiceFlag = hospiceFlag;
+    }
+
+    public Boolean getUopNumeratorA() {
+        return uopNumeratorA;
+    }
+
+    public void setUopNumeratorA(Boolean uopNumeratorA) {
+        this.uopNumeratorA = uopNumeratorA;
+    }
+
+    public Boolean getUopNumeratorB() {
+        return uopNumeratorB;
+    }
+
+    public void setUopNumeratorB(Boolean uopNumeratorB) {
+        this.uopNumeratorB = uopNumeratorB;
+    }
+
+    public Boolean getUopNumeratorC() {
+        return uopNumeratorC;
+    }
+
+    public void setUopNumeratorC(Boolean uopNumeratorC) {
+        this.uopNumeratorC = uopNumeratorC;
+    }
+
+    public Boolean getUopDenominatorA() {
+        return uopDenominatorA;
+    }
+
+    public void setUopDenominatorA(Boolean uopDenominatorA) {
+        this.uopDenominatorA = uopDenominatorA;
+    }
+
+    public Boolean getUopDenominatorB() {
+        return uopDenominatorB;
+    }
+
+    public void setUopDenominatorB(Boolean uopDenominatorB) {
+        this.uopDenominatorB = uopDenominatorB;
+    }
+
+    public Boolean getUopDenominatorC() {
+        return uopDenominatorC;
+    }
+
+    public void setUopDenominatorC(Boolean uopDenominatorC) {
+        this.uopDenominatorC = uopDenominatorC;
     }
 }

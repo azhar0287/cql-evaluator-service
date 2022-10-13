@@ -65,6 +65,12 @@ public class UtilityFunction {
             patientData.setBirthDate(getConvertedDate(document.get("birthDate").toString()));
             patientData.setGender(document.get("gender").toString());
             patientData.setHospiceFlag(document.getString("hospiceFlag"));
+            patientData.setUopNumeratorA(document.getBoolean("uopNumeratorA"));
+            patientData.setUopNumeratorB(document.getBoolean("uopNumeratorB"));
+            patientData.setUopNumeratorC(document.getBoolean("uopNumeratorC"));
+            patientData.setUopDenominatorA(document.getBoolean("uopDenominatorA"));
+            patientData.setUopDenominatorB(document.getBoolean("uopDenominatorB"));
+            patientData.setUopDenominatorC(document.getBoolean("uopDenominatorC"));
             Object o = document.get("payerInfo");
 
             List<PayerInfo> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<PayerInfo>>() {
@@ -99,6 +105,12 @@ public class UtilityFunction {
             patientData.setBirthDate(getConvertedDate(documents.get(i).get("birthDate").toString()));
             patientData.setGender(documents.get(i).get("gender").toString());
             patientData.setHospiceFlag(documents.get(i).getString("hospiceFlag"));
+            patientData.setUopNumeratorA(documents.get(i).getBoolean("uopNumeratorA"));
+            patientData.setUopNumeratorB(documents.get(i).getBoolean("uopNumeratorB"));
+            patientData.setUopNumeratorC(documents.get(i).getBoolean("uopNumeratorC"));
+            patientData.setUopDenominatorA(documents.get(i).getBoolean("uopDenominatorA"));
+            patientData.setUopDenominatorB(documents.get(i).getBoolean("uopDenominatorB"));
+            patientData.setUopDenominatorC(documents.get(i).getBoolean("uopDenominatorC"));
             Object o = documents.get(i).get("payerInfo");
 
             List<PayerInfo> payerCodes = new ObjectMapper().convertValue(o, new TypeReference<List<PayerInfo>>() {});
